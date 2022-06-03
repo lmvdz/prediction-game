@@ -1,38 +1,34 @@
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
-import { createAssociatedTokenAccount, createMint, MINT_SIZE, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction } from "@solana/web3.js";
+import { createAssociatedTokenAccount, createInitializeMintInstruction, createMint, getMinimumBalanceForRentExemptMint, MINT_SIZE, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { Keypair, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction } from "@solana/web3.js";
 import { Prediction } from "../target/types/prediction";
 
 describe("prediction", () => {
-  // Configure the client to use the local cluster.
-  // anchor.setProvider(anchor.AnchorProvider.env());
 
   const provider = anchor.AnchorProvider.local("http://127.0.0.1:8899");
   anchor.setProvider(provider);
   
   const program = anchor.workspace.Prediction as Program<Prediction>;
 
+  const payer = Keypair.fromSecretKey(Uint8Array.from(require("/home/lars/validator-keypair.json")))
 
-  it("Creates Game PDA!", async () => {
+  it("create_game_pda!", async () => {
 
-    const owner = anchor.web3.Keypair.generate();
-    const mint = anchor.web3.Keypair.generate()
+    const mint = anchor.web3.Keypair.generate();
 
-    
-
-    await createMint(program.provider.connection, owner, owner.publicKey, owner.publicKey, 9);
+    const token_mint_signature = await createMint(program.provider.connection, payer, payer.publicKey, payer.publicKey, 9, mint);
 
 
     const [gamePubkey, _gameBump] =
 			await PublicKey.findProgramAddress(
-				[owner.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('game'))],
+				[payer.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('game'))],
 				program.programId
 			);
 
 		const [upVaultPubkey, _upVaultBump] =
 			await PublicKey.findProgramAddress(
-				[owner.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('up'))],
+				[payer.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('up'))],
 				program.programId
 			);
 
@@ -44,7 +40,7 @@ describe("prediction", () => {
 
 		const [downVaultPubkey, _downVaultBump] =
 			await PublicKey.findProgramAddress(
-				[owner.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('down'))],
+				[payer.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('down'))],
 				program.programId
 			);
 
@@ -55,7 +51,7 @@ describe("prediction", () => {
 			);
 
     const signature = await program.methods.initGamePda().accounts({
-      owner: owner.publicKey,
+      owner: payer.publicKey,
       game: gamePubkey,
       upVault: upVaultPubkey,
       upVaultAuthority: upVaultAuthority,
@@ -65,7 +61,7 @@ describe("prediction", () => {
       rent: SYSVAR_RENT_PUBKEY,
       systemProgram: anchor.web3.SystemProgram.programId,
       tokenProgram: TOKEN_PROGRAM_ID,
-    }).signers([owner]).rpc();
+    }).signers([payer]).rpc();
 
 
     console.log("Your transaction signature", signature);

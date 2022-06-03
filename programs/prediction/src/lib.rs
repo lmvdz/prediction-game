@@ -13,16 +13,16 @@ pub mod prediction {
     pub fn init_game_pda(ctx: Context<InitializeGamePDA>) -> Result<()> {
 
 
-        // let up_vault_account_key = ctx.accounts.up_vault.to_account_info().key;
+        let up_vault_account_key = ctx.accounts.up_vault.to_account_info().key;
         let (up_vault_account_authority, _up_vault_nonce) =
-            Pubkey::find_program_address(&[ctx.accounts.owner.key().as_ref(), b"up"], ctx.program_id);
+            Pubkey::find_program_address(&[up_vault_account_key.key().as_ref()], ctx.program_id);
 
         // up_vault owner must be authority of up_vault
         require_keys_eq!(ctx.accounts.up_vault.owner, up_vault_account_authority, ErrorCode::InvalidUpVaultAccountAuthority);
 
-        // let down_vault_account_key = ctx.accounts.down_vault.to_account_info().key;
+        let down_vault_account_key = ctx.accounts.down_vault.to_account_info().key;
         let (down_vault_account_authority, _down_vault_nonce) =
-            Pubkey::find_program_address(&[ctx.accounts.owner.key().as_ref(), b"down"], ctx.program_id);
+            Pubkey::find_program_address(&[down_vault_account_key.key().as_ref()], ctx.program_id);
 
         // down_vault owner must be authority of down_vault
         require_keys_eq!(ctx.accounts.down_vault.owner, down_vault_account_authority, ErrorCode::InvalidDownVaultAccountAuthority);
@@ -59,7 +59,9 @@ pub struct InitializeGamePDA<'info> {
     )]
     pub game: Account<'info, Game>,
 
+    
     pub token_mint: Account<'info, Mint>,
+
 
     #[account(
         init, 
@@ -72,6 +74,9 @@ pub struct InitializeGamePDA<'info> {
     pub up_vault: Account<'info, TokenAccount>,
     /// CHECK: checked in `initialize`
     pub up_vault_authority: AccountInfo<'info>,
+
+
+
     #[account(
         init, 
         seeds = [owner.key().as_ref(), b"down"], 
@@ -83,6 +88,8 @@ pub struct InitializeGamePDA<'info> {
     pub down_vault: Account<'info, TokenAccount>,
     /// CHECK: checked in `initialize`
     pub down_vault_authority: AccountInfo<'info>,
+
+
 
     // required for TokenAccount
     pub rent: Sysvar<'info, Rent>,
