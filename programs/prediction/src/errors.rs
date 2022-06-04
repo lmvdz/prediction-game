@@ -12,5 +12,9 @@ pub enum ErrorCode {
     #[msg("Checked subtraction overflow")]
     CheckedSubOverflow,
     #[msg("Price Program not owner of Price Feed")]
-    PriceProgramNotOwnerOfPriceFeed
+    PriceProgramNotOwnerOfPriceFeed,
+    #[msg("Next round number does not match what was computed")]
+    NextComputedRoundNumberError,
+    #[msg("Round failed to finish")]
+    FailedToFinishRound
 }

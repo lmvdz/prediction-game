@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 
+use crate::state::round::Round;
 
 #[account]
 #[derive(Default)]
@@ -7,27 +8,29 @@ pub struct Game {
     pub owner: Pubkey,
     pub address: Pubkey,
 
-    pub up_vault_authority: Pubkey,
-    pub up_vault_pubkey: Pubkey,
-    pub up_vault_amount: u128,
-
-    pub down_vault_pubkey: Pubkey,
-    pub down_vault_authority: Pubkey,
-    pub down_vault_amount: u128,
-
-    pub token_mint_pubkey: Pubkey,
-
     pub round_number: u128,
     pub current_round: Pubkey,
 
-    pub price_program_pubkey: Pubkey,
-    pub price_feed_pubkey: Pubkey,
+    pub total_volume: u128
+}
 
-    pub round_start_time: i64,
-    pub round_current_time: i64,
-    pub round_time_difference: i64,
+impl Game {
 
-    pub round_start_price: i128,
-    pub round_current_price: i128,
-    pub round_price_difference: i128
+    // setup the game and initialize the first round
+    pub fn init<'info>(
+        &mut self, 
+        owner: &Signer<'info>, 
+        address: Pubkey,
+        first_round: &mut Box<Account<'info, Round>>, 
+        price_program: &AccountInfo<'info>, 
+        price_feed: &AccountInfo<'info>, 
+        clock: &AccountInfo<'info>
+    ) -> Result<()> {
+        self.owner = owner.key();
+        self.address = address.key();
+        self.round_number = 0;
+        self.current_round = first_round.address.key();
+        self.total_volume = 0;
+        first_round.init(price_program, price_feed, clock)
+    }
 }
