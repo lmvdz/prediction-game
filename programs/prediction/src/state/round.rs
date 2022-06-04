@@ -61,12 +61,12 @@ impl Round {
         self.round_time_difference = self.round_current_time.checked_sub(self.round_start_time).unwrap_or(0);
 
         if self.round_time_difference > (5 * 60) {
-            self.finish();
+            require!(self.finish().is_ok(), ErrorCode::FailedToFinishRound)
         }
         Ok(())
     }
 
-    pub fn finish<'info>(&mut self) -> Result<()> {
+    pub fn finish(&mut self) -> Result<()> {
         self.finished = true;
         Ok(())
     }
