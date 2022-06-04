@@ -10,5 +10,7 @@ pub enum ErrorCode {
     #[msg("Price Feed PublicKey does not match")]
     PriceFeedKeyMismatch,
     #[msg("Checked subtraction overflow")]
-    CheckedSubOverflow
+    CheckedSubOverflow,
+    #[msg("Price Program not owner of Price Feed")]
+    PriceProgramNotOwnerOfPriceFeed
 }
