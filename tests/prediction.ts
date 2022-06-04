@@ -4,7 +4,7 @@ import { createAssociatedTokenAccount, createInitializeMintInstruction, createMi
 import { Keypair, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction } from "@solana/web3.js";
 import { Prediction } from "../target/types/prediction";
 
-describe("prediction", () => {
+describe("prediction", async () => {
 
   const provider = anchor.AnchorProvider.local("http://127.0.0.1:8899");
   anchor.setProvider(provider);
@@ -13,12 +13,12 @@ describe("prediction", () => {
 
   const payer = Keypair.fromSecretKey(Uint8Array.from(require("/home/lars/validator-keypair.json")))
 
+
+  const mint = anchor.web3.Keypair.generate();
+
+  await createMint(program.provider.connection, payer, payer.publicKey, payer.publicKey, 9, mint);
+
   it("create_game_pda!", async () => {
-
-    const mint = anchor.web3.Keypair.generate();
-
-    const token_mint_signature = await createMint(program.provider.connection, payer, payer.publicKey, payer.publicKey, 9, mint);
-
 
     const [gamePubkey, _gameBump] =
 			await PublicKey.findProgramAddress(
@@ -60,9 +60,8 @@ describe("prediction", () => {
       tokenMint: mint.publicKey,
       rent: SYSVAR_RENT_PUBKEY,
       systemProgram: anchor.web3.SystemProgram.programId,
-      tokenProgram: TOKEN_PROGRAM_ID,
+      tokenProgram: TOKEN_PROGRAM_ID
     }).signers([payer]).rpc();
-
 
     console.log("Your transaction signature", signature);
 
