@@ -6,14 +6,14 @@ import { Prediction } from "../target/types/prediction";
 
 describe("prediction", () => {
 
-  // const connection = new Connection("https://api.devnet.solana.com");
+  const connection = new Connection("https://api.devnet.solana.com");
   const payer = Keypair.fromSecretKey(Uint8Array.from(require("/home/lars/validator-keypair.json")))
-  // const wallet = new anchor.Wallet(payer)
-  // const provider = new anchor.AnchorProvider(connection, wallet, { commitment: 'finalized'})
-  // anchor.setProvider(provider);
+  const wallet = new anchor.Wallet(payer)
+  const provider = new anchor.AnchorProvider(connection, wallet, { commitment: 'finalized'})
+  anchor.setProvider(provider);
 
 
-  anchor.setProvider(anchor.AnchorProvider.local())
+  // anchor.setProvider(anchor.AnchorProvider.local())
   
   const program = anchor.workspace.Prediction as Program<Prediction>;
 
