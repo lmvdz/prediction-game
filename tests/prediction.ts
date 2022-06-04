@@ -17,45 +17,43 @@ describe("prediction", () => {
   
   const program = anchor.workspace.Prediction as Program<Prediction>;
 
-  
-
 
   const mint = anchor.web3.Keypair.generate();
 
-  it("create_game_pda!", async () => {
+
+  it("init_game!", async () => {
 
     await createMint(program.provider.connection, payer, payer.publicKey, payer.publicKey, 9, mint);
 
-
     const [gamePubkey, _gameBump] =
-			await PublicKey.findProgramAddress(
-				[payer.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('game'))],
-				program.programId
-			);
+      await PublicKey.findProgramAddress(
+        [payer.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('game'))],
+        program.programId
+      );
 
-		const [upVaultPubkey, _upVaultBump] =
-			await PublicKey.findProgramAddress(
-				[payer.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('up'))],
-				program.programId
-			);
+    const [upVaultPubkey, _upVaultBump] =
+      await PublicKey.findProgramAddress(
+        [payer.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('up'))],
+        program.programId
+      );
 
     const [upVaultAuthority, _upVaultAuthorityNonce] =
-			await PublicKey.findProgramAddress(
-				[upVaultPubkey.toBuffer()],
-				program.programId
-			);
+      await PublicKey.findProgramAddress(
+        [upVaultPubkey.toBuffer()],
+        program.programId
+      );
 
-		const [downVaultPubkey, _downVaultBump] =
-			await PublicKey.findProgramAddress(
-				[payer.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('down'))],
-				program.programId
-			);
+    const [downVaultPubkey, _downVaultBump] =
+      await PublicKey.findProgramAddress(
+        [payer.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('down'))],
+        program.programId
+      );
 
     const [downVaultAuthority, _downVaultAuthorityNonce] =
-			await PublicKey.findProgramAddress(
-				[downVaultPubkey.toBuffer()],
-				program.programId
-			);
+      await PublicKey.findProgramAddress(
+        [downVaultPubkey.toBuffer()],
+        program.programId
+      );
 
     const initSignature = await program.methods.initGame().accounts({
       owner: payer.publicKey,
@@ -85,12 +83,22 @@ describe("prediction", () => {
 
     console.log("round start time", game.roundStartTime.toNumber());
     console.log("round start price", game.roundStartPrice.toNumber());
-    console.log('waiting 10 seconds before calling update');
+    
+  });
 
+  it("update_game", async () => {
+    console.log('waiting 10 seconds before calling update...');
+
+
+    const [gamePubkey, _gameBump] =
+      await PublicKey.findProgramAddress(
+        [payer.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('game'))],
+        program.programId
+      );
     await Promise.allSettled([new Promise<void>((resolve, reject) => {
       setTimeout(async () => {
         const updateSignature = await program.methods.updateGame().accounts({
-          game: game.address,
+          game: gamePubkey,
           priceProgram: new PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"), // chainlink
           // priceFeed: new PublicKey("CcPVS9bqyXbD9cLnTbhhHazLsrua8QMFUHTutPtjyDzq"), // SOL - mainnet - chainlink
           priceFeed: new PublicKey("HgTtcbcmp5BeThax5AU8vg4VwK79qAvAKKFMs8txMLW6"), // SOL - devnet - chainlink
@@ -102,7 +110,7 @@ describe("prediction", () => {
     
         console.log("Your update transaction signature", updateSignature);
     
-        game = await program.account.game.fetch(gamePubkey);
+        let game = await program.account.game.fetch(gamePubkey);
     
         console.log("round current time", game.roundCurrentTime.toNumber());
         console.log("round current price", game.roundCurrentPrice.toNumber());
@@ -111,5 +119,5 @@ describe("prediction", () => {
         resolve();
       }, 10 * 1000);
     })]);
-  });
+  })
 });
