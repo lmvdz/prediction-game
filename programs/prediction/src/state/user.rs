@@ -8,7 +8,7 @@ use anchor_lang::prelude::*;
 pub struct User {
 
     // accounts
-    
+
     pub address: Pubkey,
 
     pub owner: Pubkey,
@@ -62,7 +62,7 @@ pub struct UserPrediction {
 
 
     // args
-    pub up_or_down: Option<UpOrDown>,
+    pub up_or_down: i8,
 
     pub amount: u64
 
@@ -75,7 +75,7 @@ impl UserPrediction {
         self.user = user.key();
         self.amount = 0;
         self.owner = owner.key();
-        self.up_or_down = None;
+        self.up_or_down = -1;
         self.game = game.key();
         Ok(())
     }
@@ -95,5 +95,10 @@ pub struct UserPredictions {
 }
 
 impl UserPredictions {
-    
+    pub fn append<'info>(&mut self, user_prediction: &Box<Account<'info, UserPrediction>>) -> Result<()> {
+        // will this work?
+        let first_none_index = self.predictions.iter().position(|p| p.is_none()).unwrap();
+        self.predictions.as_mut()[first_none_index] = Some(***user_prediction);
+        Ok(())
+    }
 }

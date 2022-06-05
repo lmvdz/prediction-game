@@ -24,5 +24,7 @@ pub enum ErrorCode {
     #[msg("User account amount not zero")]
     UserAccountAmountNotZero,
     #[msg("Token account has insufficient amount")]
-    InsufficientTokenAccountAmount
+    InsufficientTokenAccountAmount,
+    #[msg("Failed to append user prediction")]
+    FailedToAppendUserPrediction
 }

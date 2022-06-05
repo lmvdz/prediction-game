@@ -29,4 +29,8 @@ pub mod prediction {
         instructions::user::init_user(ctx)
     }
 
+    pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: i8, amount: u64) -> Result<()> {
+        instructions::user::init_user_prediction(ctx, up_or_down, amount)
+    }
+
 }

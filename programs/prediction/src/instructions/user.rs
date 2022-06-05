@@ -4,7 +4,6 @@ use anchor_spl::token::{Mint, TokenAccount, Token};
 use crate::state::Vault;
 use crate::state::Game;
 use crate::state::Round;
-use crate::state::UpOrDown;
 use crate::state::User;
 use crate::state::UserPrediction;
 use crate::state::UserPredictions;
@@ -22,16 +21,17 @@ pub fn init_user(ctx: Context<InitUser>) -> Result<()> {
     )
 }
 
-pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: UpOrDown, amount: u64) -> Result<()> {
+pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: i8, amount: u64) -> Result<()> {
+    let user_prediction = &mut ctx.accounts.user_prediction;
+    
     // check if user already made a prediction
-    require_eq!(amount, ctx.accounts.user_prediction.amount, ErrorCode::UserAccountAmountNotZero);
-    // update the user's prediction amount
-    ctx.accounts.user_prediction.amount = amount;
-    ctx.accounts.user_prediction.up_or_down = Some(up_or_down);
+    require_eq!(amount, user_prediction.amount, ErrorCode::UserAccountAmountNotZero);
 
-    // will this work?
-    let first_none_index = ctx.accounts.user_predictions.predictions.iter().position(|p| p.is_none()).unwrap();
-    ctx.accounts.user_predictions.predictions.as_mut()[first_none_index] = Some(**ctx.accounts.user_prediction);
+    // update the user's prediction amount
+    user_prediction.amount = amount;
+    user_prediction.up_or_down = up_or_down;
+
+    require!(ctx.accounts.user_predictions.append(user_prediction).is_ok(), ErrorCode::FailedToAppendUserPrediction);
 
     ctx.accounts.vault.deposit(&ctx.accounts.from_token_account, &ctx.accounts.to_token_account, &ctx.accounts.from_token_account_authority, &ctx.accounts.token_program, amount)
 }

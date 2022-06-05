@@ -1,11 +1,9 @@
 use anchor_lang::prelude::*;
 
 
-
 use crate::state::Vault;
 use crate::state::Game;
 use crate::state::Round;
-use crate::errors::ErrorCode;
 
 // initialize game
 pub fn init_game(ctx: Context<InitializeGame>) -> Result<()> {
@@ -30,6 +28,8 @@ pub fn update_game(ctx: Context<UpdateGame>) -> Result<()> {
 
     game.update(price_program, price_feed, round)
 }
+
+
 
 
 #[derive(Accounts)]
