@@ -1,11 +1,7 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Token, Mint, TokenAccount};
 
 
-use crate::state::UpOrDown;
-use crate::state::User;
-use crate::state::UserPrediction;
-use crate::state::UserPredictions;
+
 use crate::state::Vault;
 use crate::state::Game;
 use crate::state::Round;
@@ -33,19 +29,6 @@ pub fn update_game(ctx: Context<UpdateGame>) -> Result<()> {
     let price_feed = &ctx.accounts.price_feed;
 
     game.update(price_program, price_feed, round)
-}
-
-pub fn predit(ctx: Context<PredictGame>, up_or_down: UpOrDown, amount: u64) -> Result<()> {
-    // check if user already made a prediction
-    require_eq!(amount, ctx.accounts.user_prediction.amount, ErrorCode::UserAccountAmountNotZero);
-    // update the user's prediction amount
-    ctx.accounts.user_prediction.amount = amount;
-    ctx.accounts.user_prediction.up_or_down = Some(up_or_down);
-    
-    let first_none_index = ctx.accounts.user_predictions.predictions.iter().position(|p| p.is_none()).unwrap();
-    ctx.accounts.user_predictions.predictions.as_mut()[first_none_index] = Some(**ctx.accounts.user_prediction);
-
-    ctx.accounts.vault.deposit(&ctx.accounts.from_token_account, &ctx.accounts.to_token_account, &ctx.accounts.from_token_account_authority, &ctx.accounts.token_program, amount)
 }
 
 
@@ -109,62 +92,3 @@ pub struct UpdateGame<'info> {
 }
 
 
-#[derive(Accounts)]
-pub struct PredictGame<'info> {
-    #[account(mut)]
-    pub signer: Signer<'info>,
-
-    #[account()]
-    pub game: Box<Account<'info, Game>>,
-
-    #[account(
-        mut,
-        constraint = game.key().eq(&round.game)
-    )]
-    pub round: Box<Account<'info, Round>>,
-
-    #[account(
-        mut,
-        constraint = vault.owner == round.owner
-    )]
-    pub vault: Box<Account<'info, Vault>>,
-
-    #[account(
-        mut,
-        constraint = user.owner.eq(&signer.key())
-    )]
-    pub user: Box<Account<'info, User>>,
-
-    #[account(
-        init,
-        seeds = [signer.key().as_ref(), game.key().as_ref(), b"user_prediction"], 
-        bump, 
-        payer = signer,
-        space = std::mem::size_of::<UserPrediction>() + 8
-    )]
-    pub user_prediction: Box<Account<'info, UserPrediction>>,
-
-    #[account(mut)]
-    pub user_predictions: Box<Account<'info, UserPredictions>>,
-
-    #[account(
-        constraint = vault.owner == to_token_account.owner,
-        token::mint = token_mint.key()
-    )]
-    pub to_token_account: Box<Account<'info, TokenAccount>>,
-
-    #[account(
-        constraint = signer.key().eq(&from_token_account.owner),
-        token::mint = token_mint.key()
-    )]
-    pub from_token_account: Box<Account<'info, TokenAccount>>,
-
-    #[account()]
-    pub from_token_account_authority: AccountInfo<'info>,
-
-    pub token_mint: Box<Account<'info, Mint>>,
-
-    pub token_program: Program<'info, Token>,
-    // required for Account
-    pub system_program: Program<'info, System>,
-}

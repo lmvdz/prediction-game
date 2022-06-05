@@ -7,6 +7,8 @@ use anchor_lang::prelude::*;
 
 pub struct User {
 
+    // accounts
+    
     pub address: Pubkey,
 
     pub owner: Pubkey,
@@ -49,6 +51,7 @@ pub enum UpOrDown {
 #[derive(Default, Copy)]
 pub struct UserPrediction {
 
+    // accounts
     pub owner: Pubkey,
 
     pub address: Pubkey,
@@ -57,6 +60,8 @@ pub struct UserPrediction {
 
     pub game: Pubkey,
 
+
+    // args
     pub up_or_down: Option<UpOrDown>,
 
     pub amount: u64
