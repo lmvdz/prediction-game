@@ -86,7 +86,7 @@ impl UserPrediction {
 #[account]
 #[derive(Default)]
 pub struct UserPredictions {
-    pub predictions: [UserPrediction; 32]
+    pub predictions: [Option<UserPrediction>; 32]
 }
 
 impl UserPredictions {

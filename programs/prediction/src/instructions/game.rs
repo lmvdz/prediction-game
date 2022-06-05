@@ -5,6 +5,7 @@ use anchor_spl::token::{Token, Mint, TokenAccount};
 use crate::state::UpOrDown;
 use crate::state::User;
 use crate::state::UserPrediction;
+use crate::state::UserPredictions;
 use crate::state::Vault;
 use crate::state::Game;
 use crate::state::Round;
@@ -40,6 +41,10 @@ pub fn predit(ctx: Context<PredictGame>, up_or_down: UpOrDown, amount: u64) -> R
     // update the user's prediction amount
     ctx.accounts.user_prediction.amount = amount;
     ctx.accounts.user_prediction.up_or_down = Some(up_or_down);
+    
+    let first_none_index = ctx.accounts.user_predictions.predictions.iter().position(|p| p.is_none()).unwrap();
+    ctx.accounts.user_predictions.predictions.as_mut()[first_none_index] = Some(**ctx.accounts.user_prediction);
+
     ctx.accounts.vault.deposit(&ctx.accounts.from_token_account, &ctx.accounts.to_token_account, &ctx.accounts.from_token_account_authority, &ctx.accounts.token_program, amount)
 }
 
@@ -106,7 +111,7 @@ pub struct UpdateGame<'info> {
 
 #[derive(Accounts)]
 pub struct PredictGame<'info> {
-    #[account()]
+    #[account(mut)]
     pub signer: Signer<'info>,
 
     #[account()]
@@ -131,10 +136,16 @@ pub struct PredictGame<'info> {
     pub user: Box<Account<'info, User>>,
 
     #[account(
-        mut,
-        constraint = user_prediction.owner.eq(&signer.key())
+        init,
+        seeds = [signer.key().as_ref(), game.key().as_ref(), b"user_prediction"], 
+        bump, 
+        payer = signer,
+        space = std::mem::size_of::<UserPrediction>() + 8
     )]
     pub user_prediction: Box<Account<'info, UserPrediction>>,
+
+    #[account(mut)]
+    pub user_predictions: Box<Account<'info, UserPredictions>>,
 
     #[account(
         constraint = vault.owner == to_token_account.owner,
