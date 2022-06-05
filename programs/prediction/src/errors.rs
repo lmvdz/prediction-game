@@ -16,5 +16,13 @@ pub enum ErrorCode {
     #[msg("Next round number does not match what was computed")]
     NextComputedRoundNumberError,
     #[msg("Round failed to finish")]
-    FailedToFinishRound
+    FailedToFinishRound,
+    #[msg("The deposit amount attempted was too much")]
+    DepositOverflow,
+    #[msg("The withraw amount attempted was too much")]
+    WithdrawUnderflow,
+    #[msg("User account amount not zero")]
+    UserAccountAmountNotZero,
+    #[msg("Token account has insufficient amount")]
+    InsufficientTokenAccountAmount
 }

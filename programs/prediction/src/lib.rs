@@ -20,13 +20,9 @@ pub mod prediction {
     pub fn init_game_instruction(ctx: Context<InitializeGame>) -> Result<()> {
         instructions::game::init_game(ctx)
     }
-    
-    pub fn next_round_instruction(ctx: Context<NextRound>) -> Result<()> {
-        instructions::game::next_round(ctx)
-    }
 
-    pub fn update_round_instruction(ctx: Context<UpdateRound>) -> Result<()> {
-        instructions::round::update_round(ctx)
+    pub fn update_game_instruction(ctx: Context<UpdateGame>) -> Result<()> {
+        instructions::game::update_game(ctx)
     }
 
     pub fn init_user_instruction(ctx: Context<InitUser>) -> Result<()> {
