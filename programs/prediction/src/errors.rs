@@ -64,5 +64,61 @@ pub enum ErrorCode {
     #[msg("The account to deposit to doesn't equal the up or down token account")]
     ToAccountDoesNotMatchVaultUpOrDown,
     #[msg("Round predictions array is uninitialized")]
-    RoundPredictionsIsUninitialized
+    RoundPredictionsIsUninitialized,
+    #[msg("Can't close user account when user token account is not empty")]
+    UserTokenAccountNotEmpty,
+    #[msg("Can't close user account when user token account is not closed")]
+    UserTokenAccountNotClosed,
+    #[msg("User is not the owner of the token account")]
+    UserNotOwnerOfTokenAccount,
+    #[msg("Token account authority not equal")]
+    FromTokenAccountAuthorityNotEqual,
+    #[msg("User owner not the same as the to token account owner")]
+    UserOwnerNotToTokenAccountOwner,
+    #[msg("User owner not the same as the from token account owner")]
+    UserOwnerNotFromTokenAccountOwner,
+    #[msg("Game key not equal to the round's game key")]
+    RoundGameKeyNotEqual,
+    #[msg("Round owner not the vault owner")]
+    RoundOwnerNotVaultOwner,
+    #[msg("Signer not owner of user")]
+    SignerNotOwnerOfUser,
+    #[msg("Vault owner not to token account owner")]
+    VaultOwnerNotToTokenAccountOwner,
+    #[msg("To token account not part of vault")]
+    ToTokenAccountNotPartOfVault,
+    #[msg("Signer not owner of from token account")]
+    SignerNotOwnerOfFromTokenAccount,
+    #[msg("Signer not owner")]
+    SignerNotOwner,
+    #[msg("User prediction owner and to token account owner mismatch")]
+    UserPredictionOwnerNotToTokenAccountOwner,
+    #[msg("User prediction owner and from token account owner mismatch")]
+    UserPredictionOwnerNotFromTokenAccountOwner,
+    #[msg("vault token account account authority not equal to from token account")]
+    VaultTokenAccountAuthorityNotEqualToFromTokenAccount,
+    #[msg("Failed to init game")]
+    FailedToInitGame,
+    #[msg("Failed to init round")]
+    FailedToInitRound,
+    #[msg("Failed to init vault")]
+    FailedToInitVault,
+    #[msg("Round Price Program Not Equal")]
+    RoundPriceProgramNotEqual,
+    #[msg("Round Price Feed Not Equal")]
+    RoundPriceFeedNotEqual,
+    #[msg("Vault up token account authority not equal to the one provided")]
+    VaultUpTokenAccountAuthorityMismatch,
+    #[msg("Vault down token account authority not equal to the one provided")]
+    VaultDownTokenAccountAuthorityMismatch,
+    #[msg("Round already settled")]
+    RoundAlreadySettled,
+    #[msg("Round not settled")]
+    RoundNotSettled,
+    #[msg("Failed to settle round")]
+    FailedToSettleRound,
+    #[msg("Failed to withdraw winnings")]
+    FailedToWithdrawWinnings,
+    #[msg("Failed to withdraw initial amount")]
+    FailedToWithdrawInitialAmount,
 }

@@ -23,24 +23,18 @@ pub fn init_user(ctx: Context<InitUser>) -> Result<()> {
 
 }
 
-pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: i8, amount: u64) -> Result<()> {
+pub fn init_user_prediction(ctx: Context<InitUserPrediction>) -> Result<()> {
     let round = &mut ctx.accounts.round;
 
     // update the round
     require!(round.update(&ctx.accounts.price_program, &ctx.accounts.price_feed).is_ok(), ErrorCode::FailedToUpdateRound);
 
     // round can't be over
-    require!(!(round.finished.unwrap_or(false)), ErrorCode::UserPredictionDeniedRoundFinished);
+    require!(!(round.finished), ErrorCode::RoundAlreadyFinished);
+
+    require!(!(round.settled), ErrorCode::RoundAlreadySettled);
 
     let user_prediction = &mut ctx.accounts.user_prediction;
-
-    // check to make sure the user_prediction amount is zero
-    require_eq!(amount, user_prediction.amount.unwrap_or(0), ErrorCode::UserPredictionAmountNotZero);
-
-    let user_prediction_pubkey = user_prediction.key(); 
-
-    // the user_prediction account should be initialized, but the data needs to be initialized
-    require!(user_prediction.init(&user_prediction_pubkey, &ctx.accounts.user.key(), &ctx.accounts.signer.key(), &ctx.accounts.game.key(), amount, up_or_down).is_ok(), ErrorCode::FailedToInitUserPrediction);
     
 
     // push the user_prediction to the user_predictions array
@@ -52,7 +46,7 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: i8, am
 
     
     // deposit the amount from the user_prediction
-    require!(ctx.accounts.vault.deposit(&ctx.accounts.from_token_account, &ctx.accounts.to_token_account, &ctx.accounts.from_token_account_authority, &ctx.accounts.token_program, amount).is_ok(), ErrorCode::UserPredictionFailedToDeposit);
+    require!(ctx.accounts.vault.deposit(&ctx.accounts.from_token_account, &ctx.accounts.to_token_account, &ctx.accounts.from_token_account_authority, &ctx.accounts.token_program, user_prediction.amount).is_ok(), ErrorCode::UserPredictionFailedToDeposit);
 
     Ok(())
 }
@@ -65,11 +59,14 @@ pub fn settle_and_or_close_user_prediction(ctx: Context<SettleAndOrCloseUserPred
     require!(round.update(&ctx.accounts.price_program, &ctx.accounts.price_feed).is_ok(), ErrorCode::FailedToUpdateRound);
 
     // round has to be over
-    require!((round.finished.unwrap_or(false)), ErrorCode::RoundNotFinished);
+    require!((round.finished), ErrorCode::RoundNotFinished);
+
+    require!((round.settled), ErrorCode::RoundNotSettled);
 
     let user_prediction = &mut ctx.accounts.user_prediction;
     let user_predictions = &mut ctx.accounts.user_predictions;
-    if user_prediction.settled.unwrap_or(false) {
+
+    if user_prediction.settled {
         require!(user_prediction.settle(round).is_ok(), ErrorCode::FailedToSettleUserPrediction)
     }
 
@@ -80,11 +77,79 @@ pub fn settle_and_or_close_user_prediction(ctx: Context<SettleAndOrCloseUserPred
     // push the user_prediction to the user_predictions array
     require!(user_predictions.pop(user_prediction, round).is_ok(), ErrorCode::FailedToPopUserPrediction);
 
-    
+    user_prediction.close()
+}
+
+pub fn transfer_user_token_account(ctx: Context<UserTransfer>, amount: u64) -> Result<()> {
+    ctx.accounts.user.transfer(
+        ctx.accounts.from_token_account.to_account_info(), 
+        ctx.accounts.to_token_account.to_account_info(), 
+        ctx.accounts.from_token_account_authority.clone(), 
+        ctx.accounts.token_program.to_account_info(), 
+        amount
+    )
+}
 
 
+#[derive(Accounts)]
+pub struct CloseUserAccount<'info> {
 
-    Ok(())
+    #[account()]
+    pub signer: Signer<'info>,
+
+    #[account(mut, 
+        close = receiver,
+        constraint = signer.key() == user.owner @ ErrorCode::SignerNotOwner,
+        constraint = user_token_account.owner == user.owner @ ErrorCode::UserNotOwnerOfTokenAccount
+    )]
+    pub user: Box<Account<'info, User>>,
+
+    #[account(mut, 
+        close = receiver,
+        constraint = user_token_account.owner == user.owner @ ErrorCode::UserNotOwnerOfTokenAccount,
+        constraint = user_token_account.amount == 0 @ ErrorCode::UserTokenAccountNotEmpty,
+        constraint = user_token_account.to_account_info().lamports() == 0 @ ErrorCode::UserTokenAccountNotClosed,
+        constraint = signer.key() == user_token_account.owner @ ErrorCode::SignerNotOwner
+    )]
+    pub user_token_account: Box<Account<'info, TokenAccount>>,
+
+    #[account(mut)]
+    pub receiver: SystemAccount<'info>,
+
+    pub token_mint: Box<Account<'info, Mint>>,
+
+    pub token_program: Program<'info, Token>
+
+}
+
+
+#[derive(Accounts)]
+pub struct UserTransfer<'info> {
+    #[account()]
+    pub signer: Signer<'info>,
+
+    #[account(mut)]
+    pub user: Box<Account<'info, User>>,
+
+    #[account(
+        constraint = to_token_account.owner == user.owner @ErrorCode::UserOwnerNotToTokenAccountOwner,
+        token::mint = token_mint.key()
+    )]
+    pub to_token_account: Box<Account<'info, TokenAccount>>,
+
+    #[account(
+        constraint = from_token_account.owner == from_token_account_authority.key() @ ErrorCode::FromTokenAccountAuthorityNotEqual,
+        constraint = from_token_account.owner == user.owner @ ErrorCode::UserOwnerNotFromTokenAccountOwner,
+        token::mint = token_mint.key()
+    )]
+    pub from_token_account: Box<Account<'info, TokenAccount>>,
+
+    pub from_token_account_authority: AccountInfo<'info>,
+
+    pub token_mint: Box<Account<'info, Mint>>,
+
+    pub token_program: Program<'info, Token>
+
 }
 
 #[derive(Accounts)]
@@ -142,17 +207,18 @@ pub struct InitUserPrediction<'info> {
     pub game: Box<Account<'info, Game>>,
 
     #[account(
-        constraint = game.key().eq(&round.game)
+        constraint = game.key() == round.game @ ErrorCode::RoundGameKeyNotEqual,
+        constraint = !round.finished @ ErrorCode::RoundAlreadyFinished
     )]
     pub round: Box<Account<'info, Round>>,
 
     #[account(
-        constraint = vault.owner == round.owner
+        constraint = vault.owner == round.owner @ ErrorCode::RoundOwnerNotVaultOwner
     )]
     pub vault: Box<Account<'info, Vault>>,
 
     #[account(
-        constraint = user.owner.eq(&signer.key())
+        constraint = user.owner == signer.key() @ ErrorCode::SignerNotOwnerOfUser
     )]
     pub user: Box<Account<'info, User>>,
 
@@ -169,13 +235,14 @@ pub struct InitUserPrediction<'info> {
     pub user_predictions: Box<Account<'info, UserPredictions>>,
 
     #[account(
-        constraint = vault.owner == to_token_account.owner,
+        constraint = vault.owner == to_token_account.owner @ ErrorCode::VaultOwnerNotToTokenAccountOwner,
+        constraint = vault.up_token_account_pubkey == to_token_account.key() || vault.down_token_account_pubkey == to_token_account.key() @ ErrorCode::ToTokenAccountNotPartOfVault,
         token::mint = token_mint.key()
     )]
     pub to_token_account: Box<Account<'info, TokenAccount>>,
 
     #[account(
-        constraint = signer.key().eq(&from_token_account.owner),
+        constraint = signer.key() == from_token_account.owner @ ErrorCode::SignerNotOwnerOfFromTokenAccount,
         token::mint = token_mint.key()
     )]
     pub from_token_account: Box<Account<'info, TokenAccount>>,
@@ -205,34 +272,39 @@ pub struct SettleAndOrCloseUserPrediction<'info> {
     pub game: Box<Account<'info, Game>>,
 
     #[account(
-        constraint = game.key().eq(&round.game) && round.finished.unwrap_or(false)
+        constraint = game.key() == round.game @ ErrorCode::RoundGameKeyNotEqual,
+        constraint = round.finished @ ErrorCode::RoundNotFinished
     )]
     pub round: Box<Account<'info, Round>>,
 
     #[account(
-        constraint = vault.owner == round.owner
+        constraint = vault.owner == round.owner @ ErrorCode::RoundOwnerNotVaultOwner
     )]
     pub vault: Box<Account<'info, Vault>>,
 
     #[account(
-        constraint = user.owner.eq(&signer.key())
+        constraint = user.owner == signer.key() @ ErrorCode::SignerNotOwnerOfUser
     )]
     pub user: Box<Account<'info, User>>,
 
-    #[account(mut)]
+    #[account(mut, close = user_prediction_close_receiver)]
     pub user_prediction: Box<Account<'info, UserPrediction>>,
+
+    #[account(mut)]
+    pub user_prediction_close_receiver: SystemAccount<'info>,
 
     #[account(mut)]
     pub user_predictions: Box<Account<'info, UserPredictions>>,
 
     #[account(
-        constraint = user_prediction.owner == to_token_account.owner,
+        constraint = user_prediction.owner == to_token_account.owner @ ErrorCode::UserPredictionOwnerNotToTokenAccountOwner,
         token::mint = token_mint.key()
     )]
     pub to_token_account: Box<Account<'info, TokenAccount>>,
 
     #[account(
-        constraint = vault.owner == from_token_account.owner,
+        constraint = vault.owner == from_token_account.owner @ ErrorCode::UserPredictionOwnerNotFromTokenAccountOwner,
+        constraint = vault.up_token_account_authority == from_token_account_authority.key() || vault.down_token_account_authority == from_token_account_authority.key() @ ErrorCode::VaultTokenAccountAuthorityNotEqualToFromTokenAccount,
         token::mint = token_mint.key()
     )]
     pub from_token_account: Box<Account<'info, TokenAccount>>,

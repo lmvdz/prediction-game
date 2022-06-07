@@ -35,9 +35,31 @@ impl User {
         Ok(())
     }
 
-    pub fn close(&mut self) -> Result<()> {
-        // close_account(ctx)
-        Ok(())
+    pub fn transfer<'info>(
+        &mut self, 
+        from_token_account: AccountInfo<'info>, 
+        to_token_account: AccountInfo<'info>, 
+        authority: AccountInfo<'info>, 
+        token_program: AccountInfo<'info>, 
+        amount: u64
+    ) -> Result<()> {
+        let cpi_accounts = anchor_spl::token::Transfer {
+            from: from_token_account.to_account_info().clone(),
+            to: to_token_account
+                .to_account_info()
+                .clone(),
+            authority: authority.clone(),
+        };
+        anchor_spl::token::transfer(CpiContext::new(token_program.clone(), cpi_accounts), amount)
+    }
+
+    pub fn close_token_account<'info>(&mut self, token_account: AccountInfo<'info>, destination: AccountInfo<'info>, authority: AccountInfo<'info>, token_program: AccountInfo<'info>) -> Result<()> {
+        let cpi_accounts = anchor_spl::token::CloseAccount {
+            account: token_account.clone(),
+            destination: destination.clone(),
+            authority: authority.clone(),
+        };
+        anchor_spl::token::close_account(CpiContext::new(token_program.clone(), cpi_accounts))
     }
 }
 
@@ -64,33 +86,22 @@ pub struct UserPrediction {
 
 
     // args
-    pub up_or_down: Option<i8>,
+    pub up_or_down: u8,
 
-    pub amount: Option<u64>,
+    pub amount: u64,
 
 
     // state
-    pub settled: Option<bool>
+    pub settled: bool
 
 }
 
 impl UserPrediction {
 
-    pub fn init(&mut self, user_prediciton: &Pubkey, user: &Pubkey, owner: &Pubkey, game: &Pubkey, amount: u64, up_or_down: i8) -> Result<()> {
-        self.address = user_prediciton.key();
-        self.user = user.key();
-        self.amount = Some(amount);
-        self.owner = owner.key();
-        self.up_or_down = Some(up_or_down);
-        self.game = game.key();
-        self.settled = Some(false);
-        Ok(())
-    }
-
     pub fn settle(&mut self, round: &mut Round ) -> Result<()> {
-        if !self.settled.unwrap_or(false) && round.finished.unwrap_or(false) {
+        if !self.settled && round.finished {
             // transfer wins (if applicable)
-            self.settled = Some(true);
+            self.settled = true;
             self.close()
         } else {
             Ok(())
@@ -99,7 +110,7 @@ impl UserPrediction {
     }
 
     pub fn close(&mut self) -> Result<()> {
-        require!(self.settled.unwrap_or(false), ErrorCode::FailedToCloseUnsettledUserPosition);
+        require!(self.settled, ErrorCode::FailedToCloseUnsettledUserPosition);
         // close_account(ctx)
         Ok(())
     }
@@ -110,14 +121,14 @@ impl UserPrediction {
 #[account]
 #[derive(Default)]
 pub struct UserPredictions {
-    pub predictions: [[Pubkey; 32];32]
+    pub predictions: [[Pubkey; 32]; 32]
 }
 
 impl UserPredictions {
 
     pub fn push<'info>(&mut self, user_prediction: &Account<'info, UserPrediction>, round: &mut Account<'info, Round>) -> Result<()> {
         // round can't be finished
-        require!(!round.finished.unwrap_or(false), ErrorCode::RoundAlreadyFinished);
+        require!(!round.finished, ErrorCode::RoundAlreadyFinished);
 
         // there has to be space to add the prediction to the round
         require!(self.predictions.iter().any(|p_array| p_array.iter().any(|p| p.eq(&Pubkey::default())) && p_array.iter().all(|p| !p.eq(&user_prediction.key()))), ErrorCode::PredictionAlreadyPushed);
@@ -140,10 +151,10 @@ impl UserPredictions {
 
     pub fn pop<'info>(&mut self, user_prediction: &mut Account<'info, UserPrediction>, round: &mut Account<'info, Round>) -> Result<()> {
         // round has to be finished
-        require!(round.finished.unwrap_or(false), ErrorCode::RoundNotFinished);
+        require!(round.finished, ErrorCode::RoundNotFinished);
 
         // settle the prediction if unsettled
-        if !user_prediction.settled.unwrap_or(false) {
+        if !user_prediction.settled {
             // check that it has been settled
             require!(user_prediction.settle(round).is_ok(), ErrorCode::PredictionHasntBeenSettled)
         }
