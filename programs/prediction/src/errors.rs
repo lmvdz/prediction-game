@@ -22,9 +22,47 @@ pub enum ErrorCode {
     #[msg("The withraw amount attempted was too much")]
     WithdrawUnderflow,
     #[msg("User account amount not zero")]
-    UserAccountAmountNotZero,
+    UserPredictionAmountNotZero,
     #[msg("Token account has insufficient amount")]
     InsufficientTokenAccountAmount,
     #[msg("Failed to append user prediction")]
-    FailedToAppendUserPrediction
+    FailedToAppendUserPrediction,
+    #[msg("Prediction already exists")]
+    PredictionAlreadyPushed,
+    #[msg("No prediction to pop off array found based on pubkey")]
+    NoPredictionToPopFound,
+    #[msg("Failed to pop user prediction")]
+    FailedToPopUserPrediction,
+    #[msg("Prediction hasn't been settled")]
+    PredictionHasntBeenSettled,
+    #[msg("No space to add Prediction")]
+    NoSpaceToPushPrediction,
+    #[msg("Position not valid to Pop")]
+    PredictionNotValidToPop,
+    #[msg("Failed to initialize user prediction")]
+    FailedToInitUserPrediction,
+    #[msg("Failed to complete deposit for user prediction")]
+    UserPredictionFailedToDeposit,
+    #[msg("User position could not be closed because it is unsettled")]
+    FailedToCloseUnsettledUserPosition,
+    #[msg("User prediction was denied because round finished")]
+    UserPredictionDeniedRoundFinished,
+    #[msg("Failed to update round")]
+    FailedToUpdateRound,
+    #[msg("Round not finished")]
+    RoundNotFinished,
+    #[msg("Round already finished")]
+    RoundAlreadyFinished,
+    #[msg("Failed to settle user prediction")]
+    FailedToSettleUserPrediction,
+    #[msg("Signer not owner of vault")]
+    SignerNotOwnerOfVault,
+    #[msg("Failed to deposit")]
+    FailedToDeposit,
+    #[msg("Failed to withdraw")]
+    FailedToWithdraw,
+    #[msg("The account to deposit to doesn't equal the up or down token account")]
+    ToAccountDoesNotMatchVaultUpOrDown,
+    #[msg("Round predictions array is uninitialized")]
+    RoundPredictionsIsUninitialized
 }

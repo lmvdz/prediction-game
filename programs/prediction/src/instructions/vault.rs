@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Mint, TokenAccount, Token, Transfer};
+use anchor_spl::token::{Mint, TokenAccount, Token};
 
 use crate::errors::ErrorCode;
 
@@ -23,15 +23,19 @@ pub fn init_vault(ctx: Context<InitVault>) -> Result<()> {
 
     let vault = &mut ctx.accounts.vault;
 
-    vault.up_token_account_pubkey = ctx.accounts.up_token_account.key();
-    vault.up_token_account_authority = ctx.accounts.up_token_account_authority.key();
-    vault.up_token_account_nonce = up_token_account_nonce;
+    vault.init(
+        ctx.accounts.up_token_account.key(),
+        ctx.accounts.up_token_account_authority.key(),
+        up_token_account_nonce,
+        ctx.accounts.down_token_account.key(),
+        ctx.accounts.down_token_account_authority.key(),
+        down_token_account_nonce
+    )
+}
 
-    vault.down_token_account_pubkey = ctx.accounts.down_token_account.key();
-    vault.down_token_account_authority = ctx.accounts.down_token_account_authority.key();
-    vault.down_token_account_nonce = down_token_account_nonce;
-
-
+pub fn close_vault(ctx: Context<CloseVault>) -> Result<()> {
+    require_keys_eq!(ctx.accounts.signer.key(), ctx.accounts.vault.owner.key(), ErrorCode::SignerNotOwnerOfVault);
+    
     Ok(())
 }
 
@@ -43,7 +47,6 @@ pub fn deposit(ctx: Context<VaultTransfer>, amount: u64) -> Result<()> {
 }
 
 pub fn withdraw(ctx: Context<VaultTransfer>, amount: u64) -> Result<()> {
-    
     let vault = &mut ctx.accounts.vault;
     vault.withdraw(&ctx.accounts.from_token_account, &ctx.accounts.to_token_account, &ctx.accounts.from_token_account_authority, &ctx.accounts.token_program, amount)
     
@@ -108,13 +111,12 @@ pub struct VaultTransfer<'info> {
     pub vault: Box<Account<'info, Vault>>,
 
     #[account(
-        constraint = vault.owner == to_token_account.owner,
         token::mint = token_mint.key()
     )]
     pub to_token_account: Box<Account<'info, TokenAccount>>,
 
     #[account(
-        constraint = signer.key().eq(&from_token_account.owner),
+        constraint = from_token_account.owner.eq(&from_token_account_authority.key()),
         token::mint = token_mint.key()
     )]
     pub from_token_account: Box<Account<'info, TokenAccount>>,
@@ -123,6 +125,40 @@ pub struct VaultTransfer<'info> {
 
     pub token_mint: Box<Account<'info, Mint>>,
 
+    pub token_program: Program<'info, Token>
+
+}
+
+#[derive(Accounts)]
+pub struct CloseVault<'info> {
+    #[account()]
+    pub signer: Signer<'info>,
+
+    #[account()]
+    pub vault: Box<Account<'info, Vault>>,
+
+    #[account(
+        mut,
+        constraint = signer.key() == up_token_account.owner && up_token_account.owner == up_token_account_authority.key()
+
+    )]
+    pub up_token_account:  Box<Account<'info, TokenAccount>>,
+    /// CHECK: checked in `init_game`
+    pub up_token_account_authority: AccountInfo<'info>,
+
+    #[account(
+        mut,
+        constraint = signer.key() == down_token_account.owner && down_token_account.owner == down_token_account_authority.key()
+    )]
+    pub down_token_account: Box<Account<'info, TokenAccount>>,
+    
+    /// CHECK: checked in `init_game`
+    pub down_token_account_authority: AccountInfo<'info>,
+
+    // required for TokenAccount
+    pub rent: Sysvar<'info, Rent>,
     pub token_program: Program<'info, Token>,
+    // required for Account
+    pub system_program: Program<'info, System>,
 
 }
