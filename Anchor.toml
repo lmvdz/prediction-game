@@ -1,7 +1,8 @@
 [features]
 seeds = false
+
 [programs.localnet]
-prediction = "FVUPGJ2QiLbW1dtcKMkPyAfhcSPeACVR2GujZfxh3W8e"
+prediction_game = "EPZXCy45VtSdGA7darn8LcVErMYecZS4d7XYG8pwLExb"
 
 [registry]
 url = "https://anchor.projectserum.com"

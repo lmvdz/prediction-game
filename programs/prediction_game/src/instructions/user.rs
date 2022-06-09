@@ -6,7 +6,7 @@ use crate::state::Game;
 use crate::state::Round;
 use crate::state::User;
 use crate::state::UserPrediction;
-use crate::state::UserPredictions;
+// use crate::state::UserPredictions;
 use crate::errors::ErrorCode;
 
 pub fn init_user(ctx: Context<InitUser>) -> Result<()> {
@@ -15,7 +15,6 @@ pub fn init_user(ctx: Context<InitUser>) -> Result<()> {
     let user_pubkey = user.key();
     user.init(
         user_pubkey, 
-        ctx.accounts.user_predictions.key(), 
         ctx.accounts.owner.key(), 
         ctx.accounts.token_account.key(), 
         ctx.accounts.token_account_authority.key()
@@ -27,7 +26,9 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>) -> Result<()> {
     let round = &mut ctx.accounts.round;
 
     // update the round
-    require!(round.update(&ctx.accounts.price_program, &ctx.accounts.price_feed).is_ok(), ErrorCode::FailedToUpdateRound);
+    require!(round.update(
+        &ctx.accounts.price_program, &ctx.accounts.price_feed
+    ).is_ok(), ErrorCode::FailedToUpdateRound);
 
     // round can't be over
     require!(!(round.finished), ErrorCode::RoundAlreadyFinished);
@@ -38,15 +39,23 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>) -> Result<()> {
     
 
     // push the user_prediction to the user_predictions array
-    require!(round.push(user_prediction).is_ok(), ErrorCode::FailedToAppendUserPrediction);
+    // require!(round.push(user_prediction).is_ok(), ErrorCode::FailedToAppendUserPrediction);
 
 
     // push the user_prediction to the user_predictions array
-    require!(ctx.accounts.user_predictions.push(user_prediction, round).is_ok(), ErrorCode::FailedToAppendUserPrediction);
+    // require!(ctx.accounts.user_predictions.push(user_prediction, round).is_ok(), ErrorCode::FailedToAppendUserPrediction);
 
     
     // deposit the amount from the user_prediction
     require!(ctx.accounts.vault.deposit(&ctx.accounts.from_token_account, &ctx.accounts.to_token_account, &ctx.accounts.from_token_account_authority, &ctx.accounts.token_program, user_prediction.amount).is_ok(), ErrorCode::UserPredictionFailedToDeposit);
+
+    if user_prediction.up_or_down != 0 {
+        if user_prediction.up_or_down == 1 {
+            round.total_up_amount = round.total_up_amount.checked_add(user_prediction.amount).unwrap();
+        } else if user_prediction.up_or_down == 2 {
+            round.total_down_amount = round.total_down_amount.checked_add(user_prediction.amount).unwrap();
+        }
+    }
 
     Ok(())
 }
@@ -56,7 +65,9 @@ pub fn settle_and_or_close_user_prediction(ctx: Context<SettleAndOrCloseUserPred
     let round = &mut ctx.accounts.round;
 
     // update the round
-    require!(round.update(&ctx.accounts.price_program, &ctx.accounts.price_feed).is_ok(), ErrorCode::FailedToUpdateRound);
+    require!(round.update(
+        &ctx.accounts.price_program, &ctx.accounts.price_feed
+    ).is_ok(), ErrorCode::FailedToUpdateRound);
 
     // round has to be over
     require!((round.finished), ErrorCode::RoundNotFinished);
@@ -64,20 +75,21 @@ pub fn settle_and_or_close_user_prediction(ctx: Context<SettleAndOrCloseUserPred
     require!((round.settled), ErrorCode::RoundNotSettled);
 
     let user_prediction = &mut ctx.accounts.user_prediction;
-    let user_predictions = &mut ctx.accounts.user_predictions;
+    // let user_predictions = &mut ctx.accounts.user_predictions;
 
     if user_prediction.settled {
         require!(user_prediction.settle(round).is_ok(), ErrorCode::FailedToSettleUserPrediction)
     }
 
     // push the user_prediction to the user_predictions array
-    require!(round.pop(user_prediction).is_ok(), ErrorCode::FailedToPopUserPrediction);
+    // require!(round.pop(user_prediction).is_ok(), ErrorCode::FailedToPopUserPrediction);
 
 
     // push the user_prediction to the user_predictions array
-    require!(user_predictions.pop(user_prediction, round).is_ok(), ErrorCode::FailedToPopUserPrediction);
+    // require!(user_predictions.pop(user_prediction, round).is_ok(), ErrorCode::FailedToPopUserPrediction);
 
-    user_prediction.close()
+    // user_prediction.close()
+    Ok(())
 }
 
 pub fn transfer_user_token_account(ctx: Context<UserTransfer>, amount: u64) -> Result<()> {
@@ -144,6 +156,7 @@ pub struct UserTransfer<'info> {
     )]
     pub from_token_account: Box<Account<'info, TokenAccount>>,
 
+    /// CHECK:
     pub from_token_account_authority: AccountInfo<'info>,
 
     pub token_mint: Box<Account<'info, Mint>>,
@@ -159,27 +172,27 @@ pub struct InitUser<'info> {
 
     #[account(
         init,
-        seeds = [owner.key().as_ref(), b"user"], 
+        seeds = [crate::ID.as_ref(), env!("CARGO_PKG_VERSION").as_bytes(), owner.key().as_ref(), b"user"], 
         bump, 
         payer = owner,
         space = std::mem::size_of::<User>() + 8
     )]
     pub user: Box<Account<'info, User>>, 
 
-    #[account(
-        init,
-        seeds = [owner.key().as_ref(), b"user_predictions"], 
-        bump, 
-        payer = owner,
-        space = std::mem::size_of::<UserPredictions>() + 8
-    )]
-    pub user_predictions: Box<Account<'info, UserPredictions>>,
+    // #[account(
+    //     init,
+    //     seeds = [owner.key().as_ref(), b"user_predictions"], 
+    //     bump, 
+    //     payer = owner,
+    //     space = std::mem::size_of::<UserPredictions>() + 8
+    // )]
+    // pub user_predictions: Box<Account<'info, UserPredictions>>,
 
     pub token_mint: Box<Account<'info, Mint>>,
 
     #[account(
         init, 
-        seeds = [owner.key().as_ref(), b"token_account"], 
+        seeds = [crate::ID.as_ref(), env!("CARGO_PKG_VERSION").as_bytes(), owner.key().as_ref(), b"token_account"], 
         bump, 
         payer = owner, 
         token::mint = token_mint,
@@ -224,15 +237,16 @@ pub struct InitUserPrediction<'info> {
 
     #[account(
         init,
-        seeds = [signer.key().as_ref(), game.key().as_ref(), b"user_prediction"], 
+        seeds = [crate::ID.as_ref(), env!("CARGO_PKG_VERSION").as_bytes(), signer.key().as_ref(), game.key().as_ref(), b"user_prediction"], 
         bump, 
         payer = signer,
-        space = std::mem::size_of::<UserPrediction>() + 8
+        space = std::mem::size_of::<UserPrediction>() + 8,
+        constraint = user_prediction.up_or_down == 1 || user_prediction.up_or_down == 2 @ ErrorCode::UserPredictionCanOnlyBeUpOrDown
     )]
     pub user_prediction: Box<Account<'info, UserPrediction>>,
 
-    #[account(mut)]
-    pub user_predictions: Box<Account<'info, UserPredictions>>,
+    // #[account(mut)]
+    // pub user_predictions: Box<Account<'info, UserPredictions>>,
 
     #[account(
         constraint = vault.owner == to_token_account.owner @ ErrorCode::VaultOwnerNotToTokenAccountOwner,
@@ -247,6 +261,7 @@ pub struct InitUserPrediction<'info> {
     )]
     pub from_token_account: Box<Account<'info, TokenAccount>>,
 
+    /// CHECK:
     #[account()]
     pub from_token_account_authority: AccountInfo<'info>,
 
@@ -293,8 +308,8 @@ pub struct SettleAndOrCloseUserPrediction<'info> {
     #[account(mut)]
     pub user_prediction_close_receiver: SystemAccount<'info>,
 
-    #[account(mut)]
-    pub user_predictions: Box<Account<'info, UserPredictions>>,
+    // #[account(mut)]
+    // pub user_predictions: Box<Account<'info, UserPredictions>>,
 
     #[account(
         constraint = user_prediction.owner == to_token_account.owner @ ErrorCode::UserPredictionOwnerNotToTokenAccountOwner,
@@ -309,6 +324,7 @@ pub struct SettleAndOrCloseUserPrediction<'info> {
     )]
     pub from_token_account: Box<Account<'info, TokenAccount>>,
 
+    /// CHECK:
     #[account()]
     pub from_token_account_authority: AccountInfo<'info>,
 

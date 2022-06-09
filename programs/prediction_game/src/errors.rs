@@ -121,4 +121,12 @@ pub enum ErrorCode {
     FailedToWithdrawWinnings,
     #[msg("Failed to withdraw initial amount")]
     FailedToWithdrawInitialAmount,
+    #[msg("User prediction can only be up or down")]
+    UserPredictionCanOnlyBeUpOrDown,
+    #[msg("Round winning direction invalid")]
+    RoundWinningDirectionInvalid,
+    #[msg("Failed to Close Up Vault Token Account")]
+    FailedToCloseUpTokenAccount,
+    #[msg("Failed to Close Down Vault Token Account")]
+    FailedToCloseDownTokenAccount
 }

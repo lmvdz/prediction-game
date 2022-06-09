@@ -25,30 +25,6 @@ pub struct Vault {
 
 impl Vault {
 
-    pub fn init(
-        &mut self, 
-        up_token_account_key: Pubkey,
-        up_token_account_authority_key: Pubkey,
-        up_token_account_nonce: u8,
-        down_token_account_key: Pubkey,
-        down_token_account_authority_key: Pubkey,
-        down_token_account_nonce: u8,
-        
-    ) -> Result<()> {
-        self.up_token_account_pubkey = up_token_account_key;
-        self.up_token_account_authority = up_token_account_authority_key;
-        self.up_token_account_nonce = up_token_account_nonce;
-
-        self.down_token_account_pubkey = down_token_account_key;
-        self.down_token_account_authority = down_token_account_authority_key;
-        self.down_token_account_nonce = down_token_account_nonce;
-
-        self.up_amount = 0;
-        self.down_amount = 0;
-
-        Ok(())
-    }
-
     fn transfer<'info>(
         &mut self,
         from_token_account: &Account<'info, TokenAccount>, 
