@@ -5,20 +5,21 @@ use crate::errors::ErrorCode;
 
 use crate::state::Game;
 use crate::state::vault::Vault;
+use crate::utils::util::close_token_account;
 
 pub fn close_vault_and_token_accounts<'info>(ctx: Context<'_, '_, '_, 'info, CloseVaultAndTokenAccounts<'info>>) -> Result<()> {
 
     require!(close_token_account( 
         ctx.accounts.up_token_account.to_account_info().clone(), 
         ctx.accounts.reciever_token_account.to_account_info().clone(), 
-        ctx.accounts.up_token_account_authority.clone(), 
+        ctx.accounts.signer.to_account_info().clone(), 
         ctx.accounts.token_program.to_account_info().clone()
     ).is_ok(), ErrorCode::FailedToCloseUpTokenAccount);
 
     require!(close_token_account( 
         ctx.accounts.down_token_account.to_account_info().clone(), 
         ctx.accounts.reciever_token_account.to_account_info().clone(), 
-        ctx.accounts.down_token_account_authority.clone(), 
+        ctx.accounts.signer.to_account_info().clone(), 
         ctx.accounts.token_program.to_account_info().clone()
     ).is_ok(), ErrorCode::FailedToCloseDownTokenAccount);
     
@@ -30,14 +31,14 @@ pub fn close_vault_token_accounts<'info>(ctx: Context<'_, '_, '_, 'info, CloseVa
     require!(close_token_account( 
         ctx.accounts.up_token_account.to_account_info().clone(), 
         ctx.accounts.reciever_token_account.to_account_info().clone(), 
-        ctx.accounts.up_token_account_authority.clone(), 
+        ctx.accounts.signer.to_account_info().clone(), 
         ctx.accounts.token_program.to_account_info().clone()
     ).is_ok(), ErrorCode::FailedToCloseUpTokenAccount);
 
     require!(close_token_account( 
         ctx.accounts.down_token_account.to_account_info().clone(), 
         ctx.accounts.reciever_token_account.to_account_info().clone(), 
-        ctx.accounts.down_token_account_authority.clone(), 
+        ctx.accounts.signer.to_account_info().clone(), 
         ctx.accounts.token_program.to_account_info().clone()
     ).is_ok(), ErrorCode::FailedToCloseDownTokenAccount);
     
@@ -55,15 +56,6 @@ pub fn withdraw(ctx: Context<VaultTransfer>, amount: u64) -> Result<()> {
     let vault = &mut ctx.accounts.vault;
     vault.withdraw(&ctx.accounts.from_token_account, &ctx.accounts.to_token_account, &ctx.accounts.from_token_account_authority, &ctx.accounts.token_program, amount)
     
-}
-
-pub fn close_token_account<'info>(token_account: AccountInfo<'info>, destination: AccountInfo<'info>, authority: AccountInfo<'info>, token_program: AccountInfo<'info>) -> Result<()> {
-    let cpi_accounts = anchor_spl::token::CloseAccount {
-        account: token_account.clone(),
-        destination: destination.clone(),
-        authority: authority.clone(),
-    };
-    anchor_spl::token::close_account(CpiContext::new(token_program.clone(), cpi_accounts))
 }
 
 
@@ -103,40 +95,8 @@ pub struct CloseVault<'info> {
     #[account(mut)]
     pub receiver: SystemAccount<'info>,
 
-    // #[account(
-    //     mut,
-    //     constraint = reciever_token_account.owner == signer.key()
-    // )]
-    // pub reciever_token_account: Box<Account<'info, TokenAccount>>,
-
     #[account(mut, close = receiver)]
     pub vault: Box<Account<'info, Vault>>,
-
-    // #[account(
-    //     mut,
-    //     // constraint = signer.key() == up_token_account.owner,
-    //     constraint = up_token_account.owner == up_token_account_authority.key(),
-    // )]
-    // pub up_token_account:  Box<Account<'info, TokenAccount>>,
-    // /// CHECK: checked in `init_game`
-    // pub up_token_account_authority: AccountInfo<'info>,
-
-    // #[account(
-    //     mut,
-    //     // constraint = signer.key() == down_token_account.owner,
-    //     constraint = down_token_account.owner == down_token_account_authority.key(),
-    // )]
-    // pub down_token_account: Box<Account<'info, TokenAccount>>,
-    // /// CHECK: checked in `init_game`
-    // pub down_token_account_authority: AccountInfo<'info>,
-
-    
-
-    // required for TokenAccount
-    // pub rent: Sysvar<'info, Rent>,
-    // pub token_program: Program<'info, Token>,
-    // // required for Account
-    // pub system_program: Program<'info, System>,
 
 }
 
@@ -145,50 +105,29 @@ pub struct CloseVaultTokenAccounts<'info> {
     #[account()]
     pub signer: Signer<'info>,
 
-    // #[account(mut)]
-    // pub receiver: SystemAccount<'info>,
 
     #[account(
         mut,
-        constraint = reciever_token_account.owner == signer.key()
+        constraint = reciever_token_account.owner == signer.key(),
+        constraint = reciever_token_account.mint == up_token_account.mint @ ErrorCode::TokenAccountMintMismatch,
+        constraint = reciever_token_account.mint == down_token_account.mint @ ErrorCode::TokenAccountMintMismatch,
     )]
     pub reciever_token_account: Box<Account<'info, TokenAccount>>,
 
-
-    // #[account(
-    //     mut,
-    //     constraint = game.owner == signer.key() @ ErrorCode::SignerNotOwner
-    // )]
-    // pub game: Box<Account<'info, Game>>,
-
-    // #[account(mut)]
-    // pub vault: Box<Account<'info, Vault>>,
-
     #[account(
         mut,
-        // constraint = signer.key() == up_token_account.owner,
-        constraint = up_token_account.owner == up_token_account_authority.key(),
+        constraint = up_token_account.owner == signer.key(),
     )]
     pub up_token_account:  Box<Account<'info, TokenAccount>>,
-    /// CHECK: checked in `init_game`
-    pub up_token_account_authority: AccountInfo<'info>,
 
     #[account(
         mut,
-        // constraint = signer.key() == down_token_account.owner,
-        constraint = down_token_account.owner == down_token_account_authority.key(),
+        constraint = down_token_account.owner == signer.key(),
     )]
     pub down_token_account: Box<Account<'info, TokenAccount>>,
-    /// CHECK: checked in `init_game`
-    pub down_token_account_authority: AccountInfo<'info>,
 
-    
 
-    // required for TokenAccount
-    // pub rent: Sysvar<'info, Rent>,
     pub token_program: Program<'info, Token>,
-    // // required for Account
-    // pub system_program: Program<'info, System>,
 
 }
 
@@ -203,7 +142,9 @@ pub struct CloseVaultAndTokenAccounts<'info> {
 
     #[account(
         mut,
-        constraint = reciever_token_account.owner == signer.key()
+        constraint = reciever_token_account.owner == signer.key(), 
+        constraint = reciever_token_account.mint == up_token_account.mint @ ErrorCode::TokenAccountMintMismatch,
+        constraint = reciever_token_account.mint == down_token_account.mint @ ErrorCode::TokenAccountMintMismatch,
     )]
     pub reciever_token_account: Box<Account<'info, TokenAccount>>,
 
@@ -220,28 +161,16 @@ pub struct CloseVaultAndTokenAccounts<'info> {
 
     #[account(
         mut,
-        // constraint = signer.key() == up_token_account.owner,
-        constraint = up_token_account.owner == up_token_account_authority.key(),
+        constraint = up_token_account.owner == signer.key(),
     )]
     pub up_token_account:  Box<Account<'info, TokenAccount>>,
-    /// CHECK: checked in `init_game`
-    pub up_token_account_authority: AccountInfo<'info>,
 
     #[account(
         mut,
-        // constraint = signer.key() == down_token_account.owner,
-        constraint = down_token_account.owner == down_token_account_authority.key(),
+        constraint = down_token_account.owner == signer.key(),
     )]
     pub down_token_account: Box<Account<'info, TokenAccount>>,
-    /// CHECK: checked in `init_game`
-    pub down_token_account_authority: AccountInfo<'info>,
 
-    
-
-    // required for TokenAccount
-    // pub rent: Sysvar<'info, Rent>,
     pub token_program: Program<'info, Token>,
-    // // required for Account
-    // pub system_program: Program<'info, System>,
 
 }

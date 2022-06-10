@@ -34,11 +34,11 @@ pub fn init_game(ctx: Context<InitializeGame>, vault_up_token_account_nonce: u8,
     vault.token_mint_pubkey = ctx.accounts.token_mint.key();
 
     vault.up_token_account_pubkey = ctx.accounts.up_token_account.key();
-    vault.up_token_account_authority = ctx.accounts.up_token_account_authority.key();
+    vault.up_token_account_authority = owner.key();
     vault.up_token_account_nonce = vault_up_token_account_nonce;
 
     vault.down_token_account_pubkey = ctx.accounts.down_token_account.key();
-    vault.down_token_account_authority = ctx.accounts.down_token_account_authority.key();
+    vault.down_token_account_authority = owner.key();
     vault.down_token_account_nonce = vault_down_token_account_nonce;
 
     vault.up_amount = 0;
@@ -125,29 +125,35 @@ pub fn update_game<'info>(mut ctx: Context<'_, '_, '_, 'info, UpdateGame<'info>>
 
             if accounts.len() % 2 == 0 && accounts.len() >= 2 {
                 for i in 0..(accounts.len()/2) {
+
                     let prediction = &mut Account::<'info, UserPrediction>::try_from(&accounts[i]).unwrap();
                     let token_account = &Account::<'info, TokenAccount>::try_from(&accounts[i+1]).unwrap();
     
-                    if !prediction.settled && prediction.up_or_down == round.round_winning_direction {
-                        let winnings = losing_vault_amount * (prediction.amount / winning_vault_amount);
-    
-                        // withdraw winnings from loser vault
-                        let _winnings_withdraw_result = vault.withdraw(
-                            losing_vault, 
-                            token_account, 
-                            losing_vault_authority, 
-                            token_program, 
-                            winnings
-                        );
-                        let _initial_amount_withdraw_result = vault.withdraw(
-                            winning_vault, 
-                            token_account, 
-                            winning_vault_authority, 
-                            token_program, 
-                            prediction.amount
-                        );
+                    if !prediction.settled {
+                        if prediction.up_or_down == round.round_winning_direction {
+
+                            let winnings = losing_vault_amount * (prediction.amount / winning_vault_amount);
+        
+                            // withdraw winnings from loser vault
+                            let _winnings_withdraw_result = vault.withdraw(
+                                losing_vault, 
+                                token_account, 
+                                losing_vault_authority, 
+                                token_program, 
+                                winnings
+                            );
+
+                            let _initial_amount_withdraw_result = vault.withdraw(
+                                winning_vault, 
+                                token_account, 
+                                winning_vault_authority, 
+                                token_program, 
+                                prediction.amount
+                            );
+                            // prediction.close();
+
+                        }
                         prediction.settled = true;
-                        // prediction.close();
                     }
                 }
             }
@@ -204,31 +210,18 @@ pub struct InitializeGame<'info> {
         bump, 
         payer = owner, 
         token::mint = token_mint,
-        token::authority = up_token_account_authority
+        token::authority = owner
     )]
     pub up_token_account:  Box<Account<'info, TokenAccount>>,
-    
-    /// CHECK:
-    // #[account(
-    //     constraint = up_token_account.owner == up_token_account_authority.key() @ ErrorCode::VaultUpTokenAccountAuthorityMismatch
-    // )]
-    pub up_token_account_authority: AccountInfo<'info>,
-
     #[account(
         init, 
         seeds = [crate::ID.as_ref(), env!("CARGO_PKG_VERSION").as_bytes(), owner.key().as_ref(), game.key().as_ref(), vault.key().as_ref(), b"down"], 
         bump, 
         payer = owner, 
         token::mint = token_mint,
-        token::authority = down_token_account_authority
+        token::authority = owner
     )]
     pub down_token_account: Box<Account<'info, TokenAccount>>,
-    
-    /// CHECK:
-    // #[account(
-    //     constraint = down_token_account.owner == down_token_account_authority.key() @ ErrorCode::VaultDownTokenAccountAuthorityMismatch
-    // )]
-    pub down_token_account_authority: AccountInfo<'info>,
 
     /// CHECK:
     // #[account(
@@ -337,66 +330,6 @@ pub struct CloseGame<'info> {
     )]
     pub game: Box<Account<'info, Game>>,
 
-    // #[account(
-    //     mut,
-    //     constraint = round.owner == signer.key() @ ErrorCode::SignerNotOwner,
-    //     constraint = round.game == game.key() @ ErrorCode::RoundGameKeyNotEqual,
-    //     close = receiver
-    // )]
-    // pub round: Box<Account<'info, Round>>,
-
-
-    // #[account(
-    //     mut,
-    //     constraint = vault.owner == signer.key() @ ErrorCode::SignerNotOwner,
-    //     constraint = round.owner == vault.owner @ ErrorCode::RoundOwnerNotVaultOwner,
-    //     close = receiver
-    // )]
-    // pub vault: Box<Account<'info, Vault>>,
-
-    // #[account(
-    //     mut,
-    //     constraint = up_token_account.owner == up_token_account_authority.key() @ ErrorCode::VaultUpTokenAccountAuthorityMismatch,
-    //     close = receiver
-    // )]
-    // pub up_token_account:  Box<Account<'info, TokenAccount>>,
-    
-    // /// CHECK:
-    // #[account(
-    //     constraint = up_token_account.owner == up_token_account_authority.key() @ ErrorCode::VaultUpTokenAccountAuthorityMismatch
-    // )]
-    // pub up_token_account_authority: AccountInfo<'info>,
-
-    // #[account(
-    //     mut,
-    //     constraint = down_token_account.owner == down_token_account_authority.key() @ ErrorCode::VaultDownTokenAccountAuthorityMismatch,
-    //     close = receiver
-    // )]
-    // pub down_token_account: Box<Account<'info, TokenAccount>>,
-    
-    // /// CHECK:
-    // #[account(
-    //     constraint = down_token_account.owner == down_token_account_authority.key() @ ErrorCode::VaultDownTokenAccountAuthorityMismatch
-    // )]
-    // pub down_token_account_authority: AccountInfo<'info>,
-
-    // /// CHECK:
-    // #[account(
-    //     constraint = round.price_program_pubkey == price_program.key() @ ErrorCode::RoundPriceProgramNotEqual,
-    //     // constraint = price_feed.owner.eq(&price_program.key()) @ ErrorCode::PriceProgramNotOwnerOfPriceFeed
-    // )]
-    // pub price_program: AccountInfo<'info>,
-
-    // /// CHECK:
-    // #[account(
-    //     constraint = round.price_feed_pubkey == price_feed.key() @ ErrorCode::RoundPriceFeedNotEqual,
-    //     // constraint = price_feed.owner.eq(&price_program.key()) @ ErrorCode::PriceProgramNotOwnerOfPriceFeed
-    // )]
-    // pub price_feed: AccountInfo<'info>,
-
-    // pub token_program: Program<'info, Token>,
-
-    // required for Account
     pub system_program: Program<'info, System>,
 }
 

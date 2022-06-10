@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 use instructions::*;
 
 pub mod instructions;
+pub mod utils;
 pub mod state;
 pub mod errors;
 
@@ -25,13 +26,22 @@ pub mod prediction_game {
         instructions::game::update_game(ctx)
     }
 
+
+    pub fn init_user_instruction(ctx: Context<InitUser>) -> Result<()> {
+        instructions::user::init_user(ctx)
+    }
+
+    pub fn init_user_prediction_instruction(ctx: Context<InitUserPrediction>, up_or_down: u8, amount: u64) -> Result<()> {
+        instructions::user::init_user_prediction(ctx, up_or_down, amount)
+    }
+
+
+
     pub fn close_game_instruction<'info>(_ctx: Context<'_, '_, '_, 'info, CloseGame<'info>>) -> Result<()> {
-        // instructions::game::close_game(ctx)
         Ok(())
     }
 
     pub fn close_round_instruction<'info>(_ctx: Context<'_, '_, '_, 'info, CloseRound<'info>>) -> Result<()> {
-        // instructions::round::close_round(ctx)
         Ok(())
     }
 
@@ -47,13 +57,19 @@ pub mod prediction_game {
         instructions::vault::close_vault_token_accounts(ctx)
     }
 
-    pub fn init_user_instruction(ctx: Context<InitUser>) -> Result<()> {
-        instructions::user::init_user(ctx)
+    pub fn close_user_prediction_instruction(_ctx: Context<CloseUserPrediction>) -> Result<()> {
+        Ok(())
     }
 
-    pub fn init_user_prediction(ctx: Context<InitUserPrediction>) -> Result<()> {
-        instructions::user::init_user_prediction(ctx)
+    pub fn close_user_account_instruction(_ctx: Context<CloseUserAccount>) -> Result<()> {
+        Ok(())
     }
+
+    pub fn close_user_token_account_instruction(_ctx: Context<CloseUserTokenAccount>) -> Result<()> {
+        Ok(())
+    }
+    
+    
 
     
 

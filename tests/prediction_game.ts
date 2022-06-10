@@ -1,6 +1,6 @@
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
-import { createAssociatedTokenAccount, createInitializeMintInstruction, createMint, getMinimumBalanceForRentExemptMint, getOrCreateAssociatedTokenAccount, MINT_SIZE, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { createAssociatedTokenAccount, createInitializeMintInstruction, createMint, getMinimumBalanceForRentExemptMint, getOrCreateAssociatedTokenAccount, mintTo, MINT_SIZE, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction, SYSVAR_CLOCK_PUBKEY, Connection } from "@solana/web3.js";
 import { PredictionGame } from "../target/types/prediction_game";
 
@@ -61,9 +61,7 @@ describe("prediction_game", () => {
         round: roundPubkey,
         vault: vaultPubkey,
         upTokenAccount: upVaultPubkey,
-        upTokenAccountAuthority: payer.publicKey,
         downTokenAccount: downVaultPubkey,
-        downTokenAccountAuthority: payer.publicKey,
         tokenMint: mint.publicKey,
         // tokenMint: new PublicKey(""),
         priceProgram: new PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"), // chainlink
@@ -92,6 +90,94 @@ describe("prediction_game", () => {
     
     
   });
+
+  it("init_user_prediction", async () => {
+    const [gamePubkey, _gameBump] =
+      await PublicKey.findProgramAddress(
+        [program.programId.toBuffer(), Buffer.from(program.idl.version), payer.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('game'))],
+        program.programId
+      );
+    
+    const [roundPubkey, _roundBump] =
+      await PublicKey.findProgramAddress(
+        [program.programId.toBuffer(), Buffer.from(program.idl.version), payer.publicKey.toBuffer(), gamePubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('round'))],
+        program.programId
+      );
+
+    const [vaultPubkey, _vaultBump] =
+      await PublicKey.findProgramAddress(
+        [program.programId.toBuffer(), Buffer.from(program.idl.version), payer.publicKey.toBuffer(), gamePubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('vault'))],
+        program.programId
+      );
+    
+    const [upVaultPubkey, _upVaultBump] =
+      await PublicKey.findProgramAddress(
+        [program.programId.toBuffer(), Buffer.from(program.idl.version), payer.publicKey.toBuffer(), gamePubkey.toBuffer(), vaultPubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('up'))],
+        program.programId
+      );
+
+
+    const [downVaultPubkey, _downVaultBump] =
+      await PublicKey.findProgramAddress(
+        [program.programId.toBuffer(), Buffer.from(program.idl.version), payer.publicKey.toBuffer(), gamePubkey.toBuffer(), vaultPubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('down'))],
+        program.programId
+      );
+    
+    const [userPubkey, _userPubkeyBump] =
+      await PublicKey.findProgramAddress(
+        [program.programId.toBuffer(), Buffer.from(program.idl.version), payer.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('user'))],
+        program.programId
+      )
+    const [userTokenAccountPubkey, _userTokenAccountPubkeyBump] =
+      await PublicKey.findProgramAddress(
+        [program.programId.toBuffer(), Buffer.from(program.idl.version), payer.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('token_account'))],
+        program.programId
+      )
+
+    const round = await program.account.round.fetch(roundPubkey);
+    
+    const [userPredictionPubkey, _userPredictionPubkeyBump] =
+      await PublicKey.findProgramAddress(
+        [program.programId.toBuffer(), Buffer.from(program.idl.version), payer.publicKey.toBuffer(), gamePubkey.toBuffer(), roundPubkey.toBuffer(), round.roundNumber.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('user_prediction'))],
+        program.programId
+      )
+    
+    const payerMintATA = await getOrCreateAssociatedTokenAccount(program.provider.connection, payer, mint.publicKey, payer.publicKey);
+    await mintTo(program.provider.connection, payer, mint.publicKey, payerMintATA.address, payer.publicKey, 10);
+    console.log('mint amount in ATA', (await getOrCreateAssociatedTokenAccount(program.provider.connection, payer, mint.publicKey, payer.publicKey)).amount)
+    
+    const initUserSignature = await program.methods.initUserInstruction().accounts({
+
+      owner: payer.publicKey,
+      user: userPubkey,
+      tokenAccount: userTokenAccountPubkey,
+      tokenMint: mint.publicKey,
+      rent: SYSVAR_RENT_PUBKEY,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId
+
+    }).signers([payer]).rpc();
+
+    console.log("Your init user transaction signature", initUserSignature);
+
+    const initUserPredictionSignature = await program.methods.initUserPredictionInstruction(1, new anchor.BN(1)).accounts({
+
+      signer: payer.publicKey,
+      user: userPubkey,
+      vault: vaultPubkey,
+      round: roundPubkey,
+      userPrediction: userPredictionPubkey,
+      toTokenAccount: upVaultPubkey,
+      fromTokenAccount: userTokenAccountPubkey,
+      tokenMint: mint.publicKey,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId
+
+    }).signers([payer]).rpc();
+    
+    console.log("Your close user prediction transaction signature", initUserPredictionSignature);
+
+  })
 
   it("update_game", async () => {
     console.log('waiting 10 seconds before calling update...');
@@ -238,9 +324,7 @@ describe("prediction_game", () => {
           signer: payer.publicKey,
           recieverTokenAccount: payerMintATA.address,
           upTokenAccount: upVaultPubkey,
-          upTokenAccountAuthority: payer.publicKey,
           downTokenAccount: downVaultPubkey,
-          downTokenAccountAuthority: payer.publicKey,
           tokenProgram: TOKEN_PROGRAM_ID
         }).signers([payer]).rpc();
     

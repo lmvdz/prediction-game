@@ -27,7 +27,6 @@ impl User {
     pub fn init(&mut self, user: Pubkey, owner: Pubkey, token_account: Pubkey, token_account_authority: Pubkey) -> Result<()> {
         self.address = user.key();
         self.owner = owner.key();
-        // self.predictions = user_predictions.key();
         self.token_account_pubkey = token_account.key();
         self.token_account_authority_pubkey = token_account_authority.key();
         Ok(())
@@ -49,15 +48,6 @@ impl User {
             authority: authority.clone(),
         };
         anchor_spl::token::transfer(CpiContext::new(token_program.clone(), cpi_accounts), amount)
-    }
-
-    pub fn close_token_account<'info>(&mut self, token_account: AccountInfo<'info>, destination: AccountInfo<'info>, authority: AccountInfo<'info>, token_program: AccountInfo<'info>) -> Result<()> {
-        let cpi_accounts = anchor_spl::token::CloseAccount {
-            account: token_account.clone(),
-            destination: destination.clone(),
-            authority: authority.clone(),
-        };
-        anchor_spl::token::close_account(CpiContext::new(token_program.clone(), cpi_accounts))
     }
 }
 
@@ -86,7 +76,6 @@ pub struct UserPrediction {
     pub up_or_down: u8,
 
     pub amount: u64,
-
 
     // state
     pub settled: bool

@@ -128,5 +128,7 @@ pub enum ErrorCode {
     #[msg("Failed to Close Up Vault Token Account")]
     FailedToCloseUpTokenAccount,
     #[msg("Failed to Close Down Vault Token Account")]
-    FailedToCloseDownTokenAccount
+    FailedToCloseDownTokenAccount,
+    #[msg("Token Account Mint mismatch")]
+    TokenAccountMintMismatch
 }

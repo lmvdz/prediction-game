@@ -1,10 +1,6 @@
 use anchor_lang::prelude::*;
 
-
 use crate::state::price::get_price;
-// use crate::errors::ErrorCode;
-
-// use super::UserPrediction;
 
 #[account]
 #[derive(Default)]
@@ -34,8 +30,6 @@ pub struct Round {
 
     pub total_up_amount: u64,
     pub total_down_amount: u64,
-
-    // pub predictions: [[UserPrediction; 32]; 32],
 }
 
 
@@ -60,6 +54,7 @@ impl Round {
             self.round_price_difference = self.round_current_price.checked_sub(self.round_start_price).unwrap_or(0);
 
             if self.round_time_difference > (5 * 60) {
+                
                 self.round_end_price = self.round_current_price;
 
                 self.round_winning_direction = if self.round_end_price > self.round_start_price {
@@ -71,60 +66,6 @@ impl Round {
                 self.finished = true;
             }
         }
-        Ok(())
-    }
-
-
-    // pub fn push<'info>(&mut self, predictions: [&AccountInfo], user_prediction: &Account<'info, UserPrediction>) -> Result<()> {
-    //     // round can't be finished
-    //     require!(!self.finished, ErrorCode::RoundAlreadyFinished);
-        
-    //     // there has to be space to add the prediction to the round and it can't already exist
-    //     require!(self.predictions.iter().any(|p_array| p_array.iter().any(|p| p.address.eq(&Pubkey::default())) && p_array.iter().all(|p| !p.address.eq(&user_prediction.key()))), ErrorCode::PredictionAlreadyPushed);
-
-    //     // find index
-    //     let round_first_array_index = self.predictions.iter().position(|p_array| p_array.iter().any(|p| p.address.eq(&Pubkey::default())));
-    //     require!(round_first_array_index.is_some(), ErrorCode::NoSpaceToPushPrediction);
-    //     let round_second_array_index_to_insert = self.predictions[round_first_array_index.unwrap()].iter().position(|p| p.address.eq(&Pubkey::default()));
-    //     require!(round_second_array_index_to_insert.is_some(), ErrorCode::NoSpaceToPushPrediction);
-
-    //     // add user_prediction pubkey to round.predictions array
-    //     self.predictions[round_first_array_index.unwrap()][round_second_array_index_to_insert.unwrap()] = **user_prediction;
-    //     // make sure it was pushed
-    //     require!(self.predictions[round_first_array_index.unwrap()][round_second_array_index_to_insert.unwrap()].address.eq(&user_prediction.key()), ErrorCode::FailedToAppendUserPrediction);
-
-    //     Ok(())
-
-    // }
-
-    // pub fn pop<'info>(&mut self, user_prediction: &mut Account<'info, UserPrediction>) -> Result<()> {
-    //     // round has to be finished
-    //     require!(self.finished, ErrorCode::RoundNotFinished);
-
-    //     // settle the prediction if unsettled
-    //     if !user_prediction.settled {
-    //         // check that it has been settled
-    //         require!(user_prediction.settle(self).is_ok(), ErrorCode::PredictionHasntBeenSettled)
-    //     }
-
-
-    //     // find index
-    //     let round_first_array_index = self.predictions.iter().position(|p_array| p_array.iter().any(|p| p.address.eq(&user_prediction.key())));
-    //     require!(round_first_array_index.is_some(), ErrorCode::NoPredictionToPopFound);
-    //     let round_second_array_index_to_insert = self.predictions[round_first_array_index.unwrap()].iter().position(|p| p.address.eq(&user_prediction.key()));
-    //     require!(round_second_array_index_to_insert.is_some(), ErrorCode::NoPredictionToPopFound);
-    //     // remove pubkey from predictions array
-    //     self.predictions[round_first_array_index.unwrap()][round_second_array_index_to_insert.unwrap()].address = Pubkey::default();
-    //     // make sure it was popped
-    //     require!(self.predictions[round_first_array_index.unwrap()][round_second_array_index_to_insert.unwrap()].address.eq(&Pubkey::default()), ErrorCode::FailedToPopUserPrediction);
-
-
-    //     Ok(())
-
-    // }
-
-    pub fn close(&mut self) -> Result<()> {
-
         Ok(())
     }
 
