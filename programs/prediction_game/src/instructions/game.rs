@@ -1,4 +1,8 @@
+use std::borrow::BorrowMut;
+use std::ops::DerefMut;
+
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::loader_instruction::write;
 use anchor_spl::token::Mint;
 use anchor_spl::token::Token;
 use anchor_spl::token::TokenAccount;
@@ -59,8 +63,8 @@ pub fn init_game(ctx: Context<InitializeGame>, vault_up_token_account_nonce: u8,
     round.round_current_time = now;
     round.round_time_difference = 0;
 
-    let price = get_price(price_program, price_feed).unwrap_or(0);
-    // let price = 0;
+    // let price = get_price(price_program, price_feed).unwrap_or(0);
+    let price = 0;
 
     round.round_start_price = price;
     round.round_current_price = price;
@@ -102,10 +106,10 @@ pub fn update_game<'info>(mut ctx: Context<'_, '_, '_, 'info, UpdateGame<'info>>
             ) = if round.round_winning_direction == 1 {
 
                 (
-                    &ctx.accounts.up_token_account, 
-                    &ctx.accounts.down_token_account,
-                    &ctx.accounts.up_token_account_authority,
-                    &ctx.accounts.down_token_account_authority,
+                    &mut ctx.accounts.up_token_account, 
+                    &mut ctx.accounts.down_token_account,
+                    &mut ctx.accounts.up_token_account_authority,
+                    &mut ctx.accounts.down_token_account_authority,
                     round.total_up_amount,
                     round.total_down_amount
                 )
@@ -113,10 +117,10 @@ pub fn update_game<'info>(mut ctx: Context<'_, '_, '_, 'info, UpdateGame<'info>>
             } else {
     
                (
-                    &ctx.accounts.down_token_account, 
-                    &ctx.accounts.up_token_account, 
-                    &ctx.accounts.down_token_account_authority, 
-                    &ctx.accounts.up_token_account_authority,
+                    &mut ctx.accounts.down_token_account, 
+                    &mut ctx.accounts.up_token_account, 
+                    &mut ctx.accounts.down_token_account_authority, 
+                    &mut ctx.accounts.up_token_account_authority,
                     round.total_down_amount,
                     round.total_up_amount
                 )
@@ -127,6 +131,7 @@ pub fn update_game<'info>(mut ctx: Context<'_, '_, '_, 'info, UpdateGame<'info>>
                 for i in 0..(accounts.len()/2) {
 
                     let prediction = &mut Account::<'info, UserPrediction>::try_from(&accounts[i]).unwrap();
+                    let prediction_account_info = prediction.to_account_info();
                     let token_account = &Account::<'info, TokenAccount>::try_from(&accounts[i+1]).unwrap();
     
                     if !prediction.settled {
@@ -136,7 +141,7 @@ pub fn update_game<'info>(mut ctx: Context<'_, '_, '_, 'info, UpdateGame<'info>>
         
                             // withdraw winnings from loser vault
                             let _winnings_withdraw_result = vault.withdraw(
-                                losing_vault, 
+                                losing_vault.as_mut(), 
                                 token_account, 
                                 losing_vault_authority, 
                                 token_program, 
@@ -154,6 +159,10 @@ pub fn update_game<'info>(mut ctx: Context<'_, '_, '_, 'info, UpdateGame<'info>>
 
                         }
                         prediction.settled = true;
+                        let dst: &mut [u8] = &mut prediction_account_info.try_borrow_mut_data()?;
+                        let mut cursor = std::io::Cursor::new(dst);
+                        let _write_prediction = prediction.try_serialize(&mut cursor);
+
                     }
                 }
             }

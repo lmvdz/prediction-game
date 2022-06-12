@@ -7,7 +7,7 @@ pub struct Game {
     pub owner: Pubkey,
     pub address: Pubkey,
 
-    pub round_number: u128,
+    pub round_number: u32,
     pub current_round: Pubkey,
 
     pub vault: Pubkey, 

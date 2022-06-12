@@ -1,8 +1,12 @@
 
+use anchor_lang::__private::ZeroCopyAccessor;
 use anchor_lang::prelude::*;
-// use crate::errors::ErrorCode;
+use anchor_spl::token::{TokenAccount, Token};
+use crate::errors::ErrorCode;
 
 use crate::state::Round;
+
+use super::Vault;
 
 #[account]
 #[derive(Default)]
@@ -78,7 +82,9 @@ pub struct UserPrediction {
     pub amount: u64,
 
     // state
-    pub settled: bool
+    pub settled: bool,
+
+    pub deposited: bool
 
 }
 
@@ -94,11 +100,23 @@ impl UserPrediction {
         
     }
 
-    // pub fn close(&mut self) -> Result<()> {
-    //     require!(self.settled, ErrorCode::FailedToCloseUnsettledUserPosition);
-    //     // close_account(ctx)
-    //     Ok(())
-    // }
+    pub fn deposit<'info>(
+        &mut self, 
+        vault: &mut Box<Account<'info, Vault>>,
+        from_token_account: &mut Box<Account<'info, TokenAccount>>, 
+        to_token_account: &mut Box<Account<'info, TokenAccount>>, 
+        authority: &mut AccountInfo<'info>,
+        token_program: &Program<'info, Token>
+
+    ) -> Result<()> {
+        vault.deposit(
+            from_token_account, 
+            to_token_account, 
+            authority, 
+            token_program, 
+            self.amount
+        )
+    }
 }
 
 // impl UserPredictions {

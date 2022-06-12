@@ -130,5 +130,15 @@ pub enum ErrorCode {
     #[msg("Failed to Close Down Vault Token Account")]
     FailedToCloseDownTokenAccount,
     #[msg("Token Account Mint mismatch")]
-    TokenAccountMintMismatch
+    TokenAccountMintMismatch,
+    #[msg("From token account zero balance")]
+    FromTokenAccountZeroBalance,
+    #[msg("Signer is not the owner of the user prediction")]
+    SignerNotOwnerOfUserPrediction,
+    #[msg("Invalid User Prediction Directionl")]
+    InvalidUserPredictionDirection,
+    #[msg("User Prediction Not Settled")]
+    UserPredictionNotSettled,
+    #[msg("User not owner of receiver")]
+    UserOwnerNotReceiver
 }

@@ -48,13 +48,13 @@ pub fn close_vault_token_accounts<'info>(ctx: Context<'_, '_, '_, 'info, CloseVa
 pub fn deposit(ctx: Context<VaultTransfer>, amount: u64) -> Result<()> {
 
     let vault = &mut ctx.accounts.vault;
-    vault.deposit(&ctx.accounts.from_token_account, &ctx.accounts.to_token_account, &ctx.accounts.from_token_account_authority, &ctx.accounts.token_program, amount)
+    vault.deposit(&mut ctx.accounts.from_token_account, &mut ctx.accounts.to_token_account, &mut ctx.accounts.from_token_account_authority, &ctx.accounts.token_program, amount)
     
 }
 
 pub fn withdraw(ctx: Context<VaultTransfer>, amount: u64) -> Result<()> {
     let vault = &mut ctx.accounts.vault;
-    vault.withdraw(&ctx.accounts.from_token_account, &ctx.accounts.to_token_account, &ctx.accounts.from_token_account_authority, &ctx.accounts.token_program, amount)
+    vault.withdraw(&mut ctx.accounts.from_token_account, &mut ctx.accounts.to_token_account, &mut ctx.accounts.from_token_account_authority, &ctx.accounts.token_program, amount)
     
 }
 

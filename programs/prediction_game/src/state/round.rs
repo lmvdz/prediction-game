@@ -12,7 +12,7 @@ pub struct Round {
 
     pub finished: bool,
     pub settled: bool,
-    pub round_number: u128,
+    pub round_number: u32,
 
     pub price_program_pubkey: Pubkey,
     pub price_feed_pubkey: Pubkey,
@@ -47,8 +47,8 @@ impl Round {
             self.round_time_difference = self.round_current_time.checked_sub(self.round_start_time).unwrap_or(0);
             
             // update the round price
-            self.round_current_price = get_price(price_program, price_feed).unwrap_or(self.round_start_price);  // disabled in localnet
-            // self.round_current_price += 1;
+            // self.round_current_price = get_price(price_program, price_feed).unwrap_or(self.round_start_price);  // disabled in localnet
+            self.round_current_price += 1;
             
             // calculate the difference in price or set to zero
             self.round_price_difference = self.round_current_price.checked_sub(self.round_start_price).unwrap_or(0);

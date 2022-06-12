@@ -31,11 +31,13 @@ pub mod prediction_game {
         instructions::user::init_user(ctx)
     }
 
+    pub fn transfer_user_token_account_instruction(ctx: Context<UserTransfer>, amount: u64) -> Result<()> {
+        instructions::user::transfer_user_token_account(ctx, amount)
+    }
+
     pub fn init_user_prediction_instruction(ctx: Context<InitUserPrediction>, up_or_down: u8, amount: u64) -> Result<()> {
         instructions::user::init_user_prediction(ctx, up_or_down, amount)
     }
-
-
 
     pub fn close_game_instruction<'info>(_ctx: Context<'_, '_, '_, 'info, CloseGame<'info>>) -> Result<()> {
         Ok(())
