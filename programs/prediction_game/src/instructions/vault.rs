@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Mint, TokenAccount, Token};
+use anchor_spl::token::{TokenAccount, Token};
 
 use crate::errors::ErrorCode;
 
@@ -11,14 +11,14 @@ pub fn close_vault_and_token_accounts<'info>(ctx: Context<'_, '_, '_, 'info, Clo
 
     require!(close_token_account( 
         ctx.accounts.up_token_account.to_account_info().clone(), 
-        ctx.accounts.reciever_token_account.to_account_info().clone(), 
+        ctx.accounts.receiver.to_account_info().clone(), 
         ctx.accounts.signer.to_account_info().clone(), 
         ctx.accounts.token_program.to_account_info().clone()
     ).is_ok(), ErrorCode::FailedToCloseUpTokenAccount);
 
     require!(close_token_account( 
         ctx.accounts.down_token_account.to_account_info().clone(), 
-        ctx.accounts.reciever_token_account.to_account_info().clone(), 
+        ctx.accounts.receiver.to_account_info().clone(), 
         ctx.accounts.signer.to_account_info().clone(), 
         ctx.accounts.token_program.to_account_info().clone()
     ).is_ok(), ErrorCode::FailedToCloseDownTokenAccount);
@@ -30,14 +30,14 @@ pub fn close_vault_token_accounts<'info>(ctx: Context<'_, '_, '_, 'info, CloseVa
 
     require!(close_token_account( 
         ctx.accounts.up_token_account.to_account_info().clone(), 
-        ctx.accounts.reciever_token_account.to_account_info().clone(), 
+        ctx.accounts.receiver.to_account_info().clone(), 
         ctx.accounts.signer.to_account_info().clone(), 
         ctx.accounts.token_program.to_account_info().clone()
     ).is_ok(), ErrorCode::FailedToCloseUpTokenAccount);
 
     require!(close_token_account( 
         ctx.accounts.down_token_account.to_account_info().clone(), 
-        ctx.accounts.reciever_token_account.to_account_info().clone(), 
+        ctx.accounts.receiver.to_account_info().clone(), 
         ctx.accounts.signer.to_account_info().clone(), 
         ctx.accounts.token_program.to_account_info().clone()
     ).is_ok(), ErrorCode::FailedToCloseDownTokenAccount);
@@ -45,57 +45,21 @@ pub fn close_vault_token_accounts<'info>(ctx: Context<'_, '_, '_, 'info, CloseVa
     Ok(())
 }
 
-pub fn deposit(ctx: Context<VaultTransfer>, amount: u64) -> Result<()> {
-
-    let vault = &mut ctx.accounts.vault;
-    vault.deposit(&mut ctx.accounts.from_token_account, &mut ctx.accounts.to_token_account, &mut ctx.accounts.from_token_account_authority, &ctx.accounts.token_program, amount)
-    
-}
-
-pub fn withdraw(ctx: Context<VaultTransfer>, amount: u64) -> Result<()> {
-    let vault = &mut ctx.accounts.vault;
-    vault.withdraw(&mut ctx.accounts.from_token_account, &mut ctx.accounts.to_token_account, &mut ctx.accounts.from_token_account_authority, &ctx.accounts.token_program, amount)
-    
-}
-
-
-#[derive(Accounts)]
-pub struct VaultTransfer<'info> {
-    #[account()]
-    pub signer: Signer<'info>,
-
-    #[account()]
-    pub vault: Box<Account<'info, Vault>>,
-
-    #[account(
-        token::mint = token_mint.key()
-    )]
-    pub to_token_account: Box<Account<'info, TokenAccount>>,
-
-    #[account(
-        constraint = from_token_account.owner.eq(&from_token_account_authority.key()),
-        token::mint = token_mint.key()
-    )]
-    pub from_token_account: Box<Account<'info, TokenAccount>>,
-
-    /// CHECK:
-    pub from_token_account_authority: AccountInfo<'info>,
-
-    pub token_mint: Box<Account<'info, Mint>>,
-
-    pub token_program: Program<'info, Token>
-
-}
-
 #[derive(Accounts)]
 pub struct CloseVault<'info> {
     #[account()]
     pub signer: Signer<'info>,
 
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = signer.key() == receiver.key()
+    )]
     pub receiver: SystemAccount<'info>,
 
-    #[account(mut, close = receiver)]
+    #[account(mut, 
+        close = receiver,
+        constraint = signer.key() == vault.owner
+    )]
     pub vault: Box<Account<'info, Vault>>,
 
 }
@@ -105,14 +69,11 @@ pub struct CloseVaultTokenAccounts<'info> {
     #[account()]
     pub signer: Signer<'info>,
 
-
     #[account(
         mut,
-        constraint = reciever_token_account.owner == signer.key(),
-        constraint = reciever_token_account.mint == up_token_account.mint @ ErrorCode::TokenAccountMintMismatch,
-        constraint = reciever_token_account.mint == down_token_account.mint @ ErrorCode::TokenAccountMintMismatch,
+        constraint = signer.key() == receiver.key()
     )]
-    pub reciever_token_account: Box<Account<'info, TokenAccount>>,
+    pub receiver: SystemAccount<'info>,
 
     #[account(
         mut,
@@ -137,17 +98,11 @@ pub struct CloseVaultAndTokenAccounts<'info> {
     #[account()]
     pub signer: Signer<'info>,
 
-    #[account(mut)]
-    pub receiver: SystemAccount<'info>,
-
     #[account(
         mut,
-        constraint = reciever_token_account.owner == signer.key(), 
-        constraint = reciever_token_account.mint == up_token_account.mint @ ErrorCode::TokenAccountMintMismatch,
-        constraint = reciever_token_account.mint == down_token_account.mint @ ErrorCode::TokenAccountMintMismatch,
+        constraint = signer.key() == receiver.key()
     )]
-    pub reciever_token_account: Box<Account<'info, TokenAccount>>,
-
+    pub receiver: SystemAccount<'info>,
 
     #[account(
         mut,
@@ -156,7 +111,10 @@ pub struct CloseVaultAndTokenAccounts<'info> {
     pub game: Box<Account<'info, Game>>,
 
 
-    #[account(mut, close = receiver)]
+    #[account(mut, 
+        close = receiver,
+        constraint = vault.owner == signer.key()
+    )]
     pub vault: Box<Account<'info, Vault>>,
 
     #[account(

@@ -140,5 +140,15 @@ pub enum ErrorCode {
     #[msg("User Prediction Not Settled")]
     UserPredictionNotSettled,
     #[msg("User not owner of receiver")]
-    UserOwnerNotReceiver
+    UserOwnerNotReceiver,
+    #[msg("Game fee vault authority mismatch")]
+    GameFeeVaultTokenAccountAuthorityMismatch,
+    #[msg("Failed to take fee")]
+    FailedToTakeFee,
+    #[msg("Minimum Predicion amount not met")]
+    MinimumPredictionAmountNotMet,
+    #[msg("Prediction and Token Account Owner Mismatch")]
+    PredictionAndTokenAccountOwnerMismatch,
+    #[msg("Test Round Rollover Failed")]
+    TestRoundRolloverFailed
 }
