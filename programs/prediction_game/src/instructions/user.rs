@@ -190,7 +190,8 @@ pub struct InitUserPrediction<'info> {
     #[account(
         mut,
         constraint = game.key() == current_round.game @ ErrorCode::RoundGameKeyNotEqual,
-        constraint = !current_round.finished @ ErrorCode::RoundAlreadyFinished
+        constraint = !current_round.finished @ ErrorCode::RoundAlreadyFinished,
+        constraint = current_round.round_predictions_allowed @ ErrorCode::RoundPredictionsNotAllowed
     )]
     pub current_round: Box<Account<'info, Round>>,
 

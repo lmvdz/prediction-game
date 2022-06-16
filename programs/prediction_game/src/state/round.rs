@@ -16,9 +16,13 @@ pub struct Round {
     pub price_program_pubkey: Pubkey,
     pub price_feed_pubkey: Pubkey,
 
+    pub round_length: i64,
+
     pub round_start_time: i64,
     pub round_current_time: i64,
     pub round_time_difference: i64,
+
+    pub round_predictions_allowed: bool,
 
     pub round_start_price: i128,
     pub round_current_price: i128,

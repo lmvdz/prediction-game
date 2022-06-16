@@ -22,9 +22,13 @@ pub fn init_first_round(ctx: Context<InitFirstRound>) -> Result<()> {
 
     let now = Clock::get()?.unix_timestamp;
 
+    round.round_length = 600;
+
     round.round_start_time = now;
     round.round_current_time = now;
     round.round_time_difference = 0;
+
+    round.round_predictions_allowed = true;
 
     // let price = get_price(price_program, price_feed).unwrap_or(0); // production
     let price = 0; // localnet
@@ -81,9 +85,13 @@ fn init_round_shared(owner: Pubkey, price_program: Pubkey, price_feed: Pubkey, n
 
     let now = Clock::get()?.unix_timestamp;
 
+    next_round.round_length = 600;
+
     next_round.round_start_time = now;
     next_round.round_current_time = now;
     next_round.round_time_difference = 0;
+
+    next_round.round_predictions_allowed = true;
 
     // let price = get_price(price_program, price_feed).unwrap_or(0);
     let price = 0;
@@ -142,8 +150,8 @@ impl Round {
             self.round_price_difference = self.round_current_price.checked_sub(self.round_start_price).unwrap_or(0);
     
             // if round.round_time_difference > (5 * 60) { // 5 minutes for production
-            if self.round_time_difference > (1) { // 1 second for testing
-                
+            if self.round_time_difference > self.round_length {
+
                 self.round_end_price = self.round_current_price;
     
                 self.round_winning_direction = if self.round_end_price > self.round_start_price {
@@ -153,6 +161,9 @@ impl Round {
                 };
     
                 self.finished = true;
+
+            } else if self.round_time_difference > (self.round_length / 2) {
+                self.round_predictions_allowed = false;
             }
         }
         Ok(())

@@ -150,5 +150,7 @@ pub enum ErrorCode {
     #[msg("Prediction and Token Account Owner Mismatch")]
     PredictionAndTokenAccountOwnerMismatch,
     #[msg("Test Round Rollover Failed")]
-    TestRoundRolloverFailed
+    TestRoundRolloverFailed,
+    #[msg("Round Predictions Not Allowed")]
+    RoundPredictionsNotAllowed
 }
