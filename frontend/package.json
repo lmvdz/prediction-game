@@ -1,0 +1,29 @@
+{
+  "name": "my-beta-app",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "serve": "vite preview",
+    "build": "vue-tsc --noEmit && vite build",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@mdi/font": "5.9.55",
+    "pinia": "^2.0.14",
+    "roboto-fontface": "*",
+    "vue": "^3.2.25",
+    "vue-dragscroll": "^3.0.1",
+    "vue-router": "4",
+    "vuetify": "^3.0.0-beta.0",
+    "webfontloader": "^1.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^2.3.3",
+    "typescript": "^4.7.3",
+    "vite": "^2.9.9",
+    "vite-plugin-vuetify": "^1.0.0-alpha.0",
+    "vue-cli-plugin-vuetify": "~2.5.1",
+    "vue-tsc": "^0.37.8"
+  }
+}
