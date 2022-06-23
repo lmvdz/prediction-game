@@ -30,28 +30,18 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
-                    "name": "gameFeeVault",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
                     "name": "vault",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "tokenMint",
                     "isMut": false,
                     "isSigner": false
                 },
                 {
-                    "name": "upTokenAccount",
-                    "isMut": true,
+                    "name": "priceProgram",
+                    "isMut": false,
                     "isSigner": false
                 },
                 {
-                    "name": "downTokenAccount",
-                    "isMut": true,
+                    "name": "priceFeed",
+                    "isMut": false,
                     "isSigner": false
                 },
                 {
@@ -72,21 +62,21 @@ exports.IDL = {
             ],
             "args": [
                 {
-                    "name": "vaultUpTokenAccountNonce",
-                    "type": "u8"
+                    "name": "baseSymbol",
+                    "type": "string"
                 },
                 {
-                    "name": "vaultDownTokenAccountNonce",
-                    "type": "u8"
+                    "name": "feeBps",
+                    "type": "u16"
                 },
                 {
-                    "name": "tokenDecimal",
-                    "type": "u8"
+                    "name": "crankBps",
+                    "type": "u16"
                 }
             ]
         },
         {
-            "name": "initFirstRoundInstruction",
+            "name": "initVaultInstruction",
             "accounts": [
                 {
                     "name": "owner",
@@ -94,22 +84,42 @@ exports.IDL = {
                     "isSigner": true
                 },
                 {
-                    "name": "game",
+                    "name": "feeVaultAta",
                     "isMut": true,
                     "isSigner": false
                 },
                 {
-                    "name": "round",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "priceProgram",
+                    "name": "feeVaultAtaAuthority",
                     "isMut": false,
                     "isSigner": false
                 },
                 {
-                    "name": "priceFeed",
+                    "name": "vaultAta",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "vaultAtaAuthority",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "vault",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "tokenMint",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "rent",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "tokenProgram",
                     "isMut": false,
                     "isSigner": false
                 },
@@ -119,18 +129,68 @@ exports.IDL = {
                     "isSigner": false
                 }
             ],
-            "args": []
+            "args": [
+                {
+                    "name": "vaultNonce",
+                    "type": "u8"
+                },
+                {
+                    "name": "feeVaultNonce",
+                    "type": "u8"
+                }
+            ]
         },
         {
-            "name": "initSecondRoundInstruction",
+            "name": "initFirstRoundInstruction",
             "accounts": [
                 {
-                    "name": "owner",
+                    "name": "signer",
                     "isMut": true,
                     "isSigner": true
                 },
                 {
                     "name": "game",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "crank",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "round",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "systemProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": [
+                {
+                    "name": "roundLength",
+                    "type": "i64"
+                }
+            ]
+        },
+        {
+            "name": "initSecondRoundInstruction",
+            "accounts": [
+                {
+                    "name": "signer",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "game",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "crank",
                     "isMut": true,
                     "isSigner": false
                 },
@@ -145,41 +205,6 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
-                    "name": "receiver",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "tokenMint",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "vault",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "upTokenAccount",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "downTokenAccount",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "priceProgram",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "priceFeed",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
                     "name": "systemProgram",
                     "isMut": false,
                     "isSigner": false
@@ -191,12 +216,22 @@ exports.IDL = {
             "name": "initNextRoundAndClosePreviousInstruction",
             "accounts": [
                 {
-                    "name": "owner",
+                    "name": "signer",
                     "isMut": true,
                     "isSigner": true
                 },
                 {
                     "name": "game",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "crank",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "receiver",
                     "isMut": true,
                     "isSigner": false
                 },
@@ -211,43 +246,8 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
-                    "name": "receiver",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
                     "name": "previousRound",
                     "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "tokenMint",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "vault",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "upTokenAccount",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "downTokenAccount",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "priceProgram",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "priceFeed",
-                    "isMut": false,
                     "isSigner": false
                 },
                 {
@@ -272,43 +272,13 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
+                    "name": "crank",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
                     "name": "currentRound",
                     "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "vault",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "gameFeeVault",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "gameFeeVaultAuthority",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "upTokenAccount",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "upTokenAccountAuthority",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "downTokenAccount",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "downTokenAccountAuthority",
-                    "isMut": false,
                     "isSigner": false
                 },
                 {
@@ -322,8 +292,142 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
+                    "name": "systemProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": []
+        },
+        {
+            "name": "collectFeeInstruction",
+            "accounts": [
+                {
+                    "name": "signer",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "crank",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "game",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "currentRound",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "systemProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": []
+        },
+        {
+            "name": "claimFeeInstruction",
+            "accounts": [
+                {
+                    "name": "signer",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "game",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "vault",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "vaultAuthority",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "vaultAta",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "feeVaultAta",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
                     "name": "tokenProgram",
                     "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": []
+        },
+        {
+            "name": "withdrawFeeInstruction",
+            "accounts": [
+                {
+                    "name": "signer",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "game",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "vault",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "feeVaultAta",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "feeVaultAuthority",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "toTokenAccount",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "tokenProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": []
+        },
+        {
+            "name": "payoutCranksInstruction",
+            "accounts": [
+                {
+                    "name": "signer",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "game",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "currentRound",
+                    "isMut": true,
                     "isSigner": false
                 },
                 {
@@ -348,38 +452,13 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
+                    "name": "crank",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
                     "name": "currentRound",
                     "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "vault",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "upTokenAccount",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "upTokenAccountAuthority",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "downTokenAccount",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "downTokenAccountAuthority",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "tokenProgram",
-                    "isMut": false,
                     "isSigner": false
                 },
                 {
@@ -404,23 +483,34 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
-                    "name": "tokenMint",
+                    "name": "systemProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": []
+        },
+        {
+            "name": "initCrankInstruction",
+            "accounts": [
+                {
+                    "name": "owner",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "game",
                     "isMut": false,
                     "isSigner": false
                 },
                 {
-                    "name": "tokenAccount",
+                    "name": "user",
                     "isMut": true,
                     "isSigner": false
                 },
                 {
-                    "name": "rent",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "tokenProgram",
-                    "isMut": false,
+                    "name": "crank",
+                    "isMut": true,
                     "isSigner": false
                 },
                 {
@@ -430,47 +520,6 @@ exports.IDL = {
                 }
             ],
             "args": []
-        },
-        {
-            "name": "transferUserTokenAccountInstruction",
-            "accounts": [
-                {
-                    "name": "signer",
-                    "isMut": true,
-                    "isSigner": true
-                },
-                {
-                    "name": "user",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "toTokenAccount",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "fromTokenAccount",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "tokenMint",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "tokenProgram",
-                    "isMut": false,
-                    "isSigner": false
-                }
-            ],
-            "args": [
-                {
-                    "name": "amount",
-                    "type": "u64"
-                }
-            ]
         },
         {
             "name": "initUserPredictionInstruction",
@@ -486,17 +535,12 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
-                    "name": "currentRound",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "vault",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
                     "name": "user",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "currentRound",
                     "isMut": true,
                     "isSigner": false
                 },
@@ -506,13 +550,23 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
-                    "name": "toTokenAccount",
+                    "name": "vault",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "vaultAta",
                     "isMut": true,
                     "isSigner": false
                 },
                 {
                     "name": "fromTokenAccount",
                     "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "fromTokenAccountAuthority",
+                    "isMut": false,
                     "isSigner": false
                 },
                 {
@@ -536,6 +590,57 @@ exports.IDL = {
                     "name": "upOrDown",
                     "type": "u8"
                 },
+                {
+                    "name": "amount",
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "name": "userClaimInstruction",
+            "accounts": [
+                {
+                    "name": "signer",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "user",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "toTokenAccount",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "vault",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "vaultAta",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "vaultAuthority",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "tokenMint",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "tokenProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": [
                 {
                     "name": "amount",
                     "type": "u64"
@@ -569,7 +674,28 @@ exports.IDL = {
             "args": []
         },
         {
-            "name": "closeGameFeeVaultInstruction",
+            "name": "closeCrankAccountInstruction",
+            "accounts": [
+                {
+                    "name": "signer",
+                    "isMut": false,
+                    "isSigner": true
+                },
+                {
+                    "name": "crank",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "receiver",
+                    "isMut": true,
+                    "isSigner": false
+                }
+            ],
+            "args": []
+        },
+        {
+            "name": "closeFeeVaultInstruction",
             "accounts": [
                 {
                     "name": "signer",
@@ -582,7 +708,7 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
-                    "name": "gameFeeVault",
+                    "name": "feeVault",
                     "isMut": true,
                     "isSigner": false
                 },
@@ -629,74 +755,7 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
-                    "name": "vault",
-                    "isMut": true,
-                    "isSigner": false
-                }
-            ],
-            "args": []
-        },
-        {
-            "name": "closeVaultAndTokenAccountsInstruction",
-            "accounts": [
-                {
-                    "name": "signer",
-                    "isMut": false,
-                    "isSigner": true
-                },
-                {
-                    "name": "receiver",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "game",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "vault",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "upTokenAccount",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "downTokenAccount",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "tokenProgram",
-                    "isMut": false,
-                    "isSigner": false
-                }
-            ],
-            "args": []
-        },
-        {
-            "name": "closeVaultTokenAccountsInstruction",
-            "accounts": [
-                {
-                    "name": "signer",
-                    "isMut": false,
-                    "isSigner": true
-                },
-                {
-                    "name": "receiver",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "upTokenAccount",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "downTokenAccount",
+                    "name": "vaultAta",
                     "isMut": true,
                     "isSigner": false
                 },
@@ -715,21 +774,6 @@ exports.IDL = {
                     "name": "signer",
                     "isMut": true,
                     "isSigner": true
-                },
-                {
-                    "name": "game",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "round",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "user",
-                    "isMut": false,
-                    "isSigner": false
                 },
                 {
                     "name": "userPrediction",
@@ -764,35 +808,45 @@ exports.IDL = {
                 }
             ],
             "args": []
-        },
-        {
-            "name": "closeUserTokenAccountInstruction",
-            "accounts": [
-                {
-                    "name": "signer",
-                    "isMut": false,
-                    "isSigner": true
-                },
-                {
-                    "name": "userTokenAccount",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "receiver",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "tokenProgram",
-                    "isMut": false,
-                    "isSigner": false
-                }
-            ],
-            "args": []
         }
     ],
     "accounts": [
+        {
+            "name": "crank",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "address",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "owner",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "user",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "game",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "cranks",
+                        "type": "u16"
+                    },
+                    {
+                        "name": "lastCrankRound",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "lastPaidCrankRound",
+                        "type": "publicKey"
+                    }
+                ]
+            }
+        },
         {
             "name": "game",
             "type": {
@@ -811,8 +865,8 @@ exports.IDL = {
                         "type": "u8"
                     },
                     {
-                        "name": "tokenMint",
-                        "type": "publicKey"
+                        "name": "baseSymbol",
+                        "type": "string"
                     },
                     {
                         "name": "roundNumber",
@@ -831,8 +885,16 @@ exports.IDL = {
                         "type": "publicKey"
                     },
                     {
-                        "name": "feeVault",
-                        "type": "publicKey"
+                        "name": "unclaimedFees",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "feeBps",
+                        "type": "u16"
+                    },
+                    {
+                        "name": "crankBps",
+                        "type": "u16"
                     },
                     {
                         "name": "totalVolume",
@@ -841,6 +903,14 @@ exports.IDL = {
                     {
                         "name": "totalVolumeRollover",
                         "type": "u128"
+                    },
+                    {
+                        "name": "priceProgram",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "priceFeed",
+                        "type": "publicKey"
                     }
                 ]
             }
@@ -879,6 +949,14 @@ exports.IDL = {
                         "type": "publicKey"
                     },
                     {
+                        "name": "roundNumber",
+                        "type": "u32"
+                    },
+                    {
+                        "name": "roundLength",
+                        "type": "i64"
+                    },
+                    {
                         "name": "finished",
                         "type": "bool"
                     },
@@ -891,16 +969,12 @@ exports.IDL = {
                         "type": "bool"
                     },
                     {
-                        "name": "roundNumber",
-                        "type": "u32"
+                        "name": "cranksPaid",
+                        "type": "bool"
                     },
                     {
-                        "name": "priceProgramPubkey",
-                        "type": "publicKey"
-                    },
-                    {
-                        "name": "priceFeedPubkey",
-                        "type": "publicKey"
+                        "name": "roundPredictionsAllowed",
+                        "type": "bool"
                     },
                     {
                         "name": "roundStartTime",
@@ -935,6 +1009,10 @@ exports.IDL = {
                         "type": "u8"
                     },
                     {
+                        "name": "totalFeeCollected",
+                        "type": "u64"
+                    },
+                    {
                         "name": "totalUpAmount",
                         "type": "u64"
                     },
@@ -944,7 +1022,7 @@ exports.IDL = {
                     },
                     {
                         "name": "totalAmountSettled",
-                        "type": "u128"
+                        "type": "u64"
                     },
                     {
                         "name": "totalPredictionsSettled",
@@ -953,6 +1031,22 @@ exports.IDL = {
                     {
                         "name": "totalPredictions",
                         "type": "u32"
+                    },
+                    {
+                        "name": "totalUniqueCrankers",
+                        "type": "u32"
+                    },
+                    {
+                        "name": "totalCranks",
+                        "type": "u32"
+                    },
+                    {
+                        "name": "totalCranksPaid",
+                        "type": "u32"
+                    },
+                    {
+                        "name": "totalAmountPaidToCranks",
+                        "type": "u64"
                     }
                 ]
             }
@@ -971,16 +1065,8 @@ exports.IDL = {
                         "type": "publicKey"
                     },
                     {
-                        "name": "tokenMintPubkey",
-                        "type": "publicKey"
-                    },
-                    {
-                        "name": "tokenAccountPubkey",
-                        "type": "publicKey"
-                    },
-                    {
-                        "name": "tokenAccountAuthorityPubkey",
-                        "type": "publicKey"
+                        "name": "claimable",
+                        "type": "u64"
                     }
                 ]
             }
@@ -1021,10 +1107,6 @@ exports.IDL = {
                     {
                         "name": "settled",
                         "type": "bool"
-                    },
-                    {
-                        "name": "deposited",
-                        "type": "bool"
                     }
                 ]
             }
@@ -1035,48 +1117,44 @@ exports.IDL = {
                 "kind": "struct",
                 "fields": [
                     {
-                        "name": "address",
-                        "type": "publicKey"
-                    },
-                    {
                         "name": "owner",
                         "type": "publicKey"
                     },
                     {
-                        "name": "tokenMintPubkey",
+                        "name": "address",
                         "type": "publicKey"
                     },
                     {
-                        "name": "upTokenAccountPubkey",
+                        "name": "tokenMint",
                         "type": "publicKey"
                     },
                     {
-                        "name": "upTokenAccountAuthority",
-                        "type": "publicKey"
-                    },
-                    {
-                        "name": "upTokenAccountNonce",
+                        "name": "tokenDecimals",
                         "type": "u8"
                     },
                     {
-                        "name": "downTokenAccountPubkey",
+                        "name": "vaultAta",
                         "type": "publicKey"
                     },
                     {
-                        "name": "downTokenAccountAuthority",
-                        "type": "publicKey"
-                    },
-                    {
-                        "name": "downTokenAccountNonce",
+                        "name": "vaultNonce",
                         "type": "u8"
                     },
                     {
-                        "name": "upAmount",
-                        "type": "u64"
+                        "name": "vaultAuthority",
+                        "type": "publicKey"
                     },
                     {
-                        "name": "downAmount",
-                        "type": "u64"
+                        "name": "feeVaultAta",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "feeVaultNonce",
+                        "type": "u8"
+                    },
+                    {
+                        "name": "feeVaultAuthority",
+                        "type": "publicKey"
                     }
                 ]
             }
@@ -1454,23 +1532,123 @@ exports.IDL = {
         },
         {
             "code": 6070,
+            "name": "GameVaultTokenAccountAuthorityMismatch",
+            "msg": "Game vault authority mismatch"
+        },
+        {
+            "code": 6071,
             "name": "FailedToTakeFee",
             "msg": "Failed to take fee"
         },
         {
-            "code": 6071,
+            "code": 6072,
             "name": "MinimumPredictionAmountNotMet",
             "msg": "Minimum Predicion amount not met"
         },
         {
-            "code": 6072,
+            "code": 6073,
             "name": "PredictionAndTokenAccountOwnerMismatch",
             "msg": "Prediction and Token Account Owner Mismatch"
         },
         {
-            "code": 6073,
+            "code": 6074,
             "name": "TestRoundRolloverFailed",
             "msg": "Test Round Rollover Failed"
+        },
+        {
+            "code": 6075,
+            "name": "RoundPredictionsNotAllowed",
+            "msg": "Round Predictions Not Allowed"
+        },
+        {
+            "code": 6076,
+            "name": "OwnerNotUserOwner",
+            "msg": "Owner not User Owner"
+        },
+        {
+            "code": 6077,
+            "name": "OwnerNotRoundOwner",
+            "msg": "Owner not Round Owner"
+        },
+        {
+            "code": 6078,
+            "name": "RoundKeyNotGameCurrentKey",
+            "msg": "Round Key Not Game Current Key"
+        },
+        {
+            "code": 6079,
+            "name": "OwnerNotReceiver",
+            "msg": "Owner Not Receiver"
+        },
+        {
+            "code": 6080,
+            "name": "GameOwnerNotVaultOwner",
+            "msg": "Game Owner Not Vault Owner"
+        },
+        {
+            "code": 6081,
+            "name": "VaultUpTokenAccountDoesNotMatchProvidedUpTokenAccount",
+            "msg": "Vault Up Token Account Does Not Match Provided Up Token Account"
+        },
+        {
+            "code": 6082,
+            "name": "SignerNotOwnerOfUpTokenAccount",
+            "msg": "Signer Not Owner Of Up Token Account"
+        },
+        {
+            "code": 6083,
+            "name": "VaultDownTokenAccountDoesNotMatchProvidedDownTokenAccount",
+            "msg": "Vault Down Token Account Does Not Match Provided Down Token Account"
+        },
+        {
+            "code": 6084,
+            "name": "SignerNotOwnerOfDownTokenAccount",
+            "msg": "Signer Not Owner Of Down Token Account"
+        },
+        {
+            "code": 6085,
+            "name": "PredictionAndUserOwnerMismatch",
+            "msg": "Prediction and User Owner Mismatch"
+        },
+        {
+            "code": 6086,
+            "name": "InsufficientClaimableAmount",
+            "msg": "Insufficient Claimable Amount"
+        },
+        {
+            "code": 6087,
+            "name": "FailedToClaim",
+            "msg": "Failed to Claim"
+        },
+        {
+            "code": 6088,
+            "name": "FeeAlreadyCollected",
+            "msg": "Fee Already Collected"
+        },
+        {
+            "code": 6089,
+            "name": "RoundFeeNotCollected",
+            "msg": "Round Fee Not Collected"
+        },
+        {
+            "code": 6090,
+            "name": "RoundCranksAlreadyPaid",
+            "msg": "Round Cranks Already Paid"
+        },
+        {
+            "code": 6091,
+            "name": "RoundCranksNotPaid",
+            "msg": "Round Cranks Not Paid"
+        },
+        {
+            "code": 6092,
+            "name": "GameVaultMismatch",
+            "msg": "Game Vault Mismatch"
+        },
+        {
+            "code": 6093,
+            "name": "GameFeeVaultMismatch",
+            "msg": "Game Fee Vault Mismatch"
         }
     ]
 };

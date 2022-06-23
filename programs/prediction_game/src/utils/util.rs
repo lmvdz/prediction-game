@@ -29,3 +29,25 @@ pub fn transfer_token_account<'info>(
 
     transfer(cpi_context, amount)
 }
+
+pub fn transfer_token_account_signed<'info>(
+    from_token_account: &Account<'info, TokenAccount>, 
+    to_token_account: &Account<'info, TokenAccount>, 
+    from_token_account_authority: &AccountInfo<'info>, 
+    signers: &[&[&[u8]]],
+    token_program: &Program<'info, Token>, 
+    amount: u64
+) -> Result<()> {
+    
+
+    let cpi_accounts = Transfer {
+        from: from_token_account.to_account_info().clone(),
+        to: to_token_account.to_account_info().clone(),
+        authority: from_token_account_authority.to_account_info().clone()
+    };
+    
+    let cpi_program = token_program.to_account_info();
+    let cpi_context = CpiContext::new_with_signer(cpi_program, cpi_accounts, signers);
+
+    transfer(cpi_context, amount)
+}

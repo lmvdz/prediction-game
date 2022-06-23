@@ -1,23 +1,41 @@
 import * as anchor from "@project-serum/anchor"
 import { AnchorProvider, Program, } from "@project-serum/anchor";
-import { PredictionGame, IDL} from "./types";
-import { default as jsonIDL } from './idl/prediction_game.json'
-import { ConfirmOptions, Connection, PublicKey } from "@solana/web3.js";
+import { PredictionGame, IDL } from "./types/prediction_game";
+import { Cluster, ConfirmOptions, Connection, PublicKey, Signer, Transaction } from "@solana/web3.js";
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
+import { ProgramAddresses } from "./programAddresses";
+import { PROGRAM_ID } from "./constants";
 
 
-
-export default class Workspace {
+export class Workspace {
 
     program: Program<PredictionGame>
     owner: PublicKey
+    programAddresses: ProgramAddresses<PredictionGame>
+    wallet: NodeWallet | anchor.Wallet
+    cluster: Cluster
 
-    constructor(program: Program<PredictionGame>) {
+    public constructor(program: Program<PredictionGame>, wallet: NodeWallet | anchor.Wallet, cluster: Cluster) {
         this.program = program;
-        this.owner = (this.program.provider as AnchorProvider).wallet.publicKey
+        this.owner = (this.program.provider as AnchorProvider).wallet.publicKey;
+        this.programAddresses = new ProgramAddresses(this.program, this.owner);
+        this.wallet = wallet;
+        this.cluster = cluster;
     }
 
-    public static load(connection: Connection, wallet: NodeWallet, opts: ConfirmOptions) : Workspace {
-        return new Workspace(new Program<PredictionGame>(IDL, new anchor.web3.PublicKey(jsonIDL.metadata.address), new anchor.AnchorProvider(connection, wallet, opts)))
+    public static load(connection: Connection, wallet: NodeWallet | anchor.Wallet, cluster: Cluster, opts: ConfirmOptions) : Workspace {
+        return new Workspace(new Program<PredictionGame>(IDL, PROGRAM_ID(cluster), new anchor.AnchorProvider(connection, wallet, opts)), wallet, cluster)
+    }
+
+    public async sendTransaction(tx: Transaction) : Promise<string> {
+        if (this.wallet.payer) {
+            return await this.program.provider.connection.sendTransaction(tx, [this.wallet.payer])
+        } else {
+            tx.feePayer = this.wallet.publicKey;
+            tx.recentBlockhash = (await this.program.provider.connection.getLatestBlockhash()).blockhash;
+            tx = await this.wallet.signTransaction(tx);
+            
+            return await this.program.provider.connection.sendRawTransaction(tx.serialize())
+        }
     }
 }

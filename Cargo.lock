@@ -864,6 +864,7 @@ version = "1.0.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "bytemuck",
  "chainlink_solana",
  "num-derive",
  "num-traits",

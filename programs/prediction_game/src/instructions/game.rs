@@ -1,52 +1,41 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::Mint;
 use anchor_spl::token::Token;
 use anchor_spl::token::TokenAccount;
 
 use crate::errors::ErrorCode;
 
+use crate::state::Crank;
 use crate::state::UserPrediction;
-use crate::state::Vault;
+use crate::state::User;
 use crate::state::Game;
 use crate::state::Round;
-use crate::utils::close_token_account;
+use crate::state::Vault;
+use crate::utils::transfer_token_account_signed;
 
 // initialize game
-pub fn init_game(ctx: Context<InitializeGame>, vault_up_token_account_nonce: u8, vault_down_token_account_nonce: u8, token_decimal: u8) -> Result<()> {
+pub fn init_game(ctx: Context<InitializeGame>, base_symbol: String, fee_bps: u16, crank_bps: u16) -> Result<()> {
 
     let game = &mut ctx.accounts.game;
     let owner = &ctx.accounts.owner;
-    let fee_vault = &mut ctx.accounts.game_fee_vault;
     let vault = &mut ctx.accounts.vault;
     let game_pubkey = game.key();
-    let token_mint_key = ctx.accounts.token_mint.key();
 
     game.owner = owner.key();
     game.address = game_pubkey;
+
     game.vault = vault.key();
-    game.fee_vault = fee_vault.key();
+
+    game.unclaimed_fees = 0;
+
     game.round_number = 1_u32;
     game.total_volume = 0;
     game.total_volume_rollover = 0;
-    game.token_decimal = token_decimal;
-    game.token_mint = token_mint_key;
+    game.base_symbol = base_symbol;
+    game.price_program = ctx.accounts.price_program.key();
+    game.price_feed = ctx.accounts.price_feed.key();
 
-    vault.owner = owner.key();
-    vault.address = vault.key();
-    vault.token_mint_pubkey = token_mint_key;
-
-    vault.up_token_account_pubkey = ctx.accounts.up_token_account.key();
-    vault.up_token_account_authority = owner.key();
-    vault.up_token_account_nonce = vault_up_token_account_nonce;
-
-    vault.down_token_account_pubkey = ctx.accounts.down_token_account.key();
-    vault.down_token_account_authority = owner.key();
-    vault.down_token_account_nonce = vault_down_token_account_nonce;
-
-    vault.up_amount = 0;
-    vault.down_amount = 0;
-
-    // require!(round.init(owner.key(), price_program, price_feed, 1).is_ok(), ErrorCode::FailedToInitRound);
+    game.fee_bps = fee_bps;
+    game.crank_bps = crank_bps;
 
     Ok(())
 }
@@ -56,40 +45,25 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
     let ctx = &mut ctx;
     let accounts = ctx.remaining_accounts;
     let current_round = &mut ctx.accounts.current_round;
-    let vault  = &mut ctx.accounts.vault;
-    let token_program = &ctx.accounts.token_program;
+    
+
+    let crank = &mut ctx.accounts.crank;
+
+    if !crank.last_crank_round.eq(&current_round.key()) {
+        current_round.total_unique_crankers = current_round.total_unique_crankers.saturating_add(1);
+        crank.last_crank_round = current_round.key();
+        crank.cranks = 1;
+    } else {
+        crank.cranks = crank.cranks.saturating_add(1);
+    }
+    current_round.total_cranks = current_round.total_cranks.saturating_add(1);
 
 
     if current_round.finished && current_round.fee_collected && !current_round.settled && (current_round.round_winning_direction == 1 || current_round.round_winning_direction == 2) {
-        let (
-            winning_vault,
-            losing_vault,
-            winning_vault_authority,
-            losing_vault_authority,
-            winning_round_amount,
-            losing_round_amount
-        ) = if current_round.round_winning_direction == 1 {
-
-            (
-                &mut ctx.accounts.up_token_account, 
-                &mut ctx.accounts.down_token_account,
-                &mut ctx.accounts.up_token_account_authority,
-                &mut ctx.accounts.down_token_account_authority,
-                current_round.total_up_amount,
-                current_round.total_down_amount
-            )
-
+        let (winning_round_amount, losing_round_amount) = if current_round.round_winning_direction == 1 {
+            ( current_round.total_up_amount, current_round.total_down_amount )
         } else {
-
-            (
-                &mut ctx.accounts.down_token_account, 
-                &mut ctx.accounts.up_token_account, 
-                &mut ctx.accounts.down_token_account_authority, 
-                &mut ctx.accounts.up_token_account_authority,
-                current_round.total_down_amount,
-                current_round.total_up_amount
-            )
-
+            ( current_round.total_down_amount, current_round.total_up_amount )
         };
 
         if accounts.len() % 2 == 0 && accounts.len() >= 2 {
@@ -99,40 +73,32 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
 
                 let prediction = &mut Account::<'info, UserPrediction>::try_from(&accounts[index]).unwrap();
                 let prediction_account_info = prediction.to_account_info();
-                let token_account = &Account::<'info, TokenAccount>::try_from(&accounts[index+1]).unwrap();
+                // let token_account = &Account::<'info, TokenAccount>::try_from(&accounts[index+1]).unwrap();
+                let user_account = &mut Account::<'info, User>::try_from(&accounts[index+1]).unwrap();
+                let user_account_info = user_account.to_account_info();
 
 
-                require_keys_eq!(prediction.owner, token_account.owner, ErrorCode::PredictionAndTokenAccountOwnerMismatch);
+                require_keys_eq!(prediction.owner, user_account.owner, ErrorCode::PredictionAndUserOwnerMismatch);
 
-                index+=2;
+                index += 2;
 
                 if !prediction.settled {
 
                     if prediction.up_or_down == current_round.round_winning_direction {
 
-                        let winnings = (((losing_round_amount as f64) / (winning_round_amount as f64) * (prediction.amount as f64)) - 0.5).round() as u64;
-                        // msg!("{} {}", winnings, prediction.amount);
-                        // withdraw winnings from loser vault
-                        require!(vault.withdraw(
-                            losing_vault,  
-                            token_account, 
-                            losing_vault_authority, 
-                            token_program, 
-                            winnings
-                        ).is_ok(), ErrorCode::FailedToWithdraw);
+                        let winnings = (( (losing_round_amount as f64) / (winning_round_amount as f64) * (prediction.amount as f64) ) - 0.5).round() as u64;
+                        
+                        current_round.total_amount_settled = current_round.total_amount_settled.saturating_add(winnings);
 
-                        current_round.total_amount_settled = current_round.total_amount_settled.saturating_add(winnings.into());
+                        let initial_amount = prediction.amount;
+                        current_round.total_amount_settled = current_round.total_amount_settled.saturating_add(initial_amount);
 
-                        require!(vault.withdraw(
-                            winning_vault, 
-                            token_account, 
-                            winning_vault_authority, 
-                            token_program, 
-                            prediction.amount
-                        ).is_ok(), ErrorCode::FailedToWithdraw);
-
-                        current_round.total_amount_settled = current_round.total_amount_settled.saturating_add(prediction.amount.into());
-
+                        user_account.claimable = user_account.claimable.saturating_add(winnings).saturating_add(initial_amount);
+                        
+                        let dst: &mut [u8] = &mut user_account_info.try_borrow_mut_data()?;
+                        let mut cursor = std::io::Cursor::new(dst);
+                        let _write_user_account = user_account.try_serialize(&mut cursor);
+                        
                     }
 
                     prediction.settled = true;
@@ -154,71 +120,175 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
     Ok(())
 }
 
+pub fn payout_cranks<'info>(mut ctx: Context<'_, '_, '_, 'info, PayoutCranks<'info>>) -> Result<()> {
+    let ctx = &mut ctx;
+    let current_round = &mut ctx.accounts.current_round;
+    let game = &ctx.accounts.game;
+
+    let round_key = current_round.key();
+    let accounts = ctx.remaining_accounts;
+
+    if accounts.len() % 2 == 0 && accounts.len() >= 2 {
+        let mut index: usize = 0;
+
+        for _i in 0..(accounts.len()/2) {
+
+            let crank = &mut Account::<'info, Crank>::try_from(&accounts[index]).unwrap();
+            let crank_account_info = crank.to_account_info();
+            // let token_account = &Account::<'info, TokenAccount>::try_from(&accounts[index+1]).unwrap();
+            let user_account = &mut Account::<'info, User>::try_from(&accounts[index+1]).unwrap();
+            let user_account_info = user_account.to_account_info();
+
+            index+=2;
+
+            if !crank.last_paid_crank_round.eq(&round_key) && crank.last_crank_round.eq(&round_key) {
+                // 25% of the fee collected goes to crankers
+                let crank_pay = ( ( (crank.cranks as f64) / (current_round.total_cranks as f64) * (((current_round.total_fee_collected as f64) / 10000.0 ) * game.crank_bps as f64)) - 0.5).round() as u64;
+
+                user_account.claimable = user_account.claimable.saturating_add(crank_pay);
+
+                let dst: &mut [u8] = &mut user_account_info.try_borrow_mut_data()?;
+                let mut cursor = std::io::Cursor::new(dst);
+                let _write_user_account = user_account.try_serialize(&mut cursor);
+
+                crank.last_paid_crank_round = current_round.key();
+
+                let dst: &mut [u8] = &mut crank_account_info.try_borrow_mut_data()?;
+                let mut cursor = std::io::Cursor::new(dst);
+                let _write_crank = crank.try_serialize(&mut cursor);
+                
+                
+                current_round.total_cranks_paid = current_round.total_cranks_paid.saturating_add(1);
+                current_round.total_amount_paid_to_cranks = current_round.total_amount_paid_to_cranks.saturating_add(crank_pay);
+            }
+        }
+    }
+
+    if current_round.total_cranks_paid == current_round.total_unique_crankers {
+        current_round.cranks_paid = true;
+    }
+
+    
+
+    Ok(())
+
+}
+
+pub fn claim_fee<'info>(mut ctx: Context<'_, '_, '_, 'info, ClaimFee<'info>>) -> Result<()> {
+
+    let ctx = &mut ctx;
+    let game = &mut ctx.accounts.game;
+    let vault = &mut ctx.accounts.vault;
+    let vault_key = &vault.key();
+    let fee_vault_ata = &mut ctx.accounts.fee_vault_ata;
+    let vault_ata = &mut ctx.accounts.vault_ata;
+    let vault_authority = & ctx.accounts.vault_authority;
+    let vault_nonce = vault.vault_nonce;
+
+    let unclaimed_fees = game.unclaimed_fees;
+    let token_program = &ctx.accounts.token_program;
+
+
+    let signature_seeds = [vault_key.as_ref(), b"vault_ata", &[vault_nonce]];
+    let signers = &[&signature_seeds[..]];
+
+    require!(transfer_token_account_signed(vault_ata, fee_vault_ata, vault_authority, signers, token_program, unclaimed_fees).is_ok(), ErrorCode::FailedToTakeFee);
+
+    game.unclaimed_fees = 0;
+
+    Ok(())
+}
+
+pub fn withdraw_fee<'info>(mut ctx: Context<'_, '_, '_, 'info, WithdrawFee<'info>>) -> Result<()> {
+
+    let ctx = &mut ctx;
+    let vault = &ctx.accounts.vault;
+    let vault_key = &vault.key();
+    let fee_vault_ata = &mut ctx.accounts.fee_vault_ata;
+    let fee_vault_nonce = vault.fee_vault_nonce;
+    let fee_vault_authority = & ctx.accounts.fee_vault_authority;
+
+    let to_token_account = &mut ctx.accounts.to_token_account;
+    
+    let token_program = &ctx.accounts.token_program;
+
+    let signature_seeds = [vault_key.as_ref(), b"fee_vault_ata", &[fee_vault_nonce]];
+    let signers = &[&signature_seeds[..]];
+
+    require!(transfer_token_account_signed(fee_vault_ata, to_token_account, fee_vault_authority, signers, token_program, fee_vault_ata.amount).is_ok(), ErrorCode::FailedToTakeFee);
+
+    Ok(())
+}
+
+pub fn collect_fee<'info>(mut ctx: Context<'_, '_, '_, 'info, CollectFee<'info>>) -> Result<()> {
+
+    let ctx = &mut ctx;
+    let current_round = &mut ctx.accounts.current_round;
+    let game = &mut ctx.accounts.game;
+
+    let crank = &mut ctx.accounts.crank;
+
+    if !crank.last_crank_round.eq(&current_round.key()) {
+        current_round.total_unique_crankers = current_round.total_unique_crankers.saturating_add(1);
+        crank.last_crank_round = current_round.key();
+        crank.cranks = 1;
+    } else {
+        crank.cranks = crank.cranks.saturating_add(1);
+    }
+
+    current_round.total_cranks = current_round.total_cranks.saturating_add(1);
+
+    let total_losings_fee = if current_round.round_winning_direction == 1 {
+        ((current_round.total_down_amount) / 10000) * game.fee_bps as u64
+    } else {
+        ((current_round.total_up_amount) / 10000) * game.fee_bps as u64
+    };
+    // the total amount of fee collected
+    current_round.total_fee_collected = total_losings_fee;
+
+    // remove crank_bps from fee collected
+    let losings_fee_remaining = total_losings_fee.saturating_sub((total_losings_fee / 10000) * game.crank_bps as u64);
+
+    // move total_fee minus crank_bps to fee_vault
+    if losings_fee_remaining.gt(&0_u64) {
+        game.unclaimed_fees  = game.unclaimed_fees.saturating_add(losings_fee_remaining);
+    }
+
+    if current_round.round_winning_direction == 1 {
+        current_round.total_down_amount = current_round.total_down_amount.saturating_sub(total_losings_fee);
+    } else {
+        current_round.total_up_amount = current_round.total_up_amount.saturating_sub(total_losings_fee);
+    }
+
+    current_round.fee_collected = true;
+
+    Ok(())
+}
+
 pub fn update_game<'info>(mut ctx: Context<'_, '_, '_, 'info, UpdateGame<'info>>) -> Result<()> {
     let ctx = &mut ctx;
     let current_round = &mut ctx.accounts.current_round;
-    
-    let vault = &mut ctx.accounts.vault;
-    let fee_vault = &mut ctx.accounts.game_fee_vault;
-    let up_vault = &mut ctx.accounts.up_token_account;
-    let down_vault = &mut ctx.accounts.down_token_account;
-    let up_vault_auth = &mut ctx.accounts.up_token_account_authority;
-    let down_vault_auth = &mut ctx.accounts.down_token_account_authority;
-    let token_program = &ctx.accounts.token_program;
+
+
+    let crank = &mut ctx.accounts.crank;
+
+    if !crank.last_crank_round.eq(&current_round.key()) {
+        current_round.total_unique_crankers = current_round.total_unique_crankers.saturating_add(1);
+        crank.last_crank_round = current_round.key();
+        crank.cranks = 1;
+    } else {
+        crank.cranks = crank.cranks.saturating_add(1);
+    }
+    current_round.total_cranks = current_round.total_cranks.saturating_add(1);
+
 
     let price_program = &ctx.accounts.price_program;
     let price_feed = &ctx.accounts.price_feed;
 
     require!(current_round.update_round(price_program, price_feed).is_ok(), ErrorCode::FailedToUpdateRound);
 
-    if current_round.finished && !current_round.fee_collected {
-        
-        let (
-            losings_fee, 
-            losing_token_account,
-            losing_authority,
-        ) = if current_round.round_winning_direction == 1 {
-            (
-                ((current_round.total_down_amount) / 1000) * 3, 
-                down_vault, 
-                down_vault_auth
-            )
-        } else {
-            (
-                ((current_round.total_up_amount) / 1000) * 3, 
-                up_vault, 
-                up_vault_auth
-            )
-        };
-
-        require!(vault.withdraw(losing_token_account, fee_vault, losing_authority, token_program, losings_fee).is_ok(), ErrorCode::FailedToTakeFee);
-
-        if current_round.round_winning_direction == 1 {
-            current_round.total_down_amount = current_round.total_down_amount.saturating_sub(losings_fee);
-        } else {
-            current_round.total_up_amount = current_round.total_up_amount.saturating_sub(losings_fee);
-        }
-
-        current_round.fee_collected = true;
-
-    }
-
     Ok(())
 }
-
-pub fn close_game_fee_vault<'info>(ctx: Context<'_, '_, '_, 'info, CloseGameFeeVault<'info>>) -> Result<()> {
-
-    require!(close_token_account( 
-        ctx.accounts.game_fee_vault.to_account_info().clone(), 
-        ctx.accounts.receiver.to_account_info().clone(), 
-        ctx.accounts.signer.to_account_info().clone(), 
-        ctx.accounts.token_program.to_account_info().clone()
-    ).is_ok(), ErrorCode::FailedToCloseUpTokenAccount);
-    
-    Ok(())
-}
-
-
 
 #[derive(Accounts)]
 pub struct InitializeGame<'info> {
@@ -227,7 +297,7 @@ pub struct InitializeGame<'info> {
 
     #[account(
         init,
-        seeds = [crate::ID.as_ref(), env!("CARGO_PKG_VERSION").as_bytes(), owner.key().as_ref(), b"game"], 
+        seeds = [ owner.key().as_ref(), vault.key().as_ref(), price_program.key().as_ref(), price_feed.key().as_ref(), b"game"], 
         bump, 
         payer = owner,
         space = std::mem::size_of::<Game>() + 8
@@ -235,50 +305,144 @@ pub struct InitializeGame<'info> {
     pub game: Box<Account<'info, Game>>,
 
     #[account(
-        init,
-        seeds = [crate::ID.as_ref(), env!("CARGO_PKG_VERSION").as_bytes(), owner.key().as_ref(), game.key().as_ref(), b"game_fee_vault"], 
-        bump, 
-        payer = owner,
-        token::mint = token_mint,
-        token::authority = owner
-    )]
-    pub game_fee_vault:  Box<Account<'info, TokenAccount>>,
-
-    #[account(
-        init,
-        seeds = [crate::ID.as_ref(), env!("CARGO_PKG_VERSION").as_bytes(), owner.key().as_ref(), game.key().as_ref(), b"vault"],
-        bump,
-        payer = owner,
-        space = std::mem::size_of::<Vault>() + 8 
+        constraint = vault.owner == owner.key()
     )]
     pub vault: Box<Account<'info, Vault>>,
 
-    pub token_mint: Box<Account<'info, Mint>>,
+    /// CHECK:
+    pub price_program: AccountInfo<'info>,
 
-    #[account(
-        init, 
-        seeds = [crate::ID.as_ref(), env!("CARGO_PKG_VERSION").as_bytes(), owner.key().as_ref(), game.key().as_ref(), vault.key().as_ref(), b"up"], 
-        bump, 
-        payer = owner, 
-        token::mint = token_mint,
-        token::authority = owner
-    )]
-    pub up_token_account:  Box<Account<'info, TokenAccount>>,
-    #[account(
-        init, 
-        seeds = [crate::ID.as_ref(), env!("CARGO_PKG_VERSION").as_bytes(), owner.key().as_ref(), game.key().as_ref(), vault.key().as_ref(), b"down"], 
-        bump, 
-        payer = owner, 
-        token::mint = token_mint,
-        token::authority = owner
-    )]
-    pub down_token_account: Box<Account<'info, TokenAccount>>,
+    /// CHECK:
+    pub price_feed: AccountInfo<'info>,
 
     // required for TokenAccount
     pub rent: Sysvar<'info, Rent>,
+    
     pub token_program: Program<'info, Token>,
     
     // required for Account
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct CollectFee<'info> {
+    #[account(mut)]
+    pub signer: Signer<'info>,
+
+    #[account(mut)]
+    pub crank: Box<Account<'info, Crank>>,
+
+    #[account(mut, constraint = game.current_round == current_round.key())]
+    pub game: Box<Account<'info, Game>>,
+
+    #[account(
+        mut,
+        constraint = current_round.finished @ ErrorCode::RoundNotFinished,
+        constraint = !current_round.fee_collected @ ErrorCode::FeeAlreadyCollected,
+        constraint = !current_round.settled @ ErrorCode::RoundAlreadySettled,
+        constraint = !current_round.cranks_paid @ ErrorCode::RoundCranksAlreadyPaid
+    )]
+    pub current_round: Box<Account<'info, Round>>,
+
+
+    // required for Account
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct ClaimFee<'info> {
+
+    #[account(mut)]
+    pub signer: Signer<'info>,
+
+    #[account(
+        mut, 
+        constraint = game.owner == signer.key()
+    )]
+    pub game: Box<Account<'info, Game>>,
+
+    #[account(
+        mut
+    )]
+    pub vault: Box<Account<'info, Vault>>,
+
+    /// CHECK: 
+    #[account(
+        constraint = vault.vault_authority == vault_authority.key() @ ErrorCode::GameVaultTokenAccountAuthorityMismatch
+    )]
+    pub vault_authority: AccountInfo<'info>,
+
+    #[account(
+        mut,
+        constraint = vault_ata.key() == vault.vault_ata @ ErrorCode::GameFeeVaultTokenAccountAuthorityMismatch
+    )]
+    pub vault_ata:  Box<Account<'info, TokenAccount>>,
+
+    #[account(
+        mut,
+        constraint = fee_vault_ata.key() == vault.fee_vault_ata @ ErrorCode::GameFeeVaultTokenAccountAuthorityMismatch
+    )]
+    pub fee_vault_ata:  Box<Account<'info, TokenAccount>>,
+
+
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct WithdrawFee<'info> {
+    #[account(mut)]
+    pub signer: Signer<'info>,
+
+    #[account(
+        mut, 
+        constraint = game.owner == signer.key()
+    )]
+    pub game: Box<Account<'info, Game>>,
+
+    #[account(
+        mut
+    )]
+    pub vault: Box<Account<'info, Vault>>,
+
+    #[account(
+        mut,
+        constraint = fee_vault_ata.key() == vault.fee_vault_ata @ ErrorCode::GameVaultMismatch
+    )]
+    pub fee_vault_ata: Box<Account<'info, TokenAccount>>,
+
+    /// CHECK: 
+    #[account(
+        constraint = fee_vault_ata.owner == fee_vault_authority.key() @ ErrorCode::GameVaultTokenAccountAuthorityMismatch
+    )]
+    pub fee_vault_authority: AccountInfo<'info>,
+
+    #[account(
+        mut,
+        constraint = to_token_account.owner == signer.key()
+    )]
+    pub to_token_account: Box<Account<'info, TokenAccount>>,
+
+
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct PayoutCranks<'info> {
+    #[account(mut)]
+    pub signer: Signer<'info>,
+
+    #[account(mut, constraint = game.current_round == current_round.key())]
+    pub game: Box<Account<'info, Game>>,
+
+    #[account(
+        mut,
+        constraint = current_round.finished @ ErrorCode::RoundNotFinished,
+        constraint = current_round.fee_collected @ ErrorCode::RoundFeeNotCollected,
+        constraint = current_round.settled @ ErrorCode::RoundNotSettled,
+        constraint = !current_round.cranks_paid @ ErrorCode::RoundCranksAlreadyPaid,
+    )]
+    pub current_round: Box<Account<'info, Round>>,
+
     pub system_program: Program<'info, System>,
 }
 
@@ -287,54 +451,19 @@ pub struct SettlePredictions<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
 
-    #[account(
-        mut,
-        constraint = game.owner == signer.key() @ ErrorCode::SignerNotOwner
-    )]
+    #[account(mut, constraint = game.current_round == current_round.key())]
     pub game: Box<Account<'info, Game>>,
+
+    #[account(mut)]
+    pub crank: Box<Account<'info, Crank>>,
 
     #[account(
         mut,
-        constraint = current_round.owner == signer.key() @ ErrorCode::SignerNotOwner,
-        constraint = current_round.game == game.key() @ ErrorCode::RoundGameKeyNotEqual
+        constraint = current_round.finished @ ErrorCode::RoundNotFinished,
+        constraint = current_round.fee_collected @ ErrorCode::RoundFeeNotCollected
     )]
     pub current_round: Box<Account<'info, Round>>,
 
-
-    #[account(
-        mut,
-        constraint = vault.owner == signer.key() @ ErrorCode::SignerNotOwner,
-        constraint = current_round.owner == vault.owner @ ErrorCode::RoundOwnerNotVaultOwner
-    )]
-    pub vault: Box<Account<'info, Vault>>,
-
-    #[account(
-        mut,
-        constraint = up_token_account.owner == up_token_account_authority.key() @ ErrorCode::VaultUpTokenAccountAuthorityMismatch
-    )]
-    pub up_token_account:  Box<Account<'info, TokenAccount>>,
-    
-    /// CHECK:
-    #[account(
-        constraint = up_token_account.owner == up_token_account_authority.key() @ ErrorCode::VaultUpTokenAccountAuthorityMismatch
-    )]
-    pub up_token_account_authority: AccountInfo<'info>,
-
-    #[account(
-        mut,
-        constraint = down_token_account.owner == down_token_account_authority.key() @ ErrorCode::VaultDownTokenAccountAuthorityMismatch
-    )]
-    pub down_token_account: Box<Account<'info, TokenAccount>>,
-    
-    /// CHECK:
-    #[account(
-        constraint = down_token_account.owner == down_token_account_authority.key() @ ErrorCode::VaultDownTokenAccountAuthorityMismatch
-    )]
-    pub down_token_account_authority: AccountInfo<'info>,
-
-    pub token_program: Program<'info, Token>,
-
-    // required for Account
     pub system_program: Program<'info, System>,
 }
 
@@ -344,82 +473,35 @@ pub struct UpdateGame<'info> {
     pub signer: Signer<'info>,
 
     #[account(
-        mut,
-        constraint = game.owner == signer.key() @ ErrorCode::SignerNotOwner
+        mut
     )]
     pub game: Box<Account<'info, Game>>,
 
+    #[account(mut)]
+    pub crank: Box<Account<'info, Crank>>,
+
     #[account(
         mut,
-        constraint = current_round.owner == signer.key() @ ErrorCode::SignerNotOwner,
         constraint = current_round.game == game.key() @ ErrorCode::RoundGameKeyNotEqual
     )]
     pub current_round: Box<Account<'info, Round>>,
 
 
-    #[account(
-        mut,
-        constraint = vault.owner == signer.key() @ ErrorCode::SignerNotOwner,
-        constraint = current_round.owner == vault.owner @ ErrorCode::RoundOwnerNotVaultOwner
-    )]
-    pub vault: Box<Account<'info, Vault>>,
-
-    #[account(
-        mut,
-        constraint = game_fee_vault.owner == game_fee_vault_authority.key() @ ErrorCode::GameFeeVaultTokenAccountAuthorityMismatch
-    )]
-    pub game_fee_vault:  Box<Account<'info, TokenAccount>>,
-
     /// CHECK:
     #[account(
-        constraint = game_fee_vault.owner == game_fee_vault_authority.key() @ ErrorCode::GameFeeVaultTokenAccountAuthorityMismatch
-    )]
-    pub game_fee_vault_authority: AccountInfo<'info>,
-
-    #[account(
-        mut,
-        constraint = up_token_account.owner == up_token_account_authority.key() @ ErrorCode::VaultUpTokenAccountAuthorityMismatch
-    )]
-    pub up_token_account:  Box<Account<'info, TokenAccount>>,
-    
-    /// CHECK:
-    #[account(
-        constraint = up_token_account.owner == up_token_account_authority.key() @ ErrorCode::VaultUpTokenAccountAuthorityMismatch
-    )]
-    pub up_token_account_authority: AccountInfo<'info>,
-
-    #[account(
-        mut,
-        constraint = down_token_account.owner == down_token_account_authority.key() @ ErrorCode::VaultDownTokenAccountAuthorityMismatch
-    )]
-    pub down_token_account: Box<Account<'info, TokenAccount>>,
-    
-    /// CHECK:
-    #[account(
-        constraint = down_token_account.owner == down_token_account_authority.key() @ ErrorCode::VaultDownTokenAccountAuthorityMismatch
-    )]
-    pub down_token_account_authority: AccountInfo<'info>,
-
-    /// CHECK:
-    #[account(
-        constraint = current_round.price_program_pubkey == price_program.key() @ ErrorCode::RoundPriceProgramNotEqual,
-        // constraint = price_feed.owner.eq(&price_program.key()) @ ErrorCode::PriceProgramNotOwnerOfPriceFeed
+        constraint = game.price_program == price_program.key() @ ErrorCode::RoundPriceProgramNotEqual,
     )]
     pub price_program: AccountInfo<'info>,
 
     /// CHECK:
     #[account(
-        constraint = current_round.price_feed_pubkey == price_feed.key() @ ErrorCode::RoundPriceFeedNotEqual,
-        // constraint = price_feed.owner.eq(&price_program.key()) @ ErrorCode::PriceProgramNotOwnerOfPriceFeed
+        constraint = game.price_feed == price_feed.key() @ ErrorCode::RoundPriceFeedNotEqual,
     )]
     pub price_feed: AccountInfo<'info>,
-
-    pub token_program: Program<'info, Token>,
 
     // required for Account
     pub system_program: Program<'info, System>,
 }
-
 
 #[derive(Accounts)]
 pub struct CloseGame<'info> {
@@ -435,31 +517,10 @@ pub struct CloseGame<'info> {
     #[account(
         mut,
         constraint = game.owner == signer.key() @ ErrorCode::SignerNotOwner,
+        constraint = game.unclaimed_fees.eq(&0),
         close = receiver
     )]
     pub game: Box<Account<'info, Game>>,
 
     pub system_program: Program<'info, System>,
 }
-
-
-#[derive(Accounts)]
-pub struct CloseGameFeeVault<'info> {
-    #[account()]
-    pub signer: Signer<'info>,
-
-    #[account(
-        mut,
-        constraint = signer.key() == receiver.key()
-    )]
-    pub receiver: SystemAccount<'info>,
-
-    #[account(
-        mut,
-        constraint = game_fee_vault.owner == signer.key(),
-    )]
-    pub game_fee_vault:  Box<Account<'info, TokenAccount>>,
-
-    pub token_program: Program<'info, Token>
-}
-

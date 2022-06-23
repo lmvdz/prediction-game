@@ -28,12 +28,16 @@ pub mod prediction_game {
         Ok(())
     }
 
-    pub fn init_game_instruction(ctx: Context<InitializeGame>, vault_up_token_account_nonce: u8, vault_down_token_account_nonce: u8, token_decimal: u8) -> Result<()> {
-        instructions::game::init_game(ctx, vault_up_token_account_nonce, vault_down_token_account_nonce, token_decimal)
+    pub fn init_game_instruction(ctx: Context<InitializeGame>, base_symbol: String, fee_bps: u16, crank_bps: u16) -> Result<()> {
+        instructions::game::init_game(ctx, base_symbol, fee_bps, crank_bps)
     }
 
-    pub fn init_first_round_instruction(ctx: Context<InitFirstRound>) -> Result<()> {
-        instructions::round::init_first_round(ctx)
+    pub fn init_vault_instruction(ctx: Context<InitializeVault>, vault_nonce: u8, fee_vault_nonce: u8) -> Result<()> {
+        instructions::vault::init_vault(ctx, vault_nonce, fee_vault_nonce)
+    }
+
+    pub fn init_first_round_instruction(ctx: Context<InitFirstRound>, round_length: i64) -> Result<()> {
+        instructions::round::init_first_round(ctx, round_length)
     }
 
     pub fn init_second_round_instruction(ctx: Context<InitSecondRound>) -> Result<()> {
@@ -48,6 +52,22 @@ pub mod prediction_game {
         instructions::game::update_game(ctx)
     }
 
+    pub fn collect_fee_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CollectFee<'info>>) -> Result<()> {
+        instructions::game::collect_fee(ctx)
+    }
+
+    pub fn claim_fee_instruction<'info>(ctx: Context<'_, '_, '_, 'info, ClaimFee<'info>>) -> Result<()> {
+        instructions::game::claim_fee(ctx)
+    }
+
+    pub fn withdraw_fee_instruction<'info>(ctx: Context<'_, '_, '_, 'info, WithdrawFee<'info>>) -> Result<()> {
+        instructions::game::withdraw_fee(ctx)
+    }
+
+    pub fn payout_cranks_instruction<'info>(ctx: Context<'_, '_, '_, 'info, PayoutCranks<'info>>) -> Result<()> {
+        instructions::game::payout_cranks(ctx)
+    }
+
     pub fn settle_predictions_instruction<'info>(ctx: Context<'_, '_, '_, 'info, SettlePredictions<'info>>) -> Result<()> {
         instructions::game::settle_predictions(ctx)
     }
@@ -57,37 +77,53 @@ pub mod prediction_game {
         instructions::user::init_user(ctx)
     }
 
-    pub fn transfer_user_token_account_instruction(ctx: Context<UserTransfer>, amount: u64) -> Result<()> {
-        instructions::user::transfer_user_token_account(ctx, amount)
+    pub fn init_crank_instruction(ctx: Context<InitCrank>) -> Result<()> {
+        instructions::crank::init_crank(ctx)
     }
+
+    // pub fn init_user_token_account_instruction(_ctx: Context<InitUserTokenAccount>) -> Result<()> {
+    //     Ok(())
+    // }
+
+    // pub fn transfer_user_token_account_instruction(ctx: Context<UserTransfer>, amount: u64) -> Result<()> {
+    //     instructions::user::transfer_user_token_account(ctx, amount)
+    // }
 
     pub fn init_user_prediction_instruction(ctx: Context<InitUserPrediction>, up_or_down: u8, amount: u64) -> Result<()> {
         instructions::user::init_user_prediction(ctx, up_or_down, amount)
+    }
+
+    pub fn user_claim_instruction(ctx: Context<UserClaim>, amount: u64) -> Result<()> {
+        instructions::user::user_claim(ctx, amount)
     }
 
     pub fn close_game_instruction<'info>(_ctx: Context<'_, '_, '_, 'info, CloseGame<'info>>) -> Result<()> {
         Ok(())
     }
 
-    pub fn close_game_fee_vault_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CloseGameFeeVault<'info>>) -> Result<()> {
-        instructions::game::close_game_fee_vault(ctx)
+    pub fn close_crank_account_instruction(_ctx: Context<CloseCrankAccount>) -> Result<()> {
+        Ok(())
+    }
+
+    pub fn close_fee_vault_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CloseFeeVaultTokenAccount<'info>>) -> Result<()> {
+        instructions::vault::close_fee_vault_token_account(ctx)
     }
 
     pub fn close_round_instruction<'info>(_ctx: Context<'_, '_, '_, 'info, CloseRound<'info>>) -> Result<()> {
         Ok(())
     }
 
-    pub fn close_vault_instruction<'info>(_ctx: Context<'_, '_, '_, 'info, CloseVault<'info>>) -> Result<()> {
-        Ok(())
+    pub fn close_vault_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CloseVaultTokenAccount<'info>>) -> Result<()> {
+        instructions::vault::close_vault_token_account(ctx)
     }
 
-    pub fn close_vault_and_token_accounts_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CloseVaultAndTokenAccounts<'info>>) -> Result<()> {
-        instructions::vault::close_vault_and_token_accounts(ctx)
-    }
+    // pub fn close_vault_and_token_accounts_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CloseVaultAndTokenAccounts<'info>>) -> Result<()> {
+    //     instructions::vault::close_vault_and_token_accounts(ctx)
+    // }
 
-    pub fn close_vault_token_accounts_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CloseVaultTokenAccounts<'info>>) -> Result<()> {
-        instructions::vault::close_vault_token_accounts(ctx)
-    }
+    // pub fn close_vault_token_accounts_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CloseVaultTokenAccounts<'info>>) -> Result<()> {
+    //     instructions::vault::close_vault_token_accounts(ctx)
+    // }
 
     pub fn close_user_prediction_instruction(_ctx: Context<CloseUserPrediction>) -> Result<()> {
         Ok(())
@@ -97,9 +133,9 @@ pub mod prediction_game {
         Ok(())
     }
 
-    pub fn close_user_token_account_instruction(_ctx: Context<CloseUserTokenAccount>) -> Result<()> {
-        Ok(())
-    }
+    // pub fn close_user_token_account_instruction(_ctx: Context<CloseUserTokenAccount>) -> Result<()> {
+    //     Ok(())
+    // }
     
     
 

@@ -1,28 +1,25 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Mint, TokenAccount};
 
 use crate::errors::ErrorCode;
 
-use crate::state::{Round, Game, Vault};
+use crate::state::{Round, Game, Crank};
 
-pub fn init_first_round(ctx: Context<InitFirstRound>) -> Result<()> {
+pub fn init_first_round(ctx: Context<InitFirstRound>, round_length: i64) -> Result<()> {
     let round = &mut ctx.accounts.round;
     let game = &mut ctx.accounts.game;
 
     game.current_round = round.key();
     game.previous_round = round.key();
 
-    round.owner = ctx.accounts.owner.key();
+    round.owner = game.owner.key();
     round.game = ctx.accounts.game.key();
     round.address = round.key();
-    round.price_program_pubkey = ctx.accounts.price_program.key();
-    round.price_feed_pubkey = ctx.accounts.price_feed.key();
 
     round.round_number = 1_u32; // starting round is 1
 
     let now = Clock::get()?.unix_timestamp;
 
-    round.round_length = 600;
+    round.round_length = round_length;
 
     round.round_start_time = now;
     round.round_current_time = now;
@@ -40,16 +37,24 @@ pub fn init_first_round(ctx: Context<InitFirstRound>) -> Result<()> {
     round.finished = false;
     round.settled = false;
     round.fee_collected = false;
+    round.cranks_paid = false;
+
+    round.total_fee_collected = 0;
 
     round.total_amount_settled = 0;
     round.total_predictions = 0;
     round.total_predictions_settled = 0;
+    
+    round.total_unique_crankers = 0;
+    round.total_cranks = 0;
+    round.total_amount_paid_to_cranks = 0;
+    round.total_cranks_paid = 0;
 
     Ok(())
 }
 
 
-fn init_round_shared(owner: Pubkey, price_program: Pubkey, price_feed: Pubkey, next_round: &mut Box<Account<Round>>, current_round: &mut Box<Account<Round>>, game: &mut Box<Account<Game>>) -> Result<()> {
+fn init_round_shared(next_round: &mut Box<Account<Round>>, current_round: &mut Box<Account<Round>>, game: &mut Box<Account<Game>>) -> Result<()> {
     game.current_round = next_round.key();
     game.previous_round = current_round.key();
 
@@ -69,11 +74,9 @@ fn init_round_shared(owner: Pubkey, price_program: Pubkey, price_feed: Pubkey, n
         game.total_volume = game.total_volume.saturating_add(current_round.total_down_amount.into());
     }
 
-    next_round.owner = owner.key();
+    next_round.owner = game.owner.key();
     next_round.game = game.key();
     next_round.address = next_round.key();
-    next_round.price_program_pubkey = price_program.key();
-    next_round.price_feed_pubkey = price_feed.key();
 
     next_round.round_number = if current_round.round_number.eq(&u32::MAX) {
         1
@@ -85,7 +88,7 @@ fn init_round_shared(owner: Pubkey, price_program: Pubkey, price_feed: Pubkey, n
 
     let now = Clock::get()?.unix_timestamp;
 
-    next_round.round_length = 600;
+    next_round.round_length = current_round.round_length;
 
     next_round.round_start_time = now;
     next_round.round_current_time = now;
@@ -103,10 +106,18 @@ fn init_round_shared(owner: Pubkey, price_program: Pubkey, price_feed: Pubkey, n
     next_round.finished = false;
     next_round.settled = false;
     next_round.fee_collected = false;
+    next_round.cranks_paid = false;
+
+    next_round.total_fee_collected = 0;
 
     next_round.total_amount_settled = 0;
     next_round.total_predictions = 0;
     next_round.total_predictions_settled = 0;
+
+    next_round.total_unique_crankers = 0;
+    next_round.total_cranks = 0;
+    next_round.total_amount_paid_to_cranks = 0;
+    next_round.total_cranks_paid = 0;
 
     Ok(())
 }
@@ -116,7 +127,7 @@ pub fn init_second_round(ctx: Context<InitSecondRound>) -> Result<()> {
     let first_round = &mut ctx.accounts.first_round;
     let game = &mut ctx.accounts.game;
 
-    init_round_shared(ctx.accounts.owner.key(), ctx.accounts.price_program.key(), ctx.accounts.price_feed.key(), second_round, first_round, game)
+    init_round_shared(second_round, first_round, game)
 }
 
 pub fn init_next_round_and_close_previous(ctx: Context<InitNextRoundAndClosePrevious>) -> Result<()> {
@@ -124,7 +135,7 @@ pub fn init_next_round_and_close_previous(ctx: Context<InitNextRoundAndClosePrev
     let current_round = &mut ctx.accounts.current_round;
     let game = &mut ctx.accounts.game;
 
-    init_round_shared(ctx.accounts.owner.key(), ctx.accounts.price_program.key(), ctx.accounts.price_feed.key(), next_round, current_round, game)
+    init_round_shared(next_round, current_round, game)
 }
 
 
@@ -137,20 +148,12 @@ impl Round {
 
     ) -> Result<()> {
         if !self.finished {
-            // update the round time
-            self.round_current_time = Clock::get()?.unix_timestamp;
-            // calculate the difference in time or set to zero
-            self.round_time_difference = self.round_current_time.checked_sub(self.round_start_time).unwrap_or(0);
-            
-            // update the round price
-            // self.round_current_price = get_price(price_program, price_feed).unwrap_or(self.round_start_price);  // production
-            self.round_current_price += 1; // localnet testing
-            
-            // calculate the difference in price or set to zero
-            self.round_price_difference = self.round_current_price.checked_sub(self.round_start_price).unwrap_or(0);
     
-            // if round.round_time_difference > (5 * 60) { // 5 minutes for production
-            if self.round_time_difference > self.round_length {
+            if self.round_predictions_allowed && self.round_time_difference >= (self.round_length / 2) { // for production
+                self.round_predictions_allowed = false;
+            }
+            // if self.round_time_difference > (2) { 
+            if self.round_time_difference >= self.round_length { // for production
 
                 self.round_end_price = self.round_current_price;
     
@@ -159,11 +162,19 @@ impl Round {
                 } else {
                     2
                 };
-    
                 self.finished = true;
-
-            } else if self.round_time_difference > (self.round_length / 2) {
-                self.round_predictions_allowed = false;
+            } else {
+                // update the round time
+                self.round_current_time = Clock::get()?.unix_timestamp;
+                // calculate the difference in time or set to zero
+                self.round_time_difference = self.round_current_time.checked_sub(self.round_start_time).unwrap_or(0);
+                
+                // update the round price
+                // self.round_current_price = get_price(price_program, price_feed).unwrap_or(self.round_start_price);  // production
+                self.round_current_price += 1; // localnet testing
+                
+                // calculate the difference in price or set to zero
+                self.round_price_difference = self.round_current_price.checked_sub(self.round_start_price).unwrap_or(0);
             }
         }
         Ok(())
@@ -189,17 +200,18 @@ pub struct CloseRound<'info> {
 #[derive(Accounts)]
 pub struct InitFirstRound<'info> {
     #[account(mut)]
-    pub owner: Signer<'info>,
+    pub signer: Signer<'info>,
 
     #[account(mut)]
     pub game: Box<Account<'info, Game>>,
 
+    #[account(mut)]
+    pub crank: Box<Account<'info, Crank>>,
+
     #[account(
         init,
         seeds = [
-            crate::ID.as_ref(), 
-            env!("CARGO_PKG_VERSION").as_bytes(), 
-            owner.key().as_ref(), 
+            
             game.key().as_ref(), 
             &[(1_u32).to_be_bytes()[0]], 
             &[(1_u32).to_be_bytes()[1]], 
@@ -208,16 +220,10 @@ pub struct InitFirstRound<'info> {
             b"round"
         ], 
         bump, 
-        payer = owner,
+        payer = signer,
         space = std::mem::size_of::<Round>() + 8
     )]
     pub round: Box<Account<'info, Round>>,
-    
-    /// CHECK:
-    pub price_program: AccountInfo<'info>,
-
-    /// CHECK:
-    pub price_feed: AccountInfo<'info>,
 
     // required for Account
     pub system_program: Program<'info, System>,
@@ -227,17 +233,17 @@ pub struct InitFirstRound<'info> {
 #[derive(Accounts)]
 pub struct InitSecondRound<'info> {
     #[account(mut)]
-    pub owner: Signer<'info>,
+    pub signer: Signer<'info>,
 
-    #[account(mut, constraint = owner.key() == game.owner )]
+    #[account(mut)]
     pub game: Box<Account<'info, Game>>,
+
+    #[account(mut)]
+    pub crank: Box<Account<'info, Crank>>,
 
     #[account(
         init,
         seeds = [
-            crate::ID.as_ref(), 
-            env!("CARGO_PKG_VERSION").as_bytes(), 
-            owner.key().as_ref(), 
             game.key().as_ref(), 
             &[if game.round_number.eq(&u32::MAX) { (1_u32).to_be_bytes()[0] } else { game.round_number.saturating_add(1).to_be_bytes()[0] }], 
             &[if game.round_number.eq(&u32::MAX) { (1_u32).to_be_bytes()[1] } else { game.round_number.saturating_add(1).to_be_bytes()[1] }], 
@@ -246,55 +252,19 @@ pub struct InitSecondRound<'info> {
             b"round"
         ], 
         bump, 
-        payer = owner,
-        space = std::mem::size_of::<Round>() + 8,
-        constraint = first_round.price_program_pubkey == price_program.key(),
-        constraint = first_round.price_feed_pubkey == price_feed.key()
+        payer = signer,
+        space = std::mem::size_of::<Round>() + 8
     )]
     pub second_round: Box<Account<'info, Round>>,
 
     #[account(
         mut,
-        constraint = owner.key() == first_round.owner,
-        constraint = first_round.key() == game.current_round,
-        constraint = first_round.finished,
-        constraint = first_round.settled
+        constraint = first_round.key() == game.current_round @ ErrorCode::RoundKeyNotGameCurrentKey,
+        constraint = first_round.finished @ ErrorCode::RoundNotFinished,
+        constraint = first_round.fee_collected @ ErrorCode::RoundFeeNotCollected,
+        constraint = first_round.settled @ ErrorCode::RoundNotSettled
     )]
     pub first_round: Box<Account<'info, Round>>,
-
-    #[account(
-        mut,
-        constraint = owner.key() == receiver.key()
-    )]
-    pub receiver: SystemAccount<'info>,
-
-    pub token_mint: Box<Account<'info, Mint>>,
-
-    #[account(
-        mut, 
-        constraint = vault.owner == game.owner
-    )]
-    pub vault: Box<Account<'info, Vault>>,
-    
-    #[account(
-        mut, 
-        constraint = vault.up_token_account_pubkey == up_token_account.key(),
-        constraint = owner.key() == up_token_account.owner
-    )]
-    pub up_token_account:  Box<Account<'info, TokenAccount>>,
-
-    #[account(
-        mut, 
-        constraint = vault.down_token_account_pubkey == down_token_account.key(),
-        constraint = owner.key() == up_token_account.owner
-    )]
-    pub down_token_account: Box<Account<'info, TokenAccount>>,
-    
-    /// CHECK:
-    pub price_program: AccountInfo<'info>,
-
-    /// CHECK:
-    pub price_feed: AccountInfo<'info>,
 
     // required for Account
     pub system_program: Program<'info, System>,
@@ -303,84 +273,58 @@ pub struct InitSecondRound<'info> {
 #[derive(Accounts)]
 pub struct InitNextRoundAndClosePrevious<'info> {
     #[account(mut)]
-    pub owner: Signer<'info>,
+    pub signer: Signer<'info>,
 
-    #[account(mut, constraint = owner.key() == game.owner )]
+    #[account(mut)]
     pub game: Box<Account<'info, Game>>,
+
+    #[account(mut)]
+    pub crank: Box<Account<'info, Crank>>,
+
+    #[account(
+        mut,
+        constraint = signer.key() == receiver.key()
+    )]
+    pub receiver: SystemAccount<'info>,
 
     #[account(
         init,
         seeds = [
-            crate::ID.as_ref(), 
-            env!("CARGO_PKG_VERSION").as_bytes(), 
-            owner.key().as_ref(), 
+            
             game.key().as_ref(), 
             &[if game.round_number.eq(&u32::MAX) { (1_u32).to_be_bytes()[0] } else { game.round_number.saturating_add(1).to_be_bytes()[0] }], 
             &[if game.round_number.eq(&u32::MAX) { (1_u32).to_be_bytes()[1] } else { game.round_number.saturating_add(1).to_be_bytes()[1] }], 
             &[if game.round_number.eq(&u32::MAX) { (1_u32).to_be_bytes()[2] } else { game.round_number.saturating_add(1).to_be_bytes()[2] }],  
             &[if game.round_number.eq(&u32::MAX) { (1_u32).to_be_bytes()[3] } else { game.round_number.saturating_add(1).to_be_bytes()[3] }],  
             b"round"
+            
         ], 
         bump, 
-        payer = owner,
-        space = std::mem::size_of::<Round>() + 8,
-        constraint = current_round.price_program_pubkey == price_program.key(),
-        constraint = current_round.price_feed_pubkey == price_feed.key()
+        payer = signer,
+        space = std::mem::size_of::<Round>() + 8
     )]
     pub next_round: Box<Account<'info, Round>>,
 
     #[account(
         mut,
-        constraint = owner.key() == current_round.owner,
         constraint = current_round.key() == game.current_round,
-        constraint = current_round.finished,
-        constraint = current_round.settled
+        constraint = current_round.finished @ ErrorCode::RoundNotFinished,
+        constraint = current_round.fee_collected @ ErrorCode::RoundFeeNotCollected,
+        constraint = current_round.settled @ ErrorCode::RoundNotSettled,
+        constraint = current_round.cranks_paid @ ErrorCode::RoundCranksNotPaid
     )]
     pub current_round: Box<Account<'info, Round>>,
 
     #[account(
         mut,
-        constraint = owner.key() == receiver.key()
-    )]
-    pub receiver: SystemAccount<'info>,
-
-    #[account(
-        mut,
         close = receiver,
-        constraint = owner.key() == previous_round.owner,
         constraint = previous_round.key() == game.previous_round,
-        constraint = previous_round.finished,
-        constraint = previous_round.settled
+        constraint = previous_round.finished @ ErrorCode::RoundNotFinished,
+        constraint = previous_round.fee_collected @ ErrorCode::RoundFeeNotCollected,
+        constraint = previous_round.settled @ ErrorCode::RoundNotSettled,
+        constraint = previous_round.cranks_paid @ ErrorCode::RoundCranksNotPaid,
     )]
     pub previous_round: Box<Account<'info, Round>>,
-
-    pub token_mint: Box<Account<'info, Mint>>,
-
-    #[account(
-        mut, 
-        constraint = vault.owner == game.owner
-    )]
-    pub vault: Box<Account<'info, Vault>>,
-    
-    #[account(
-        mut, 
-        constraint = vault.up_token_account_pubkey == up_token_account.key(),
-        constraint = owner.key() == up_token_account.owner
-    )]
-    pub up_token_account:  Box<Account<'info, TokenAccount>>,
-
-    #[account(
-        mut, 
-        constraint = vault.down_token_account_pubkey == down_token_account.key(),
-        constraint = owner.key() == up_token_account.owner
-    )]
-    pub down_token_account: Box<Account<'info, TokenAccount>>,
-    
-    /// CHECK:
-    pub price_program: AccountInfo<'info>,
-
-    /// CHECK:
-    pub price_feed: AccountInfo<'info>,
 
     // required for Account
     pub system_program: Program<'info, System>,

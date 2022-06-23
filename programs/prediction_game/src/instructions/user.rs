@@ -1,30 +1,31 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, TokenAccount, Token};
 
-use crate::state::Vault;
+use crate::errors::ErrorCode;
 use crate::state::Game;
 use crate::state::Round;
 use crate::state::User;
 use crate::state::UserPrediction;
-// use crate::state::UserPredictions;
-use crate::errors::ErrorCode;
+use crate::state::Vault;
+use crate::utils::transfer_token_account;
+use crate::utils::transfer_token_account_signed;
 
 pub fn init_user(ctx: Context<InitUser>) -> Result<()> {
     
     let user = &mut ctx.accounts.user;
-    let user_pubkey = user.key();
-    user.init(
-        user_pubkey, 
-        ctx.accounts.owner.key(), 
-        ctx.accounts.token_account.key(), 
-        ctx.accounts.owner.key()
-    )
+
+    user.address = user.key();
+    user.owner = ctx.accounts.owner.key();
+    user.claimable = 0;
+
+    Ok(())
 
 }
 
 pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, amount: u64) -> Result<()> {
     let current_round = &mut ctx.accounts.current_round;
-    let game = &ctx.accounts.game;
+    let game = &mut ctx.accounts.game;
+    let user = &mut ctx.accounts.user;
 
     require!(amount.saturating_div(10_u64.pow(game.token_decimal.into())) > 1, ErrorCode::MinimumPredictionAmountNotMet);
 
@@ -38,56 +39,92 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
     let user_prediction_pubkey = user_prediction.key();
     user_prediction.owner = ctx.accounts.signer.key();
     user_prediction.address = user_prediction_pubkey;
-    user_prediction.user = ctx.accounts.user.key();
-    user_prediction.game = ctx.accounts.game.key();
+    user_prediction.user = user.key();
+    user_prediction.game = game.key();
     user_prediction.round = current_round.key();
     user_prediction.up_or_down = up_or_down;
     user_prediction.amount = amount;
-    user_prediction.deposited = false;
     user_prediction.settled = false;
 
 
-    let vault = &mut ctx.accounts.vault;
+    let vault_ata = &mut ctx.accounts.vault_ata;
     let from_token_account = &mut ctx.accounts.from_token_account;
-    let to_token_account = &mut ctx.accounts.to_token_account;
-    let authority = &mut ctx.accounts.signer.to_account_info();
+    let from_token_account_authority = &ctx.accounts.from_token_account_authority;
     let token_program = &ctx.accounts.token_program;
 
     if user_prediction.up_or_down == 1 {
         current_round.total_up_amount = current_round.total_up_amount.checked_add(user_prediction.amount).unwrap();
-        user_prediction.deposited = true;
     } else if user_prediction.up_or_down == 2 {
         current_round.total_down_amount = current_round.total_down_amount.checked_add(user_prediction.amount).unwrap();
-        user_prediction.deposited = true;
     }
 
     current_round.total_predictions += 1;
 
-    vault.deposit(from_token_account, to_token_account, authority, token_program, user_prediction.amount)
+    // deposit or use unclaimed
+    let deposit_amount = if user.claimable.gt(&user_prediction.amount) || user.claimable.eq(&user_prediction.amount) {
+        
+        user.claimable = user.claimable.saturating_sub(user_prediction.amount);
+        0_u64
+
+    } else if user.claimable.gt(&0_u64) {
+
+        let user_prediction_remaining_amount = user_prediction.amount.saturating_sub(user.claimable);
+        user.claimable = user.claimable.saturating_sub(user_prediction.amount);
+        user_prediction_remaining_amount
+
+    } else {
+        
+        user_prediction.amount
+
+    };
+
+    if deposit_amount.gt(&0_u64) {
+        require!(transfer_token_account(from_token_account, vault_ata, from_token_account_authority, token_program, deposit_amount).is_ok(), ErrorCode::UserPredictionFailedToDeposit);
+    }
+
+    Ok(())
 }
 
-pub fn transfer_user_token_account(ctx: Context<UserTransfer>, amount: u64) -> Result<()> {
+pub fn user_claim(ctx: Context<UserClaim>, amount: u64) -> Result<()> {
+    let user = &mut ctx.accounts.user;
+    let vault = &ctx.accounts.vault;
+    let vault_key = &vault.key();
+    let vault_ata = &ctx.accounts.vault_ata;
+    let vault_nonce = vault.vault_nonce;
+    let vault_authority = &ctx.accounts.vault_authority;
+    let to_token_account = &mut ctx.accounts.to_token_account;
 
-    ctx.accounts.user.transfer(
-        ctx.accounts.from_token_account.to_account_info(), 
-        ctx.accounts.to_token_account.to_account_info(), 
-        ctx.accounts.signer.to_account_info().clone(), 
-        ctx.accounts.token_program.to_account_info(), 
+    let token_program = &ctx.accounts.token_program;
+
+    require!(user.claimable.gt(&amount) || user.claimable.eq(&amount), ErrorCode::InsufficientClaimableAmount);
+
+    let signature_seeds = [vault_key.as_ref(), b"vault_ata", &[vault_nonce]];
+    let signers = &[&signature_seeds[..]];
+
+    require!(transfer_token_account_signed(
+        vault_ata, //  from 
+        to_token_account, // to 
+        &vault_authority.to_account_info(), // from auth
+        signers, // signers
+        token_program, // TOKEN_PROGRAM
         amount
-    )
+    ).is_ok(), ErrorCode::FailedToClaim);
 
+    user.claimable = user.claimable.saturating_sub(amount);
+
+    Ok(())
 }
 
 
 #[derive(Accounts)]
 pub struct CloseUserAccount<'info> {
 
-    #[account()]
     pub signer: Signer<'info>,
 
     #[account(mut, 
         close = receiver,
-        constraint = signer.key() == user.owner @ ErrorCode::SignerNotOwner
+        constraint = signer.key() == user.owner @ ErrorCode::SignerNotOwner,
+        constraint = user.claimable.eq(&0_u64)
     )]
     pub user: Box<Account<'info, User>>,
 
@@ -97,29 +134,8 @@ pub struct CloseUserAccount<'info> {
 }
 
 #[derive(Accounts)]
-pub struct CloseUserTokenAccount<'info> {
+pub struct UserClaim<'info> {
 
-    #[account()]
-    pub signer: Signer<'info>,
-
-    #[account(mut, 
-        constraint = signer.key() == user_token_account.owner @ ErrorCode::SignerNotOwner
-    )]
-    pub user_token_account: Box<Account<'info, TokenAccount>>,
-
-    #[account(
-        mut,
-        constraint = signer.key() == receiver.key()
-    )]
-    pub receiver: SystemAccount<'info>,
-
-    pub token_program: Program<'info, Token>
-
-}
-
-
-#[derive(Accounts)]
-pub struct UserTransfer<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
 
@@ -128,17 +144,24 @@ pub struct UserTransfer<'info> {
 
     #[account(
         mut,
-        constraint = to_token_account.owner == user.owner @ErrorCode::UserOwnerNotToTokenAccountOwner,
-        token::mint = token_mint.key()
+        constraint = to_token_account.owner == user.owner @ErrorCode::UserOwnerNotToTokenAccountOwner
     )]
     pub to_token_account: Box<Account<'info, TokenAccount>>,
 
+    #[account()]
+    pub vault: Box<Account<'info, Vault>>,
+
     #[account(
         mut,
-        constraint = from_token_account.owner == user.owner @ ErrorCode::UserOwnerNotFromTokenAccountOwner,
-        token::mint = token_mint.key()
+        constraint = vault_ata.owner == vault.vault_authority.key() @ ErrorCode::UserOwnerNotFromTokenAccountOwner
     )]
-    pub from_token_account: Box<Account<'info, TokenAccount>>,
+    pub vault_ata: Box<Account<'info, TokenAccount>>,
+
+    /// CHECK:
+    #[account(
+        constraint = vault_authority.key() == vault_ata.owner @ ErrorCode::UserOwnerNotFromTokenAccountOwner
+    )]
+    pub vault_authority: AccountInfo<'info>,
 
     pub token_mint: Box<Account<'info, Mint>>,
 
@@ -153,39 +176,31 @@ pub struct InitUser<'info> {
 
     #[account(
         init,
-        seeds = [crate::ID.as_ref(), env!("CARGO_PKG_VERSION").as_bytes(), owner.key().as_ref(), b"user"], 
+        seeds = [ owner.key().as_ref(), b"user"], 
         bump, 
         payer = owner,
         space = std::mem::size_of::<User>() + 8
     )]
     pub user: Box<Account<'info, User>>, 
 
-    pub token_mint: Box<Account<'info, Mint>>,
-
-    #[account(
-        init, 
-        seeds = [crate::ID.as_ref(), env!("CARGO_PKG_VERSION").as_bytes(), owner.key().as_ref(), b"token_account"], 
-        bump, 
-        payer = owner, 
-        token::mint = token_mint,
-        token::authority = owner
-    )]
-    pub token_account:  Box<Account<'info, TokenAccount>>,
-
-    // required for TokenAccount
-    pub rent: Sysvar<'info, Rent>,
-    pub token_program: Program<'info, Token>,
     // required for Account
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
 pub struct InitUserPrediction<'info> {
+
     #[account(mut)]
     pub signer: Signer<'info>,
 
     #[account(mut)]
     pub game: Box<Account<'info, Game>>,
+
+    #[account(
+        mut,
+        constraint = user.owner == signer.key() @ ErrorCode::SignerNotOwnerOfUser
+    )]
+    pub user: Box<Account<'info, User>>,
 
     #[account(
         mut,
@@ -195,23 +210,11 @@ pub struct InitUserPrediction<'info> {
     )]
     pub current_round: Box<Account<'info, Round>>,
 
-    #[account(
-        mut,
-        constraint = vault.owner == current_round.owner @ ErrorCode::RoundOwnerNotVaultOwner
-    )]
-    pub vault: Box<Account<'info, Vault>>,
-
-    #[account(mut,
-        constraint = user.owner == signer.key() @ ErrorCode::SignerNotOwnerOfUser
-    )]
-    pub user: Box<Account<'info, User>>,
-
+    
     #[account(
         init,
         seeds = [
-            crate::ID.as_ref(), 
-            env!("CARGO_PKG_VERSION").as_bytes(), 
-            signer.key().as_ref(), 
+            user.owner.as_ref(), 
             game.key().as_ref(), 
             current_round.key().as_ref(), 
             &[current_round.round_number.to_be_bytes()[0]], 
@@ -222,31 +225,36 @@ pub struct InitUserPrediction<'info> {
         ],
         bump, 
         payer = signer,
-        space = std::mem::size_of::<UserPrediction>() + 8,
+        space = std::mem::size_of::<UserPrediction>() + 8
     )]
     pub user_prediction: Box<Account<'info, UserPrediction>>,
 
     #[account(
-        mut,
-        constraint = vault.owner == to_token_account.owner @ ErrorCode::VaultOwnerNotToTokenAccountOwner,
-        constraint = (vault.up_token_account_pubkey == to_token_account.key() || vault.down_token_account_pubkey == to_token_account.key()) @ ErrorCode::ToTokenAccountNotPartOfVault,
-        token::mint = token_mint.key()
+        constraint = vault.vault_ata == vault_ata.key()
     )]
-    pub to_token_account: Box<Account<'info, TokenAccount>>,
+    pub vault: Box<Account<'info, Vault>>,
 
     #[account(
         mut,
-        constraint = signer.key() == from_token_account.owner @ ErrorCode::SignerNotOwnerOfFromTokenAccount,
-        constraint = from_token_account.amount > 0 @ ErrorCode::FromTokenAccountZeroBalance,
-        token::mint = token_mint.key()
+        constraint = vault_ata.owner == vault.vault_authority @ ErrorCode::RoundOwnerNotVaultOwner
+    )]
+    pub vault_ata: Box<Account<'info, TokenAccount>>,
+
+    #[account(
+        mut,
+        constraint = from_token_account.amount > 0 @ ErrorCode::FromTokenAccountZeroBalance
     )]
     pub from_token_account: Box<Account<'info, TokenAccount>>,
 
+    /// CHECK:
+    #[account(
+        constraint = from_token_account_authority.key() == from_token_account.owner
+    )]
+    pub from_token_account_authority: AccountInfo<'info>,
+
+
     pub token_mint: Box<Account<'info, Mint>>,
-
     pub token_program: Program<'info, Token>,
-
-    // required for Account
     pub system_program: Program<'info, System>,
 }
 
@@ -254,18 +262,6 @@ pub struct InitUserPrediction<'info> {
 pub struct CloseUserPrediction<'info> { 
     #[account(mut)]
     pub signer: Signer<'info>,
-
-    #[account()]
-    pub game: Box<Account<'info, Game>>,
-
-    #[account(
-        constraint = game.key() == round.game @ ErrorCode::RoundGameKeyNotEqual,
-        constraint = round.finished @ ErrorCode::RoundNotFinished
-    )]
-    pub round: Box<Account<'info, Round>>,
-
-    #[account()]
-    pub user: Box<Account<'info, User>>,
 
     #[account(
         mut, 
@@ -276,7 +272,7 @@ pub struct CloseUserPrediction<'info> {
 
     #[account(
         mut,
-        constraint = user.owner == user_prediction_close_receiver.key() @ ErrorCode::UserOwnerNotReceiver
+        constraint = user_prediction.owner == user_prediction_close_receiver.key() @ ErrorCode::UserOwnerNotReceiver
     )]
     pub user_prediction_close_receiver: SystemAccount<'info>
 }

@@ -5,7 +5,8 @@
     },
     "dependencies": {
         "@project-serum/anchor": "^0.24.2",
-        "@solana/spl-token": "^0.2.0"
+        "@solana/spl-token": "^0.2.0",
+        "polling-account-fetcher": "1.0.9"
     },
     "devDependencies": {
         "@types/bn.js": "^5.1.0",

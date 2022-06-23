@@ -42,6 +42,27 @@
   dependencies:
     "@hapi/hoek" "^9.0.0"
 
+"@project-serum/anchor@^0.22.1":
+  version "0.22.1"
+  resolved "https://registry.yarnpkg.com/@project-serum/anchor/-/anchor-0.22.1.tgz#698a9620f94691de0a12bbc650a5c8380e2f0e8a"
+  integrity sha512-5pHeyvQhzLahIQ8aZymmDMZJAJFklN0joZdI+YIqFkK2uU/mlKr6rBLQjxysf/j1mLLiNG00tdyLfUtTAdQz7w==
+  dependencies:
+    "@project-serum/borsh" "^0.2.5"
+    "@solana/web3.js" "^1.17.0"
+    base64-js "^1.5.1"
+    bn.js "^5.1.2"
+    bs58 "^4.0.1"
+    buffer-layout "^1.2.2"
+    camelcase "^5.3.1"
+    cross-fetch "^3.1.5"
+    crypto-hash "^1.3.0"
+    eventemitter3 "^4.0.7"
+    find "^0.3.0"
+    js-sha256 "^0.9.0"
+    pako "^2.0.3"
+    snake-case "^3.0.4"
+    toml "^3.0.0"
+
 "@project-serum/anchor@^0.24.2":
   version "0.24.2"
   resolved "https://registry.yarnpkg.com/@project-serum/anchor/-/anchor-0.24.2.tgz#a3c52a99605c80735f446ca9b3a4885034731004"
@@ -113,6 +134,28 @@
     "@solana/buffer-layout-utils" "^0.2.0"
     "@solana/web3.js" "^1.32.0"
     start-server-and-test "^1.14.0"
+
+"@solana/web3.js@^1.17.0":
+  version "1.44.0"
+  resolved "https://registry.yarnpkg.com/@solana/web3.js/-/web3.js-1.44.0.tgz#233f7bd268520a0ce852ff7f92ded150c5fad0f5"
+  integrity sha512-KHf7o8sM5FlxYGHGroD7IJeCCOmjFITdBIXq4cO5xPFQ8O6Y26FWfYqIXqY1dXI29t240g0m1GYPssCp5UVgZg==
+  dependencies:
+    "@babel/runtime" "^7.12.5"
+    "@ethersproject/sha2" "^5.5.0"
+    "@solana/buffer-layout" "^4.0.0"
+    bigint-buffer "^1.1.5"
+    bn.js "^5.0.0"
+    borsh "^0.7.0"
+    bs58 "^4.0.1"
+    buffer "6.0.1"
+    fast-stable-stringify "^1.0.0"
+    jayson "^3.4.4"
+    js-sha3 "^0.8.0"
+    node-fetch "2"
+    rpc-websockets "^7.4.2"
+    secp256k1 "^4.0.2"
+    superstruct "^0.14.2"
+    tweetnacl "^1.0.0"
 
 "@solana/web3.js@^1.32.0", "@solana/web3.js@^1.36.0":
   version "1.43.4"
@@ -661,6 +704,13 @@ find-up@5.0.0:
     locate-path "^6.0.0"
     path-exists "^4.0.0"
 
+find@^0.3.0:
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/find/-/find-0.3.0.tgz#4082e8fc8d8320f1a382b5e4f521b9bc50775cb8"
+  integrity sha512-iSd+O4OEYV/I36Zl8MdYJO0xD82wH528SaCieTVHhclgiYNe9y+yPKSwK+A7/WsmHL1EZ+pYUJBXWTL5qofksw==
+  dependencies:
+    traverse-chain "~0.1.0"
+
 flat@^5.0.2:
   version "5.0.2"
   resolved "https://registry.yarnpkg.com/flat/-/flat-5.0.2.tgz#8ca6fe332069ffa9d324c327198c598259ceb241"
@@ -1137,6 +1187,14 @@ picomatch@^2.0.4, picomatch@^2.2.1:
   resolved "https://registry.yarnpkg.com/picomatch/-/picomatch-2.3.1.tgz#3ba3833733646d9d3e4995946c1365a67fb07a42"
   integrity sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA==
 
+polling-account-fetcher@1.0.9:
+  version "1.0.9"
+  resolved "https://registry.yarnpkg.com/polling-account-fetcher/-/polling-account-fetcher-1.0.9.tgz#e363d5e4f45dc51652d8c8a2843043f59f568f21"
+  integrity sha512-NgsqbEuESOdQi5KDZRBEWlFsMCkS/EKn1jnhGfQNRWmJx9GbzSgcfjzK/RNcy9DagCTWaMxSqLCF7ovV2QjQYg==
+  dependencies:
+    "@project-serum/anchor" "^0.22.1"
+    undici "^5.5.1"
+
 prettier@^2.6.2:
   version "2.6.2"
   resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.6.2.tgz#e26d71a18a74c3d0f0597f55f01fb6c06c206032"
@@ -1356,6 +1414,11 @@ tr46@~0.0.3:
   resolved "https://registry.yarnpkg.com/tr46/-/tr46-0.0.3.tgz#8184fd347dac9cdc185992f3a6622e14b9d9ab6a"
   integrity sha1-gYT9NH2snNwYWZLzpmIuFLnZq2o=
 
+traverse-chain@~0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/traverse-chain/-/traverse-chain-0.1.0.tgz#61dbc2d53b69ff6091a12a168fd7d433107e40f1"
+  integrity sha512-up6Yvai4PYKhpNp5PkYtx50m3KbwQrqDwbuZP/ItyL64YEWHAvH6Md83LFLV/GRSk/BoUVwwgUzX6SOQSbsfAg==
+
 ts-mocha@^10.0.0:
   version "10.0.0"
   resolved "https://registry.yarnpkg.com/ts-mocha/-/ts-mocha-10.0.0.tgz#41a8d099ac90dbbc64b06976c5025ffaebc53cb9"
@@ -1408,6 +1471,11 @@ typescript@^4.3.5:
   version "4.7.2"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.7.2.tgz#1f9aa2ceb9af87cca227813b4310fff0b51593c4"
   integrity sha512-Mamb1iX2FDUpcTRzltPxgWMKy3fhg0TN378ylbktPGPK/99KbDtMQ4W1hwgsbPAsG3a0xKa1vmw4VKZQbkvz5A==
+
+undici@^5.5.1:
+  version "5.5.1"
+  resolved "https://registry.yarnpkg.com/undici/-/undici-5.5.1.tgz#baaf25844a99eaa0b22e1ef8d205bffe587c8f43"
+  integrity sha512-MEvryPLf18HvlCbLSzCW0U00IMftKGI5udnjrQbC5D4P0Hodwffhv+iGfWuJwg16Y/TK11ZFK8i+BPVW2z/eAw==
 
 utf-8-validate@^5.0.2:
   version "5.0.9"

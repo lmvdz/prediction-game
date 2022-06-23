@@ -143,6 +143,8 @@ pub enum ErrorCode {
     UserOwnerNotReceiver,
     #[msg("Game fee vault authority mismatch")]
     GameFeeVaultTokenAccountAuthorityMismatch,
+    #[msg("Game vault authority mismatch")]
+    GameVaultTokenAccountAuthorityMismatch,
     #[msg("Failed to take fee")]
     FailedToTakeFee,
     #[msg("Minimum Predicion amount not met")]
@@ -152,5 +154,41 @@ pub enum ErrorCode {
     #[msg("Test Round Rollover Failed")]
     TestRoundRolloverFailed,
     #[msg("Round Predictions Not Allowed")]
-    RoundPredictionsNotAllowed
+    RoundPredictionsNotAllowed,
+    #[msg("Owner not User Owner")]
+    OwnerNotUserOwner,
+    #[msg("Owner not Round Owner")]
+    OwnerNotRoundOwner,
+    #[msg("Round Key Not Game Current Key")]
+    RoundKeyNotGameCurrentKey,
+    #[msg("Owner Not Receiver")]
+    OwnerNotReceiver,
+    #[msg("Game Owner Not Vault Owner")]
+    GameOwnerNotVaultOwner,
+    #[msg("Vault Up Token Account Does Not Match Provided Up Token Account")]
+    VaultUpTokenAccountDoesNotMatchProvidedUpTokenAccount,
+    #[msg("Signer Not Owner Of Up Token Account")]
+    SignerNotOwnerOfUpTokenAccount,
+    #[msg("Vault Down Token Account Does Not Match Provided Down Token Account")]
+    VaultDownTokenAccountDoesNotMatchProvidedDownTokenAccount,
+    #[msg("Signer Not Owner Of Down Token Account")]
+    SignerNotOwnerOfDownTokenAccount,
+    #[msg("Prediction and User Owner Mismatch")]
+    PredictionAndUserOwnerMismatch,
+    #[msg("Insufficient Claimable Amount")]
+    InsufficientClaimableAmount,
+    #[msg("Failed to Claim")]
+    FailedToClaim,
+    #[msg("Fee Already Collected")]
+    FeeAlreadyCollected,
+    #[msg("Round Fee Not Collected")]
+    RoundFeeNotCollected,
+    #[msg("Round Cranks Already Paid")]
+    RoundCranksAlreadyPaid,
+    #[msg("Round Cranks Not Paid")]
+    RoundCranksNotPaid,
+    #[msg("Game Vault Mismatch")]
+    GameVaultMismatch,
+    #[msg("Game Fee Vault Mismatch")]
+    GameFeeVaultMismatch
 }

@@ -3,7 +3,7 @@ import { Program } from "@project-serum/anchor";
 import { closeAccountInstructionData, createAssociatedTokenAccount, createInitializeMintInstruction, createMint, getAccount, getAssociatedTokenAddress, getMinimumBalanceForRentExemptMint, getOrCreateAssociatedTokenAccount, mintTo, MINT_SIZE, TOKEN_PROGRAM_ID, transfer } from "@solana/spl-token";
 import { Keypair, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Transaction, SYSVAR_CLOCK_PUBKEY, Connection } from "@solana/web3.js";
 import { BN } from "bn.js";
-import { PredictionGame } from "../target/types/prediction_game";
+import { PredictionGame } from "../sdk/src/types/prediction_game";
 
 
 function chunk(array : Array<any>, size: number) {
@@ -42,7 +42,7 @@ describe("prediction_game", () => {
 
   it("send_SOL_to_players", async () => {
     let txCount = 0;
-    Promise.allSettled(players.map(async (player) => {
+    await Promise.allSettled(players.map(async (player) => {
       await anchor.web3.sendAndConfirmTransaction(program.provider.connection, new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: owner.publicKey,
@@ -58,39 +58,47 @@ describe("prediction_game", () => {
 
   it("init_game_and_first_round!", async () => {    
     await createMint(program.provider.connection, owner, owner.publicKey, owner.publicKey, mintDecimals, mint);
+    
     const [gamePubkey, _gameBump] =
       await PublicKey.findProgramAddress(
         [program.programId.toBuffer(), Buffer.from(program.idl.version), owner.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('game'))],
         program.programId
       );
+
+    console.log('gamePubkey', gamePubkey.toBase58());
     
     const [gameFeeVaultPubkey, _gameFeeVaultBump] =
       await PublicKey.findProgramAddress(
         [program.programId.toBuffer(), Buffer.from(program.idl.version), owner.publicKey.toBuffer(), gamePubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('game_fee_vault'))],
         program.programId
       );
+
+      console.log('gameFeeVaultPubkey', gameFeeVaultPubkey.toBase58());
     const roundNumberBuffer = new anchor.BN(1).toArrayLike(Buffer, 'be', 4);
     const [roundPubkey, _roundBump] =
       await PublicKey.findProgramAddress(
         [
           program.programId.toBuffer(), 
           Buffer.from(program.idl.version), 
-          owner.publicKey.toBuffer(), 
           gamePubkey.toBuffer(),
-          roundNumberBuffer.slice(0, 1),
-          roundNumberBuffer.slice(1, 2),
-          roundNumberBuffer.slice(2, 3),
-          roundNumberBuffer.slice(3, 4),
+          roundNumberBuffer.subarray(0, 1),
+          roundNumberBuffer.subarray(1, 2),
+          roundNumberBuffer.subarray(2, 3),
+          roundNumberBuffer.subarray(3, 4),
           Buffer.from(anchor.utils.bytes.utf8.encode('round'))
         ],
         program.programId
       );
+
+    console.log('roundPubkey', roundPubkey.toBase58());
 
     const [vaultPubkey, _vaultBump] =
       await PublicKey.findProgramAddress(
         [program.programId.toBuffer(), Buffer.from(program.idl.version), owner.publicKey.toBuffer(), gamePubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('vault'))],
         program.programId
       );
+
+      console.log('vaultPubkey', vaultPubkey.toBase58());
     
     const [upVaultPubkey, _upVaultBump] =
       await PublicKey.findProgramAddress(
@@ -98,16 +106,18 @@ describe("prediction_game", () => {
         program.programId
       );
 
+      console.log('upVaultPubkey', upVaultPubkey.toBase58());
+
     const [downVaultPubkey, _downVaultBump] =
       await PublicKey.findProgramAddress(
         [program.programId.toBuffer(), Buffer.from(program.idl.version), owner.publicKey.toBuffer(), gamePubkey.toBuffer(), vaultPubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('down'))],
         program.programId
       );
 
-    
+    console.log('downVaultPubkey', downVaultPubkey.toBase58());
     
     try {
-      const initSignature = await program.methods.initGameInstruction(_upVaultBump, _downVaultBump, mintDecimals).accounts({
+      const initSignature = await program.methods.initGameInstruction("SOL", 30, 1000).accounts({
         owner: owner.publicKey,
         game: gamePubkey,
         gameFeeVault: gameFeeVaultPubkey,
@@ -121,12 +131,13 @@ describe("prediction_game", () => {
       }).signers([owner]).rpc();
 
       const initRoundSignature = await program.methods.initFirstRoundInstruction().accounts({
-        owner: owner.publicKey,
+        signer: owner.publicKey,
         game: gamePubkey,
         round: roundPubkey,
-        priceProgram: new PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"), // chainlink
+        crank: crankPubkey,
+        // priceProgram: new PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"), // chainlink
         // priceFeed: new PublicKey("CcPVS9bqyXbD9cLnTbhhHazLsrua8QMFUHTutPtjyDzq"), // SOL - mainnet - chainlink
-        priceFeed: new PublicKey("HgTtcbcmp5BeThax5AU8vg4VwK79qAvAKKFMs8txMLW6"), // SOL - devnet - chainlink
+        // priceFeed: new PublicKey("HgTtcbcmp5BeThax5AU8vg4VwK79qAvAKKFMs8txMLW6"), // SOL - devnet - chainlink
         // priceProgram: new PublicKey("FsJ3A3u2vn5cTVofAjvy6y5kwABJAqYWpe4975bi2epH"), // pyth program
         // priceFeed: new PublicKey("H6ARHf6YXhGYeQfUzQNGk6rDNnLBQKrenN712K4AQJEG"), // SOL - mainnet - pyth
         // priceFeed: new PublicKey("J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix"), // SOL - devnet - pyth
@@ -260,7 +271,7 @@ describe("prediction_game", () => {
           )
         const [playerTokenAccountPubkey, _playerTokenAccountPubkeyBump] =
           await PublicKey.findProgramAddress(
-            [program.programId.toBuffer(), Buffer.from(program.idl.version), player.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('token_account'))],
+            [program.programId.toBuffer(), Buffer.from(program.idl.version), player.publicKey.toBuffer(), mint.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('token_account'))],
             program.programId
           )
 
@@ -271,12 +282,18 @@ describe("prediction_game", () => {
 
           owner: player.publicKey,
           user: playerPubkey,
+          systemProgram: anchor.web3.SystemProgram.programId
+      
+        }).signers([player]).rpc();
+
+        let initPlayerTokenAccountSignature = await program.methods.initUserTokenAccountInstruction().accounts({
+          owner: player.publicKey,
+          user: playerPubkey,
           tokenAccount: playerTokenAccountPubkey,
           tokenMint: mint.publicKey,
           rent: SYSVAR_RENT_PUBKEY,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: anchor.web3.SystemProgram.programId
-      
         }).signers([player]).rpc();
       
         // console.log("init player transaction signature", initPlayerSignature);
@@ -444,7 +461,7 @@ describe("prediction_game", () => {
   
               const [playerTokenAccountPubkey, _playerTokenAccountPubkeyBump] =
                 await PublicKey.findProgramAddress(
-                  [program.programId.toBuffer(), Buffer.from(program.idl.version), player.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('token_account'))],
+                  [program.programId.toBuffer(), Buffer.from(program.idl.version), player.publicKey.toBuffer(), mint.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('token_account'))],
                   program.programId
                 )
               return [
@@ -601,7 +618,6 @@ describe("prediction_game", () => {
     
       const initNextRoundSignature = await program.methods.initSecondRoundInstruction().accounts({
         owner: owner.publicKey,
-        receiver: owner.publicKey,
         game: gamePubkey,
         vault: vaultPubkey,
         firstRound: currentRoundPubkey,
@@ -717,9 +733,9 @@ describe("prediction_game", () => {
             [program.programId.toBuffer(), Buffer.from(program.idl.version), player.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('user'))],
             program.programId
           )
-        const [playerTokenAccountPubkey, _playerTokenAccountPubkeyBump] =
+          const [playerTokenAccountPubkey, _playerTokenAccountPubkeyBump] =
           await PublicKey.findProgramAddress(
-            [program.programId.toBuffer(), Buffer.from(program.idl.version), player.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('token_account'))],
+            [program.programId.toBuffer(), Buffer.from(program.idl.version), player.publicKey.toBuffer(), mint.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('token_account'))],
             program.programId
           )
 
@@ -923,9 +939,9 @@ describe("prediction_game", () => {
                   program.programId
                 )
   
-              const [playerTokenAccountPubkey, _playerTokenAccountPubkeyBump] =
+                const [playerTokenAccountPubkey, _playerTokenAccountPubkeyBump] =
                 await PublicKey.findProgramAddress(
-                  [program.programId.toBuffer(), Buffer.from(program.idl.version), player.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('token_account'))],
+                  [program.programId.toBuffer(), Buffer.from(program.idl.version), player.publicKey.toBuffer(), mint.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('token_account'))],
                   program.programId
                 )
               return [
@@ -1014,14 +1030,12 @@ describe("prediction_game", () => {
     // const currentRound = await program.account.round.fetch(game.currentRound);
     
 
-    let previousRoundNumber;
+    let previousRoundNumber = new anchor.BN(game.roundNumber-1)
     const u32MAX = new anchor.BN("4294967295")
-
-    if (game.currentRound.toBase58() !== game.previousRound.toBase58()) {
-      previousRoundNumber = BN.max(new anchor.BN(1), BN.min(u32MAX, new anchor.BN(game.roundNumber-1)))
-    } else {
-      previousRoundNumber = new anchor.BN( Math.max(1, game.roundNumber-1) )
+    if (previousRoundNumber.lt(new anchor.BN(1))) {
+      previousRoundNumber = u32MAX
     }
+    
     
 
     const previousRoundNumberBuffer = previousRoundNumber.toArrayLike(Buffer, 'be', 4);
@@ -1223,9 +1237,9 @@ describe("prediction_game", () => {
             [program.programId.toBuffer(), Buffer.from(program.idl.version), player.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('user'))],
             program.programId
           )
-        const [playerTokenAccountPubkey, _playerTokenAccountPubkeyBump] =
+          const [playerTokenAccountPubkey, _playerTokenAccountPubkeyBump] =
           await PublicKey.findProgramAddress(
-            [program.programId.toBuffer(), Buffer.from(program.idl.version), player.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('token_account'))],
+            [program.programId.toBuffer(), Buffer.from(program.idl.version), player.publicKey.toBuffer(), mint.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('token_account'))],
             program.programId
           )
 
@@ -1429,9 +1443,9 @@ describe("prediction_game", () => {
                   program.programId
                 )
   
-              const [playerTokenAccountPubkey, _playerTokenAccountPubkeyBump] =
+                const [playerTokenAccountPubkey, _playerTokenAccountPubkeyBump] =
                 await PublicKey.findProgramAddress(
-                  [program.programId.toBuffer(), Buffer.from(program.idl.version), player.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('token_account'))],
+                  [program.programId.toBuffer(), Buffer.from(program.idl.version), player.publicKey.toBuffer(), mint.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('token_account'))],
                   program.programId
                 )
               return [
@@ -1565,9 +1579,9 @@ describe("prediction_game", () => {
           [program.programId.toBuffer(), Buffer.from(program.idl.version), player.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('user'))],
           program.programId
         )
-      const [playerTokenAccountPubkey, _playerTokenAccountPubkeyBump] =
+        const [playerTokenAccountPubkey, _playerTokenAccountPubkeyBump] =
         await PublicKey.findProgramAddress(
-          [program.programId.toBuffer(), Buffer.from(program.idl.version), player.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('token_account'))],
+          [program.programId.toBuffer(), Buffer.from(program.idl.version), player.publicKey.toBuffer(), mint.publicKey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('token_account'))],
           program.programId
         )
 

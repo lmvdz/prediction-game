@@ -6,8 +6,16 @@ import vuetify from 'vite-plugin-vuetify'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
+	build: {
+		commonjsOptions: {
+			transformMixedEsModules: true
+		  }
+	},
+	define: {
+		'process.env': process.env
+	},
+	plugins: [
 		vue(),
 		vuetify({ autoImport: true }),
-]
+	]
 })
