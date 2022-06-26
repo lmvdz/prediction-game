@@ -117,11 +117,9 @@ async function initFromGameSeed(workspace: Workspace, gameSeed: GameSeed, mint: 
     
 }
 
-export async function init(owner: Keypair, endpoint: string, cluster: Cluster, mint: Mint) {
+export async function init(owner: Keypair, connection: Connection, cluster: Cluster, mint: Mint) {
 
     const botWallet: NodeWallet = new NodeWallet(owner);
-
-    const connection: Connection = new Connection(endpoint)
     const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' })
 
     if (cluster === 'devnet') {
