@@ -117,7 +117,7 @@ function initNewTxStatus() : TxStatus {
       loading: false,
       show: false
   });
-  let txStatus = txStatusList[index-1];
+  let txStatus = txStatusList.value[index-1];
   txStatus.index = index-1;
   return txStatus;
 }
@@ -372,7 +372,7 @@ async function airdrop(game: Game) {
       txStatus.subtitle = ''
       txStatus.loading = true
       txStatus.show = true
-      let { status, data } = (await axios.get('http://localhost:8444/airdrop/'+(await getTokenAccount(game)).address.toBase58()));
+      let { status, data } = (await axios.get('https://faucet.solpredict.io/airdrop/'+getTokenAccount(game).address.toBase58()));
       if (status === 200) {
         txStatus.loading = false;
         txStatus.signatures.push(data)

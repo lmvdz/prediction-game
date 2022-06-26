@@ -73,6 +73,10 @@
         {
           "name": "crankBps",
           "type": "u16"
+        },
+        {
+          "name": "roundLength",
+          "type": "i64"
         }
       ]
     },
@@ -180,12 +184,7 @@
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "roundLength",
-          "type": "i64"
-        }
-      ]
+      "args": []
     },
     {
       "name": "initSecondRoundInstruction",
@@ -910,6 +909,10 @@
           {
             "name": "previousRound",
             "type": "publicKey"
+          },
+          {
+            "name": "roundLength",
+            "type": "i64"
           },
           {
             "name": "vault",
@@ -1713,8 +1716,5 @@
       "name": "GameFeeVaultMismatch",
       "msg": "Game Fee Vault Mismatch"
     }
-  ],
-  "metadata": {
-    "address": "EPZXCy45VtSdGA7darn8LcVErMYecZS4d7XYG8pwLExb"
-  }
+  ]
 }

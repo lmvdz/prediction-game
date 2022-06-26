@@ -28,16 +28,16 @@ pub mod prediction_game {
         Ok(())
     }
 
-    pub fn init_game_instruction(ctx: Context<InitializeGame>, oracle: u8, base_symbol: String, fee_bps: u16, crank_bps: u16) -> Result<()> {
-        instructions::game::init_game(ctx, oracle, base_symbol, fee_bps, crank_bps)
+    pub fn init_game_instruction(ctx: Context<InitializeGame>, oracle: u8, base_symbol: String, fee_bps: u16, crank_bps: u16, round_length: i64) -> Result<()> {
+        instructions::game::init_game(ctx, oracle, base_symbol, fee_bps, crank_bps, round_length)
     }
 
     pub fn init_vault_instruction(ctx: Context<InitializeVault>, vault_nonce: u8, fee_vault_nonce: u8) -> Result<()> {
         instructions::vault::init_vault(ctx, vault_nonce, fee_vault_nonce)
     }
 
-    pub fn init_first_round_instruction(ctx: Context<InitFirstRound>, round_length: i64) -> Result<()> {
-        instructions::round::init_first_round(ctx, round_length)
+    pub fn init_first_round_instruction(ctx: Context<InitFirstRound>) -> Result<()> {
+        instructions::round::init_first_round(ctx)
     }
 
     pub fn init_second_round_instruction(ctx: Context<InitSecondRound>) -> Result<()> {

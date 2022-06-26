@@ -76,6 +76,10 @@ exports.IDL = {
                 {
                     "name": "crankBps",
                     "type": "u16"
+                },
+                {
+                    "name": "roundLength",
+                    "type": "i64"
                 }
             ]
         },
@@ -183,12 +187,7 @@ exports.IDL = {
                     "isSigner": false
                 }
             ],
-            "args": [
-                {
-                    "name": "roundLength",
-                    "type": "i64"
-                }
-            ]
+            "args": []
         },
         {
             "name": "initSecondRoundInstruction",
@@ -913,6 +912,10 @@ exports.IDL = {
                     {
                         "name": "previousRound",
                         "type": "publicKey"
+                    },
+                    {
+                        "name": "roundLength",
+                        "type": "i64"
                     },
                     {
                         "name": "vault",

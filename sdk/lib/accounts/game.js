@@ -214,11 +214,11 @@ class Game {
             return this;
         }
     }
-    static async initializeGame(workspace, baseSymbol, vault, oracle, priceProgram, priceFeed, feeBps, crankBps) {
+    static async initializeGame(workspace, baseSymbol, vault, oracle, priceProgram, priceFeed, feeBps, crankBps, roundLength) {
         const [gamePubkey, _gamePubkeyBump] = await workspace.programAddresses.getGamePubkey(vault, priceProgram, priceFeed);
         // console.log(baseSymbol, vaultPubkeyBump, feeVaultPubkeyBump)
         return new Promise((resolve, reject) => {
-            workspace.program.methods.initGameInstruction(oracle, baseSymbol, feeBps, crankBps).accounts({
+            workspace.program.methods.initGameInstruction(oracle, baseSymbol, feeBps, crankBps, roundLength).accounts({
                 owner: workspace.owner,
                 game: gamePubkey,
                 vault: vault.account.address,

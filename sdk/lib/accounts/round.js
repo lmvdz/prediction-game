@@ -59,10 +59,10 @@ class Round {
                 (oraclePrice.mod(new anchor.BN(10).pow(new anchor.BN(this.account.roundPriceDecimals))).toNumber() / (10 ** this.account.roundPriceDecimals))).toFixed(2));
         }
     }
-    static initializeFirst(workspace, game, crank, roundLength) {
+    static initializeFirst(workspace, game, crank) {
         return new Promise((resolve, reject) => {
             workspace.programAddresses.getRoundPubkey(game.account.address, new anchor.BN(1)).then(([roundPubkey, _roundPubkeyBump]) => {
-                workspace.program.methods.initFirstRoundInstruction(roundLength).accounts({
+                workspace.program.methods.initFirstRoundInstruction().accounts({
                     signer: workspace.owner,
                     game: game.account.address,
                     crank: crank.account.address,

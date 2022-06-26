@@ -41,7 +41,7 @@ export default class Round implements DataUpdatable<RoundAccount> {
     constructor(account: RoundAccount);
     updateData(data: RoundAccount): Promise<boolean>;
     convertOraclePriceToNumber(oraclePrice: anchor.BN, game: Game): number;
-    static initializeFirst(workspace: Workspace, game: Game, crank: Crank, roundLength: anchor.BN): Promise<Game>;
+    static initializeFirst(workspace: Workspace, game: Game, crank: Crank): Promise<Game>;
     static initializeSecond(workspace: Workspace, game: Game, crank: Crank): Promise<Game>;
     static initializeNext(workspace: Workspace, game: Game, crank: Crank): Promise<Game>;
 }

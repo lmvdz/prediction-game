@@ -4,7 +4,7 @@ use crate::errors::ErrorCode;
 
 use crate::state::{Round, Game, Crank, get_price};
 
-pub fn init_first_round(ctx: Context<InitFirstRound>, round_length: i64) -> Result<()> {
+pub fn init_first_round(ctx: Context<InitFirstRound>) -> Result<()> {
     let round = &mut ctx.accounts.round;
     let game = &mut ctx.accounts.game;
 
@@ -16,14 +16,14 @@ pub fn init_first_round(ctx: Context<InitFirstRound>, round_length: i64) -> Resu
     game.previous_round = round.key();
 
     round.owner = game.owner.key();
-    round.game = ctx.accounts.game.key();
+    round.game = game.key();
     round.address = round.key();
 
     round.round_number = 1_u32; // starting round is 1
 
     let now = Clock::get()?.unix_timestamp;
 
-    round.round_length = round_length;
+    round.round_length = game.round_length;
 
     round.round_start_time = now;
     round.round_current_time = now;
@@ -99,7 +99,7 @@ fn init_round_shared<'info>(next_round: &mut Box<Account<Round>>, current_round:
 
     let now = Clock::get()?.unix_timestamp;
 
-    next_round.round_length = current_round.round_length;
+    next_round.round_length = game.round_length;
 
     next_round.round_start_time = now;
     next_round.round_current_time = now;

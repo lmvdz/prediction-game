@@ -15,6 +15,7 @@ export declare type GameAccount = {
     roundNumber: number;
     currentRound: PublicKey;
     previousRound: PublicKey;
+    roundLength: number;
     vault: PublicKey;
     unclaimedFees: anchor.BN;
     feeBps: number;
@@ -49,7 +50,7 @@ export default class Game implements DataUpdatable<GameAccount> {
     claimFee(workspace: Workspace, vault: Vault): Promise<Game>;
     payoutCranksInstruction(workspace: Workspace, remainingAccounts: AccountMeta[]): Promise<TransactionInstruction>;
     payoutCranks(workspace: Workspace): Promise<Game>;
-    static initializeGame(workspace: Workspace, baseSymbol: string, vault: Vault, oracle: Oracle, priceProgram: PublicKey, priceFeed: PublicKey, feeBps: number, crankBps: number): Promise<Game>;
+    static initializeGame(workspace: Workspace, baseSymbol: string, vault: Vault, oracle: Oracle, priceProgram: PublicKey, priceFeed: PublicKey, feeBps: number, crankBps: number, roundLength: anchor.BN): Promise<Game>;
     updateGame(workspace: Workspace, crank: Crank): Promise<Game>;
     settlePredictionsInstruction(workspace: Workspace, crank: Crank, remainingAccounts: AccountMeta[]): Promise<TransactionInstruction>;
     settlePredictions(workspace: Workspace, crank: Crank): Promise<Game>;

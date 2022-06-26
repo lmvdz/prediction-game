@@ -13,7 +13,7 @@ use crate::state::Vault;
 use crate::utils::transfer_token_account_signed;
 
 // initialize game
-pub fn init_game(ctx: Context<InitializeGame>, oracle: u8, base_symbol: String, fee_bps: u16, crank_bps: u16) -> Result<()> {
+pub fn init_game(ctx: Context<InitializeGame>, oracle: u8, base_symbol: String, fee_bps: u16, crank_bps: u16, round_length: i64) -> Result<()> {
 
     let game = &mut ctx.accounts.game;
     let owner = &ctx.accounts.owner;
@@ -27,6 +27,7 @@ pub fn init_game(ctx: Context<InitializeGame>, oracle: u8, base_symbol: String, 
 
     game.unclaimed_fees = 0;
 
+    game.round_length = round_length;
     game.round_number = 1_u32;
     game.total_volume = 0;
     game.total_volume_rollover = 0;

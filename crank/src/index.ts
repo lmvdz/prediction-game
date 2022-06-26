@@ -1,21 +1,17 @@
 import { Cluster, PublicKey } from "@solana/web3.js";
 import { Connection, Keypair } from "@solana/web3.js";
-import { getAccount } from "@solana/spl-token";
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
 import * as anchor from "@project-serum/anchor"
 import { config } from 'dotenv';
 import bs58 from 'bs58';
 import Game, { GameAccount, Oracle } from "sdk/lib/accounts/game";
-import { createMint, getMint, Mint, MintLayout, mintTo } from "@solana/spl-token";
 import Round, { RoundAccount } from "sdk/lib/accounts/round";
 import { fetchAccountRetry } from "sdk/lib/util";
 import { Workspace } from "sdk";
-import express from 'express';
-import cors from 'cors';
-import bodyParser from 'body-parser';
 import User, { UserAccount } from "sdk/lib/accounts/user";
 import Crank, { CrankAccount } from "sdk/lib/accounts/crank";
 import Vault, { VaultAccount } from "sdk/lib/accounts/vault";
+import { ProgramAccount } from "@project-serum/anchor";
 
 config({path: '.env.local'})
 
@@ -49,119 +45,36 @@ try {
 
 const botWallet: NodeWallet = new NodeWallet(owner);
 
-// const connection: Connection = new Connection('http://localhost:8899');
-const connection: Connection = new Connection(endpoint)
-const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' })
-const mintKeypair = Keypair.fromSecretKey(bs58.decode("3dS4W9gKuGQcvA4s9dSRKLGJ8UAdu9ZeFLxJfv6WLK4BzZZnt3L2WNSJchjtgLi7BnxMTcpPRU1AG9yfEkR2cxDT"))
-const mintDecimals = 6;
 
-let gameSeeds: Array<GameSeed> = [ 
-    { 
-        baseSymbol: "SOL", 
-        priceProgram: new PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"), 
-        priceFeed: new PublicKey("HgTtcbcmp5BeThax5AU8vg4VwK79qAvAKKFMs8txMLW6"),
-        roundLength: new anchor.BN(300),
-        oracle: Oracle.Chainlink
-    }, 
-    {
-        baseSymbol: "BTC", 
-        priceProgram: new PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"), 
-        priceFeed: new PublicKey("CzZQBrJCLqjXRfMjRN3fhbxur2QYHUzkpaRwkWsiPqbz"),
-        roundLength: new anchor.BN(300),
-        oracle: Oracle.Chainlink
-    }, 
-    {
-        baseSymbol: "ETH", 
-        priceProgram: new PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"), 
-        priceFeed: new PublicKey("2ypeVyYnZaW2TNYXXTaZq9YhYvnqcjCiifW1C6n8b7Go"),
-        roundLength: new anchor.BN(300),
-        oracle: Oracle.Chainlink
-    }
-] as Array<GameSeed>;
-
-async function createFakeMint(connection: Connection, keypair?: Keypair, mintDecimals = 6) : Promise<Mint> {
-    const mintKey = keypair || Keypair.generate();
-
-    try {
-        await createMint(connection, owner, owner.publicKey, owner.publicKey, mintDecimals, mintKey)
-    } catch (error) {
-        console.warn("mint already created");
-    }
-    
-    return await getMint(connection, mintKey.publicKey);
-}
-
-const initVault = (workspace: Workspace, tokenMint: PublicKey) : Promise<Vault> => {
+const loadVault = (workspace: Workspace, vaultPubkey: PublicKey) : Promise<Vault> => {
     return new Promise((resolve, reject) => {
-        Vault.initializeVault(workspace, tokenMint).then(vault => {
-            resolve(vault);
+        fetchAccountRetry<VaultAccount>(workspace, 'vault', (vaultPubkey)).then(vaultAccount => {
+            resolve(new Vault(
+                vaultAccount
+            ));
         }).catch(error => {
+            console.error(error);
             reject(error);
-        })
-    })
-}
-
-const loadVault = (workspace: Workspace, tokenMint: PublicKey) : Promise<Vault> => {
-    return new Promise((resolve, reject) => {
-        initVault(workspace, tokenMint).then((vault: Vault) => {
-            resolve(vault);
-        }).catch((error) => {
-            workspace.programAddresses.getVaultPubkey(tokenMint).then(([vaultPubkey, _vaultPubkeyBump]) => {
-                fetchAccountRetry<VaultAccount>(workspace, 'vault', (vaultPubkey)).then(vaultAccount => {
-                    resolve(new Vault(
-                        vaultAccount
-                    ));
-                }).catch(error => {
-                    console.warn("failed to fetch vault account")
-                    reject(error);
-                })
-            }).catch(error => {
-                reject(error);
-            })
         })
     }) 
 }
 
-const startGame = (workspace: Workspace, baseSymbol: string, vault: Vault, oracle: Oracle, priceProgram: PublicKey, priceFeed: PublicKey) : Promise<Game> => {
-    return new Promise((resolve, reject) => {
-        Game.initializeGame(
-            workspace, 
-            baseSymbol,
-            vault, 
-            oracle,
-            priceProgram, 
-            priceFeed,
-            30,
-            1000
-        ).then(game => {
-            resolve(game);
-        }).catch(error => {
-            reject(error)
-        })
-    })
-}
 
-const loadGame = (workspace: Workspace, baseSymbol: string, vault: Vault, oracle: Oracle, priceProgram: PublicKey, priceFeed: PublicKey) : Promise<Game> => {
+
+const loadGame = (workspace: Workspace, gamePubkey: PublicKey) : Promise<Game> => {
     return new Promise((resolve, reject) => {
-        workspace.programAddresses.getGamePubkey(vault, priceProgram, priceFeed).then(([gamePubkey, _gamePubkeyBump]) => {
-            fetchAccountRetry<GameAccount>(workspace, 'game', (gamePubkey)).then(gameAccount => {
-                resolve(new Game(
-                    gameAccount
-                ));
-            }).catch(error => {
-                console.error(error);
-                startGame(workspace, baseSymbol, vault, oracle, priceProgram, priceFeed).then((game: Game) => {
-                    resolve(game);
-                }).catch((error) => {
-                    reject(error);
-                })
-            })
+        fetchAccountRetry<GameAccount>(workspace, 'game', (gamePubkey)).then(gameAccount => {
+            resolve(new Game(
+                gameAccount
+            ));
         }).catch(error => {
+            console.error(error);
             reject(error);
         })
         
     })
 }
+
 
 const loadCrank = (workspace: Workspace, game: Game, user: User) : Promise<Crank> => {
     return new Promise((resolve, reject) => {
@@ -275,7 +188,7 @@ const updateLoop = (workspace: Workspace, vault: Vault, game: Game, crank: Crank
         workspace.program.provider.connection.getTokenAccountBalance(vault.account.vaultAta).then(vaultTokenAccountBalanaceResponse => {
             workspace.program.provider.connection.getTokenAccountBalance(vault.account.feeVaultAta).then(feeVaultTokenAccountBalanaceResponse => {
                 console.log(
-                    game.currentRound.convertOraclePriceToNumber(game),
+                    game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundStartPrice, game),
                     vaultTokenAccountBalanaceResponse.value.uiAmount,
                     feeVaultTokenAccountBalanaceResponse.value.uiAmount,
                     ((game.account.unclaimedFees.div(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() + ((game.account.unclaimedFees.mod(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() / (10 ** vault.account.tokenDecimals))),
@@ -330,17 +243,16 @@ const updateLoop = (workspace: Workspace, vault: Vault, game: Game, crank: Crank
 
 
 
-const crankLoop = async (workspace: Workspace, mint: Mint, gameSeed: GameSeed) => {
+const crankLoop = async (workspace: Workspace, vault: Vault, game: Game) => {
     try {
+        
         // load required accounts to crank
-        let vault = await loadVault(workspace, mint.address);
-        let game = await loadGame(workspace, gameSeed.baseSymbol, vault, gameSeed.oracle, gameSeed.priceProgram, gameSeed.priceFeed);
         let user = await loadUser(workspace);
         let crank = await loadCrank(workspace, game, user);
 
         // first round initialization
         if (game.account.currentRound.toBase58() === PublicKey.default.toBase58() && game.account.previousRound.toBase58() === PublicKey.default.toBase58()) {
-            game = await Round.initializeFirst(workspace, game, crank, gameSeed.roundLength);
+            game = await Round.initializeFirst(workspace, game, crank);
         } else {
             game = await game.loadRoundData(workspace) ;
         }
@@ -349,7 +261,7 @@ const crankLoop = async (workspace: Workspace, mint: Mint, gameSeed: GameSeed) =
     } catch (error) {
         console.error(error);
         setTimeout(() => {
-            crankLoop(workspace, mint, gameSeed);
+            crankLoop(workspace, vault, game);
         }, 1000)
         
     }
@@ -365,48 +277,23 @@ type GameSeed = {
 
 async function run() {
 
-    let mint = await createFakeMint(connection, mintKeypair, mintDecimals);
+    const connection: Connection = new Connection(endpoint)
+    const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' })
 
-    gameSeeds.forEach(async (gameSeed : GameSeed) => {
-        crankLoop(workspace, mint, gameSeed)
+    let vaults = (await workspace.program.account.vault.all()).map(vaultProgramAccount => {
+        return new Vault(vaultProgramAccount.account)
     })
+    let games = (await workspace.program.account.game.all()).map((gameProgramAccount: ProgramAccount<GameAccount>) => {
+        return new Game(gameProgramAccount.account)
+    })
+
+    games.forEach(game => {
+        let vault = vaults.find(v => v.account.address.toBase58() === game.account.vault.toBase58())
+        if (vault) {
+            crankLoop(workspace, vault, game);
+        }
+    })
+    
 }
 
 run();
-
-
-const app = express();
-app.use(cors());
-app.use(bodyParser.json())
-app.get('/airdrop/:destination', async (req, res) => {
-    let address = new PublicKey(req.params.destination);
-    let tryAirdrop = async (retry=0) => {
-        if (retry < 10) {
-            try {
-                let account = await getAccount(connection, address);
-                if (account.isInitialized) {
-                    mintTo(connection, owner, mintKeypair.publicKey, address, owner, BigInt(((new anchor.BN(1000)).mul((new anchor.BN(10)).pow(new anchor.BN(mintDecimals)))).toString()), [owner]).then((signature) => {
-                        return res.send(signature);
-                    }).catch(error => {
-                        return res.status(500).send(error);
-                    })
-                } else {
-                    setTimeout(() => {
-                        tryAirdrop(retry+1);
-                    }, 1000)
-                }
-            } catch (error) {
-                setTimeout(() => {
-                    tryAirdrop(retry+1);
-                }, 1000)
-            }
-        } else {
-            return res.status(400).send(new Error("Airdrop failed"))
-        }
-    }
-    await tryAirdrop();
-});
-
-app.listen(8444, () => {
-    console.log('listening on 8444');
-})

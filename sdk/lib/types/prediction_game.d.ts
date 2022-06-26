@@ -73,6 +73,10 @@ export declare type PredictionGame = {
                 {
                     "name": "crankBps";
                     "type": "u16";
+                },
+                {
+                    "name": "roundLength";
+                    "type": "i64";
                 }
             ];
         },
@@ -180,12 +184,7 @@ export declare type PredictionGame = {
                     "isSigner": false;
                 }
             ];
-            "args": [
-                {
-                    "name": "roundLength";
-                    "type": "i64";
-                }
-            ];
+            "args": [];
         },
         {
             "name": "initSecondRoundInstruction";
@@ -910,6 +909,10 @@ export declare type PredictionGame = {
                     {
                         "name": "previousRound";
                         "type": "publicKey";
+                    },
+                    {
+                        "name": "roundLength";
+                        "type": "i64";
                     },
                     {
                         "name": "vault";

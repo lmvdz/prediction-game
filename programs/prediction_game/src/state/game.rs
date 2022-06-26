@@ -13,6 +13,7 @@ pub struct Game {
     pub round_number: u32,
     pub current_round: Pubkey,
     pub previous_round: Pubkey,
+    pub round_length: i64,
 
     pub vault: Pubkey, 
 

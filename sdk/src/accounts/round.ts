@@ -90,11 +90,11 @@ export default class Round implements DataUpdatable<RoundAccount> {
         
     }
 
-    public static initializeFirst(workspace: Workspace, game: Game, crank: Crank, roundLength: anchor.BN): Promise<Game> {
+    public static initializeFirst(workspace: Workspace, game: Game, crank: Crank): Promise<Game> {
     
         return new Promise((resolve, reject) => {
             workspace.programAddresses.getRoundPubkey(game.account.address, new anchor.BN(1)).then(([roundPubkey, _roundPubkeyBump]) => {
-                workspace.program.methods.initFirstRoundInstruction(roundLength).accounts({
+                workspace.program.methods.initFirstRoundInstruction().accounts({
                     signer: workspace.owner,
                     game: game.account.address,
                     crank: crank.account.address,

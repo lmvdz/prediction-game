@@ -73,6 +73,10 @@ export type PredictionGame = {
         {
           "name": "crankBps",
           "type": "u16"
+        },
+        {
+          "name": "roundLength",
+          "type": "i64"
         }
       ]
     },
@@ -180,12 +184,7 @@ export type PredictionGame = {
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "roundLength",
-          "type": "i64"
-        }
-      ]
+      "args": []
     },
     {
       "name": "initSecondRoundInstruction",
@@ -910,6 +909,10 @@ export type PredictionGame = {
           {
             "name": "previousRound",
             "type": "publicKey"
+          },
+          {
+            "name": "roundLength",
+            "type": "i64"
           },
           {
             "name": "vault",
@@ -1791,6 +1794,10 @@ export const IDL: PredictionGame = {
         {
           "name": "crankBps",
           "type": "u16"
+        },
+        {
+          "name": "roundLength",
+          "type": "i64"
         }
       ]
     },
@@ -1898,12 +1905,7 @@ export const IDL: PredictionGame = {
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "roundLength",
-          "type": "i64"
-        }
-      ]
+      "args": []
     },
     {
       "name": "initSecondRoundInstruction",
@@ -2628,6 +2630,10 @@ export const IDL: PredictionGame = {
           {
             "name": "previousRound",
             "type": "publicKey"
+          },
+          {
+            "name": "roundLength",
+            "type": "i64"
           },
           {
             "name": "vault",

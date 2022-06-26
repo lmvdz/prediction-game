@@ -22,6 +22,7 @@ export type GameAccount = {
     roundNumber: number
     currentRound: PublicKey
     previousRound: PublicKey
+    roundLength: number
 
     vault: PublicKey
 
@@ -232,13 +233,13 @@ export default class Game implements DataUpdatable<GameAccount> {
         
     }
 
-    public static async initializeGame(workspace: Workspace, baseSymbol: string, vault: Vault, oracle: Oracle, priceProgram: PublicKey, priceFeed: PublicKey, feeBps: number, crankBps: number): Promise<Game> {
+    public static async initializeGame(workspace: Workspace, baseSymbol: string, vault: Vault, oracle: Oracle, priceProgram: PublicKey, priceFeed: PublicKey, feeBps: number, crankBps: number, roundLength: anchor.BN): Promise<Game> {
         const [gamePubkey, _gamePubkeyBump] = await workspace.programAddresses.getGamePubkey(vault, priceProgram, priceFeed);
 
         // console.log(baseSymbol, vaultPubkeyBump, feeVaultPubkeyBump)
 
         return new Promise((resolve, reject) => {
-            workspace.program.methods.initGameInstruction(oracle, baseSymbol, feeBps, crankBps).accounts({
+            workspace.program.methods.initGameInstruction(oracle, baseSymbol, feeBps, crankBps, roundLength).accounts({
                 owner: workspace.owner,
                 game: gamePubkey,
                 vault: vault.account.address,
