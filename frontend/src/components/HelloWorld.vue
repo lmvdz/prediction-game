@@ -27,6 +27,7 @@ import bs58 from 'bs58';
 import UpArrowAnimation from '../lottie/65775-arrrow-moving-upward.json'
 import DownArrowAnimation from '../lottie/65777-graph-moving-downward.json'
 import CrabAnimation from '../lottie/101494-rebound-rock-water-creature-by-dave-chenell.json'
+import { initTokenList } from "./plugins/tokenList"
 
 export type TxStatus = {
   index: number,
@@ -667,29 +668,46 @@ export default defineComponent({
     }
   },
   created() {
-    if (this.aggrWorkspace === '') {
-      this.aggrWorkspace = window.location.host + "/workspaces/btc.json";
-    }
-    this.tokenList = useTokenList();
-    this.loadWallet();
-    if (this.workspace === null) {
-     initWorkspace(window.location.host.startsWith("devnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net", window.location.host.split('.')[0] as Cluster);
-      this.workspace = useWorkspace();
-      this.loadWorkspace();
-    }
+    ;(async () => {
+      this.tokenList = useTokenList();
+      if (this.tokenList === []) {
+        await initTokenList('mainnet-beta');
+        this.tokenList = useTokenList();
+      }
+        
+      if (this.aggrWorkspace === '') {
+        this.aggrWorkspace = window.location.host + "/workspaces/btc.json";
+      }
+      
+      this.loadWallet();
+      if (this.workspace === null) {
+        initWorkspace(window.location.host.startsWith("devnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net", window.location.host.split('.')[0] as Cluster);
+        this.workspace = useWorkspace();
+        this.loadWorkspace();
+      }
+    })();
+    
     
   },
   mounted() {
-    if (this.aggrWorkspace === '') {
-      this.aggrWorkspace = window.location.host + "/workspaces/btc.json";
-    }
-    this.tokenList = useTokenList();
-    this.loadWallet();
-    if (this.workspace === null) {
-      initWorkspace(window.location.host.startsWith("devnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net", window.location.host.split('.')[0] as Cluster);
-      this.workspace = useWorkspace();
-      this.loadWorkspace();
-    }
+    ;(async () => {
+      this.tokenList = useTokenList();
+      if (this.tokenList === []) {
+        await initTokenList('mainnet-beta');
+        this.tokenList = useTokenList();
+      }
+        
+      if (this.aggrWorkspace === '') {
+        this.aggrWorkspace = window.location.host + "/workspaces/btc.json";
+      }
+      
+      this.loadWallet();
+      if (this.workspace === null) {
+        initWorkspace(window.location.host.startsWith("devnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net", window.location.host.split('.')[0] as Cluster);
+        this.workspace = useWorkspace();
+        this.loadWorkspace();
+      }
+    })();
   }
 })
 </script>
