@@ -938,7 +938,7 @@ export default defineComponent({
                             activator="parent"
                             location="end"
                           >Starting Price</v-tooltip>
-                            $ {{  bnToNumber(game.currentRound.account.roundStartPrice, getVault(game).account.tokenDecimals).toFixed(2) }}
+                            $ {{  bnToNumber(game.currentRound.account.roundStartPrice, game.currentRound.account.roundPriceDecimals).toFixed(2) }}
                           </v-col>
                         </v-row>
                         <v-row style="margin: 1px;">
@@ -978,7 +978,7 @@ export default defineComponent({
                           activator="parent"
                           location="end"
                         >Starting Price</v-tooltip>
-                          $ {{  bnToNumber(game.currentRound.account.roundStartPrice, getVault(game).account.tokenDecimals).toFixed(2) }}                      
+                          $ {{  bnToNumber(game.currentRound.account.roundStartPrice, game.currentRound.account.roundPriceDecimals).toFixed(2) }}                      
                       </v-col>
                     </v-row>
                     <v-row style="margin: 1px;">
