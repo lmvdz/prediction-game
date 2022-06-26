@@ -1,6 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const { exec } = require('child_process');
+
+exec('rm -rf ./frontend')
+exec('rm -rf ./aggr')
+
+exec('cp -r ../frontend/dist frontend')
+exec('cp -r ../aggr/dist aggr')
 
 const devnet = express();
 devnet.use(cors());
