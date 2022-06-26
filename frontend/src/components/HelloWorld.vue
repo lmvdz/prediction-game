@@ -37,9 +37,6 @@ let frontendGameData: Ref<Map<string, FrontendGameData>> = ref(new Map<string, F
 let wallet = ref(null as WalletStore);
 let workspace = ref(null as Workspace);
 let tokenList: Ref<Array<TokenInfo>> = ref(null as TokenInfo[]);
-let updatingGames = ref(false);
-let userDoesNotExist = ref(false);
-let txStatus = ref(null as TxStatus)
 let user = ref(null as User);
 let tokenAccounts: Ref<Map<string, Account>> = ref(new Map<string, Account>());
 let updateInterval: Ref<NodeJS.Timer> = ref(null as NodeJS.Timer);
@@ -90,6 +87,22 @@ export default defineComponent({
   name: 'HelloWorld',
   components: {
     CryptoIcon
+  },
+  data() {
+    return {
+      games,
+      vaults,
+      userPredictions,
+      frontendGameData,
+      wallet,
+      workspace,
+      tokenList,
+      user,
+      tokenAccounts,
+      updateInterval,
+      aggrWorkspace,
+      txStatusList
+    }
   },
   methods: {
     bnToNumber(num: anchor.BN, decimals: number) : number {
