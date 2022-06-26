@@ -22,7 +22,7 @@ mainnet.get('/*', (req, res) => {
 	res.sendFile(__dirname + '/../frontend/dist/index.html');
 })
 
-mainnet.listen(3001, () => {console.log('devnet started on port 3001')});
+mainnet.listen(3001, () => {console.log('mainnet started on port 3001')});
 
 
 const aggr = express();
