@@ -165,6 +165,16 @@
                     "isSigner": false
                 },
                 {
+                    "name": "priceProgram",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "priceFeed",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
                     "name": "systemProgram",
                     "isMut": false,
                     "isSigner": false
@@ -203,6 +213,16 @@
                 {
                     "name": "firstRound",
                     "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "priceProgram",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "priceFeed",
+                    "isMut": false,
                     "isSigner": false
                 },
                 {
@@ -249,6 +269,16 @@
                 {
                     "name": "previousRound",
                     "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "priceProgram",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "priceFeed",
+                    "isMut": false,
                     "isSigner": false
                 },
                 {
@@ -1683,5 +1713,8 @@
             "name": "GameFeeVaultMismatch",
             "msg": "Game Fee Vault Mismatch"
         }
-    ]
+    ],
+    "metadata": {
+        "address": "EPZXCy45VtSdGA7darn8LcVErMYecZS4d7XYG8pwLExb"
+    }
 }

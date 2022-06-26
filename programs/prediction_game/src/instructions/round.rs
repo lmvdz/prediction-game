@@ -2,14 +2,14 @@ use anchor_lang::prelude::*;
 
 use crate::errors::ErrorCode;
 
-use crate::state::{Round, Game, Crank};
+use crate::state::{Round, Game, Crank, get_price};
 
 pub fn init_first_round(ctx: Context<InitFirstRound>, round_length: i64) -> Result<()> {
     let round = &mut ctx.accounts.round;
     let game = &mut ctx.accounts.game;
 
-    let price_program = game.price_program;
-    let price_feed = game.price_feed;
+    let price_program = &ctx.accounts.price_program;
+    let price_feed = &ctx.accounts.price_feed;
     let oracle = game.oracle;
 
     game.current_round = round.key();
@@ -31,11 +31,11 @@ pub fn init_first_round(ctx: Context<InitFirstRound>, round_length: i64) -> Resu
 
     round.round_predictions_allowed = true;
 
-    // let (price, decimals) = get_price(oracle, price_program, price_feed).unwrap_or(0); // production & devnet
-    let price = 0; // localnet
+    let (price, decimals) = get_price(oracle, price_program, price_feed).unwrap_or((0, 0)); // production & devnet
+    // let price = 0; // localnet
 
-    // round.round_price_decimals = decimals; // production & devnet
-    round.round_price_decimals = 1;
+    round.round_price_decimals = decimals; // production & devnet
+    // round.round_price_decimals = 1;
 
     round.round_start_price = price;
     round.round_current_price = price;
@@ -64,7 +64,8 @@ pub fn init_first_round(ctx: Context<InitFirstRound>, round_length: i64) -> Resu
 }
 
 
-fn init_round_shared(next_round: &mut Box<Account<Round>>, current_round: &mut Box<Account<Round>>, game: &mut Box<Account<Game>>) -> Result<()> {
+fn init_round_shared<'info>(next_round: &mut Box<Account<Round>>, current_round: &mut Box<Account<Round>>, game: &mut Box<Account<Game>>, price_program: &AccountInfo<'info>, price_feed: &AccountInfo<'info>) -> Result<()> {
+    
     game.current_round = next_round.key();
     game.previous_round = current_round.key();
 
@@ -106,8 +107,8 @@ fn init_round_shared(next_round: &mut Box<Account<Round>>, current_round: &mut B
 
     next_round.round_predictions_allowed = true;
 
-    // let (price, decimals) = get_price(oracle, price_program, price_feed).unwrap_or(0);
-    let price = 0;
+    let (price, _decimals) = get_price(game.oracle, price_program, price_feed).unwrap_or((0, 0));
+    // let price = 0;
 
     next_round.round_start_price = price;
     next_round.round_current_price = price;
@@ -139,7 +140,10 @@ pub fn init_second_round(ctx: Context<InitSecondRound>) -> Result<()> {
     let first_round = &mut ctx.accounts.first_round;
     let game = &mut ctx.accounts.game;
 
-    init_round_shared(second_round, first_round, game)
+    let price_program = &ctx.accounts.price_program;
+    let price_feed = &ctx.accounts.price_feed;
+
+    init_round_shared(second_round, first_round, game, price_program, price_feed)
 }
 
 pub fn init_next_round_and_close_previous(ctx: Context<InitNextRoundAndClosePrevious>) -> Result<()> {
@@ -147,7 +151,10 @@ pub fn init_next_round_and_close_previous(ctx: Context<InitNextRoundAndClosePrev
     let current_round = &mut ctx.accounts.current_round;
     let game = &mut ctx.accounts.game;
 
-    init_round_shared(next_round, current_round, game)
+    let price_program = &ctx.accounts.price_program;
+    let price_feed = &ctx.accounts.price_feed;
+
+    init_round_shared(next_round, current_round, game, price_program, price_feed)
 }
 
 
@@ -172,8 +179,9 @@ impl Round {
             self.round_time_difference = self.round_current_time.checked_sub(self.round_start_time).unwrap_or(0);
             
             // update the round price
-            // self.round_current_price = get_price(oracle, price_program, price_feed).unwrap_or(self.round_start_price);  // production
-            self.round_current_price += 1; // localnet testing
+            let (price, _decimals) = get_price(oracle, price_program, price_feed).unwrap_or((self.round_start_price, 0));  // production
+            self.round_current_price = price;
+            // self.round_current_price += 1; // localnet testing
             
             // calculate the difference in price or set to zero
             self.round_price_difference = self.round_current_price.checked_sub(self.round_start_price).unwrap_or(0);
@@ -245,6 +253,18 @@ pub struct InitFirstRound<'info> {
     )]
     pub round: Box<Account<'info, Round>>,
 
+    /// CHECK:
+    #[account(
+        constraint = game.price_program == price_program.key() @ ErrorCode::RoundPriceProgramNotEqual,
+    )]
+    pub price_program: AccountInfo<'info>,
+
+    /// CHECK:
+    #[account(
+        constraint = game.price_feed == price_feed.key() @ ErrorCode::RoundPriceFeedNotEqual,
+    )]
+    pub price_feed: AccountInfo<'info>,
+
     // required for Account
     pub system_program: Program<'info, System>,
 }
@@ -285,6 +305,18 @@ pub struct InitSecondRound<'info> {
         constraint = first_round.settled @ ErrorCode::RoundNotSettled
     )]
     pub first_round: Box<Account<'info, Round>>,
+
+    /// CHECK:
+    #[account(
+        constraint = game.price_program == price_program.key() @ ErrorCode::RoundPriceProgramNotEqual,
+    )]
+    pub price_program: AccountInfo<'info>,
+
+    /// CHECK:
+    #[account(
+        constraint = game.price_feed == price_feed.key() @ ErrorCode::RoundPriceFeedNotEqual,
+    )]
+    pub price_feed: AccountInfo<'info>,
 
     // required for Account
     pub system_program: Program<'info, System>,
@@ -345,6 +377,18 @@ pub struct InitNextRoundAndClosePrevious<'info> {
         constraint = previous_round.cranks_paid @ ErrorCode::RoundCranksNotPaid,
     )]
     pub previous_round: Box<Account<'info, Round>>,
+
+    /// CHECK:
+    #[account(
+        constraint = game.price_program == price_program.key() @ ErrorCode::RoundPriceProgramNotEqual,
+    )]
+    pub price_program: AccountInfo<'info>,
+
+    /// CHECK:
+    #[account(
+        constraint = game.price_feed == price_feed.key() @ ErrorCode::RoundPriceFeedNotEqual,
+    )]
+    pub price_feed: AccountInfo<'info>,
 
     // required for Account
     pub system_program: Program<'info, System>,

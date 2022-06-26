@@ -1,4 +1,4 @@
-import { Workspace } from "src/workspace";
+import { Workspace } from "../workspace";
 
 function tryConfirm(workspace: Workspace, txSignature: string, maxRetry=5, retryAttempt=0) : Promise<void> {
     return new Promise((resolve, reject) => {

@@ -165,6 +165,16 @@ export type PredictionGame = {
           "isSigner": false
         },
         {
+          "name": "priceProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "priceFeed",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
@@ -203,6 +213,16 @@ export type PredictionGame = {
         {
           "name": "firstRound",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "priceProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "priceFeed",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -249,6 +269,16 @@ export type PredictionGame = {
         {
           "name": "previousRound",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "priceProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "priceFeed",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -1853,6 +1883,16 @@ export const IDL: PredictionGame = {
           "isSigner": false
         },
         {
+          "name": "priceProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "priceFeed",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
@@ -1891,6 +1931,16 @@ export const IDL: PredictionGame = {
         {
           "name": "firstRound",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "priceProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "priceFeed",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -1937,6 +1987,16 @@ export const IDL: PredictionGame = {
         {
           "name": "previousRound",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "priceProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "priceFeed",
+          "isMut": false,
           "isSigner": false
         },
         {

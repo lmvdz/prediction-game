@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import { Cluster, PublicKey } from "@solana/web3.js";
 import { Connection, Keypair } from "@solana/web3.js";
 import { getAccount } from "@solana/spl-token";
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
@@ -22,6 +22,8 @@ config({path: '.env.local'})
 const privateKeyEnvVariable = "PRIVATE_KEY"
 // ENVIRONMENT VARIABLE FOR THE BOT PRIVATE KEY
 const privateKey = process.env[privateKeyEnvVariable]
+const endpoint = process.env.ENDPOINT;
+const cluster = process.env.CLUSTER as Cluster;
 
 if (privateKey === undefined) {
     console.error('need a ' + privateKeyEnvVariable +' env variable');
@@ -46,10 +48,13 @@ try {
 }
 
 const botWallet: NodeWallet = new NodeWallet(owner);
-const connection: Connection = new Connection('http://localhost:8899')
-const workspace: Workspace = Workspace.load(connection, botWallet, 'testnet', { commitment: 'confirmed' })
+
+// const connection: Connection = new Connection('http://localhost:8899');
+const connection: Connection = new Connection(endpoint)
+const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' })
 const mintKeypair = Keypair.fromSecretKey(bs58.decode("3dS4W9gKuGQcvA4s9dSRKLGJ8UAdu9ZeFLxJfv6WLK4BzZZnt3L2WNSJchjtgLi7BnxMTcpPRU1AG9yfEkR2cxDT"))
 const mintDecimals = 6;
+
 let gameSeeds: Array<GameSeed> = [ 
     { 
         baseSymbol: "SOL", 

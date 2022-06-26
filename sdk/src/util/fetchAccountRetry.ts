@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { Workspace } from "src/workspace";
+import { Workspace } from "../workspace";
 
 function tryFetch<T>(workspace: Workspace, account: string, pubkey: PublicKey, maxRetry=5, retryAttempt=0) : Promise<T> {
     return new Promise((resolve, reject) => {

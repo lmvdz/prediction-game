@@ -165,6 +165,16 @@ export declare type PredictionGame = {
                     "isSigner": false;
                 },
                 {
+                    "name": "priceProgram";
+                    "isMut": false;
+                    "isSigner": false;
+                },
+                {
+                    "name": "priceFeed";
+                    "isMut": false;
+                    "isSigner": false;
+                },
+                {
                     "name": "systemProgram";
                     "isMut": false;
                     "isSigner": false;
@@ -203,6 +213,16 @@ export declare type PredictionGame = {
                 {
                     "name": "firstRound";
                     "isMut": true;
+                    "isSigner": false;
+                },
+                {
+                    "name": "priceProgram";
+                    "isMut": false;
+                    "isSigner": false;
+                },
+                {
+                    "name": "priceFeed";
+                    "isMut": false;
                     "isSigner": false;
                 },
                 {
@@ -249,6 +269,16 @@ export declare type PredictionGame = {
                 {
                     "name": "previousRound";
                     "isMut": true;
+                    "isSigner": false;
+                },
+                {
+                    "name": "priceProgram";
+                    "isMut": false;
+                    "isSigner": false;
+                },
+                {
+                    "name": "priceFeed";
+                    "isMut": false;
                     "isSigner": false;
                 },
                 {

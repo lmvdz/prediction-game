@@ -168,6 +168,16 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
+                    "name": "priceProgram",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "priceFeed",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
                     "name": "systemProgram",
                     "isMut": false,
                     "isSigner": false
@@ -206,6 +216,16 @@ exports.IDL = {
                 {
                     "name": "firstRound",
                     "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "priceProgram",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "priceFeed",
+                    "isMut": false,
                     "isSigner": false
                 },
                 {
@@ -252,6 +272,16 @@ exports.IDL = {
                 {
                     "name": "previousRound",
                     "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "priceProgram",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "priceFeed",
+                    "isMut": false,
                     "isSigner": false
                 },
                 {
