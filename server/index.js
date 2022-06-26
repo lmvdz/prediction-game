@@ -6,6 +6,7 @@ const { config } = require('dotenv')
 
 config({path: '.env.local'})
 
+const bs58 = require('bs58')
 const { PublicKey, Connection, Keypair } = require("@solana/web3.js");
 const { getMint, mintTo } = require("@solana/spl-token");
 
