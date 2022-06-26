@@ -15,7 +15,7 @@ devnet.use(bodyParser.json());
 
 devnet.use(express.static('frontend'));
 devnet.get('/*', (req, res) => {
-	res.sendFile(__dirname + 'frontend/index.html');
+	res.sendFile(__dirname + '/frontend/index.html');
 })
 
 devnet.listen(3000, () => {console.log('devnet started on port 3000')});
@@ -26,7 +26,7 @@ mainnet.use(bodyParser.json());
 
 mainnet.use(express.static('frontend'));
 mainnet.get('/*', (req, res) => {
-	res.sendFile(__dirname + 'frontend/index.html');
+	res.sendFile(__dirname + '/frontend/index.html');
 })
 
 mainnet.listen(3001, () => {console.log('mainnet started on port 3001')});
@@ -38,7 +38,7 @@ aggr.use(bodyParser.json());
 
 aggr.use(express.static('aggr'));
 aggr.get('/*', (req, res) => {
-	res.sendFile(__dirname + 'aggr/index.html');
+	res.sendFile(__dirname + '/aggr/index.html');
 })
 
 mainnet.listen(3002, () => {console.log('aggr started on port 3002')});
