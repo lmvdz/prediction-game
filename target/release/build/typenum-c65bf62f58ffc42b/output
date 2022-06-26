@@ -1,0 +1,2 @@
+cargo:rustc-env=TYPENUM_BUILD_CONSTS=/home/lars/github/solana-prediction/target/release/build/typenum-c65bf62f58ffc42b/out/consts.rs
+cargo:rustc-env=TYPENUM_BUILD_OP=/home/lars/github/solana-prediction/target/release/build/typenum-c65bf62f58ffc42b/out/op.rs

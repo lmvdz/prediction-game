@@ -1,0 +1,14 @@
+/home/lars/github/solana-prediction/target/debug/deps/heck-4788b0a81303e13c.rmeta: /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/lib.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/camel.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/kebab.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/mixed.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/shouty_kebab.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/shouty_snake.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/snake.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/title.rs
+
+/home/lars/github/solana-prediction/target/debug/deps/libheck-4788b0a81303e13c.rlib: /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/lib.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/camel.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/kebab.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/mixed.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/shouty_kebab.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/shouty_snake.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/snake.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/title.rs
+
+/home/lars/github/solana-prediction/target/debug/deps/heck-4788b0a81303e13c.d: /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/lib.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/camel.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/kebab.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/mixed.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/shouty_kebab.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/shouty_snake.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/snake.rs /home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/title.rs
+
+/home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/lib.rs:
+/home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/camel.rs:
+/home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/kebab.rs:
+/home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/mixed.rs:
+/home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/shouty_kebab.rs:
+/home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/shouty_snake.rs:
+/home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/snake.rs:
+/home/lars/.cargo/registry/src/github.com-1ecc6299db9ec823/heck-0.3.3/src/title.rs:

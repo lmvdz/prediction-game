@@ -117,9 +117,8 @@ async function initFromGameSeed(workspace, gameSeed, mint) {
         return [null, null];
     }
 }
-async function init(owner, endpoint, cluster, mint) {
+async function init(owner, connection, cluster, mint) {
     const botWallet = new nodewallet_1.default(owner);
-    const connection = new web3_js_2.Connection(endpoint);
     const workspace = workspace_1.Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
     if (cluster === 'devnet') {
         // devnet mint
@@ -127,9 +126,11 @@ async function init(owner, endpoint, cluster, mint) {
         const mintDecimals = 6;
         mint = await createFakeMint(connection, mintKeypair, owner, mintDecimals);
     }
-    await Promise.all(exports.gameSeeds.map(async (gameSeed) => {
-        await initFromGameSeed(workspace, gameSeed, mint.address);
-    }));
+    (await Promise.all(exports.gameSeeds.map(async (gameSeed) => {
+        return await initFromGameSeed(workspace, gameSeed, mint.address);
+    }))).forEach(([vault, game]) => {
+        console.log(vault.account.address.toBase58(), game.account.baseSymbol);
+    });
 }
 exports.init = init;
 //# sourceMappingURL=admin.js.map
