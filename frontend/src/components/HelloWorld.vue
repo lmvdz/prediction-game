@@ -44,7 +44,7 @@ const { txStatusList } = storeToRefs(useStore());
 import { defineComponent } from 'vue'
 
 import { Program, ProgramAccount } from "@project-serum/anchor";
-import { PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
+import { Cluster, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 import { confirmTxRetry, fetchAccountRetry } from "sdk/lib/util";
 import { TokenInfo } from "@solana/spl-token-registry";
 import { UpOrDown } from 'sdk'
@@ -566,7 +566,7 @@ export default defineComponent({
           if (!this.wallet.connected) {
             this.loadWallet();
           } else {
-            initWorkspace("http://localhost:8899", 'testnet');
+            initWorkspace(window.location.host.startsWith("devnet") ? "https://psytrbhymqlkfrhudd.dev.genesysgo.net:8899" : "https://ssc-dao.genesysgo.net", window.location.host.split('.')[0] as Cluster);
             this.workspace = useWorkspace();
             this.loadWorkspace();
           }
@@ -650,18 +650,18 @@ export default defineComponent({
     this.tokenList = useTokenList();
     this.loadWallet();
     if (this.workspace === null) {
-      initWorkspace("http://localhost:8899", 'testnet');
+     initWorkspace(window.location.host.startsWith("devnet") ? "https://psytrbhymqlkfrhudd.dev.genesysgo.net:8899" : "https://ssc-dao.genesysgo.net", window.location.host.split('.')[0] as Cluster);
       this.workspace = useWorkspace();
       this.loadWorkspace();
     }
     
   },
   mounted() {
-    this.aggrWorkspace = "http://localhost:3000/workspaces/btc.json";
+    this.aggrWorkspace = window.location.host + "/workspaces/btc.json";
     this.tokenList = useTokenList();
     this.loadWallet();
     if (this.workspace === null) {
-      initWorkspace("http://localhost:8899", 'testnet');
+      initWorkspace(window.location.host.startsWith("devnet") ? "https://psytrbhymqlkfrhudd.dev.genesysgo.net:8899" : "https://ssc-dao.genesysgo.net", window.location.host.split('.')[0] as Cluster);
       this.workspace = useWorkspace();
       this.loadWorkspace();
     }
