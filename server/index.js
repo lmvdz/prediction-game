@@ -13,7 +13,7 @@ const { getMint, mintTo } = require("@solana/spl-token");
 const owner = require('./owner.js')
 const anchor = require('@project-serum/anchor')
 const admin = require('sdk/lib/admin')
-
+console.log(process.env.ENDPOINT);
 let connection = new Connection(process.env.ENDPOINT, { commitment: 'confirmed' });
 const mintKeypair = Keypair.fromSecretKey(bs58.decode("3dS4W9gKuGQcvA4s9dSRKLGJ8UAdu9ZeFLxJfv6WLK4BzZZnt3L2WNSJchjtgLi7BnxMTcpPRU1AG9yfEkR2cxDT"))
 
