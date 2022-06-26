@@ -275,6 +275,7 @@ const updateLoop = (workspace: Workspace, vault: Vault, game: Game, crank: Crank
         workspace.program.provider.connection.getTokenAccountBalance(vault.account.vaultAta).then(vaultTokenAccountBalanaceResponse => {
             workspace.program.provider.connection.getTokenAccountBalance(vault.account.feeVaultAta).then(feeVaultTokenAccountBalanaceResponse => {
                 console.log(
+                    game.currentRound.convertOraclePriceToNumber(game),
                     vaultTokenAccountBalanaceResponse.value.uiAmount,
                     feeVaultTokenAccountBalanaceResponse.value.uiAmount,
                     ((game.account.unclaimedFees.div(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() + ((game.account.unclaimedFees.mod(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() / (10 ** vault.account.tokenDecimals))),
