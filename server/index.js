@@ -23,3 +23,15 @@ mainnet.get('/*', (req, res) => {
 })
 
 mainnet.listen(3001, () => {console.log('devnet started on port 3001')});
+
+
+const aggr = express();
+aggr.use(cors());
+aggr.use(bodyParser.json());
+
+aggr.use(express.static('../aggr/dist'));
+aggr.get('/*', (req, res) => {
+	res.sendFile(__dirname + '../aggr/dist/index.html');
+})
+
+mainnet.listen(3002, () => {console.log('devnet started on port 3002')});
