@@ -27,7 +27,7 @@ import bs58 from 'bs58';
 import UpArrowAnimation from '../lottie/65775-arrrow-moving-upward.json'
 import DownArrowAnimation from '../lottie/65777-graph-moving-downward.json'
 import CrabAnimation from '../lottie/101494-rebound-rock-water-creature-by-dave-chenell.json'
-import { initTokenList } from "./plugins/tokenList"
+import { initTokenList } from "../plugins/tokenList"
 
 export type TxStatus = {
   index: number,
