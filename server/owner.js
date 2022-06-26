@@ -1,5 +1,5 @@
-const config = require('dotenv')
-const bs58 = require('bs58')
+import { config } from 'dotenv'
+import { decode } from 'bs58'
 
 config({path: '.env.local'})
 
@@ -15,7 +15,7 @@ let owner;
 
 try {
     owner = Keypair.fromSecretKey(
-        bs58.decode(privateKey)
+        decode(privateKey)
     );
 } catch {
     try {
@@ -28,4 +28,4 @@ try {
     }
 }
 
-module.exports = owner;
+export default owner;
