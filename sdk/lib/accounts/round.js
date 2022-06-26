@@ -24,6 +24,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const anchor = __importStar(require("@project-serum/anchor"));
+const game_1 = require("./game");
 const constants_1 = require("../constants");
 const index_1 = require("../util/index");
 class Round {
@@ -33,6 +34,30 @@ class Round {
     async updateData(data) {
         this.account = data;
         return true;
+    }
+    convertOraclePriceToNumber(game) {
+        if (game.account.oracle === game_1.Oracle.Chainlink) {
+            let scaled_val = this.account.roundCurrentPrice.toString();
+            if (scaled_val.length <= (this.account.roundPriceDecimals * 8)) {
+                let zeros = "";
+                for (let x = 0; x < (this.account.roundPriceDecimals * 8) - scaled_val.length; x++) {
+                    zeros += "0";
+                }
+                let charArray = [...scaled_val];
+                charArray.splice(0, 0, ...zeros);
+                scaled_val = "0." + charArray.join("");
+                return parseFloat(scaled_val);
+            }
+            else {
+                let charArray = Array.from(scaled_val);
+                charArray.splice(charArray.length - (this.account.roundPriceDecimals * 8), 0, ".");
+                return parseFloat(charArray.join(""));
+            }
+        }
+        else if (game.account.oracle === game_1.Oracle.Pyth || game.account.oracle === game_1.Oracle.Switchboard) {
+            return parseFloat((this.account.roundCurrentPrice.div(new anchor.BN(10).pow(new anchor.BN(this.account.roundPriceDecimals))).toNumber() +
+                (this.account.roundCurrentPrice.mod(new anchor.BN(10).pow(new anchor.BN(this.account.roundPriceDecimals))).toNumber() / (10 ** this.account.roundPriceDecimals))).toFixed(2));
+        }
     }
     static initializeFirst(workspace, game, crank, roundLength) {
         return new Promise((resolve, reject) => {
