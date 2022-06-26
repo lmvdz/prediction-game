@@ -1,4 +1,5 @@
-<script setup lang="ts">
+<script lang="ts">
+
 import { defineComponent } from 'vue'
 
 import { Program, ProgramAccount } from "@project-serum/anchor";
@@ -31,45 +32,6 @@ import { AccountsCoder } from '@project-serum/anchor';
 import UpArrowAnimation from '../lottie/65775-arrrow-moving-upward.json'
 import DownArrowAnimation from '../lottie/65777-graph-moving-downward.json'
 import CrabAnimation from '../lottie/101494-rebound-rock-water-creature-by-dave-chenell.json'
-
-let games: Ref<Array<Game>> = ref([] as Array<Game>);
-let vaults: Ref<Map<string, Vault>> = ref(new Map<string, Vault>());
-let userPredictions: Ref<Array<UserPrediction>> = ref([] as Array<UserPrediction>);
-let frontendGameData: Ref<Map<string, FrontendGameData>> = ref(new Map<string, FrontendGameData>())
-let wallet = ref(null as WalletStore);
-let workspace = ref(null as Workspace);
-let tokenList: Ref<Array<TokenInfo>> = ref(null as TokenInfo[]);
-let updatingGames = ref(false);
-let userDoesNotExist = ref(false);
-let txStatus = ref(null as TxStatus)
-let user = ref(null as User);
-let tokenAccounts: Ref<Map<string, Account>> = ref(new Map<string, Account>());
-let updateInterval: Ref<NodeJS.Timer> = ref(null as NodeJS.Timer);
-let aggrWorkspace: Ref<string> = ref('');
-
-const { txStatusList } = storeToRefs(useStore());
-
-return {
-  games,
-  vaults,
-  userPredictions,
-  frontendGameData,
-  wallet,
-  workspace,
-  tokenList,
-  updatingGames,
-  userDoesNotExist,
-  txStatus,
-  user,
-  tokenAccounts,
-  updateInterval,
-  aggrWorkspace,
-  txStatusList
-}
-
-</script>
-
-<script lang="ts">
 
 export type TxStatus = {
   index: number,
@@ -108,6 +70,42 @@ export type FrontendGameData = {
 
 export default defineComponent({
   name: 'HelloWorld',
+  setup() {
+    let games: Ref<Array<Game>> = ref([] as Array<Game>);
+    let vaults: Ref<Map<string, Vault>> = ref(new Map<string, Vault>());
+    let userPredictions: Ref<Array<UserPrediction>> = ref([] as Array<UserPrediction>);
+    let frontendGameData: Ref<Map<string, FrontendGameData>> = ref(new Map<string, FrontendGameData>())
+    let wallet = ref(null as WalletStore);
+    let workspace = ref(null as Workspace);
+    let tokenList: Ref<Array<TokenInfo>> = ref(null as TokenInfo[]);
+    let updatingGames = ref(false);
+    let userDoesNotExist = ref(false);
+    let txStatus = ref(null as TxStatus)
+    let user = ref(null as User);
+    let tokenAccounts: Ref<Map<string, Account>> = ref(new Map<string, Account>());
+    let updateInterval: Ref<NodeJS.Timer> = ref(null as NodeJS.Timer);
+    let aggrWorkspace: Ref<string> = ref('');
+
+    const { txStatusList } = storeToRefs(useStore());
+
+    return {
+      games,
+      vaults,
+      userPredictions,
+      frontendGameData,
+      wallet,
+      workspace,
+      tokenList,
+      updatingGames,
+      userDoesNotExist,
+      txStatus,
+      user,
+      tokenAccounts,
+      updateInterval,
+      aggrWorkspace,
+      txStatusList
+    }
+  },
   methods: {
     bnToNumber(num: anchor.BN, decimals: number) : number {
       let _10to = new anchor.BN(10).pow(new anchor.BN(decimals));
