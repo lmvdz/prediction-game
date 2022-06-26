@@ -566,7 +566,7 @@ export default defineComponent({
           if (!this.wallet.connected) {
             this.loadWallet();
           } else {
-            initWorkspace(window.location.host.startsWith("devnet") ? "https://psytrbhymqlkfrhudd.dev.genesysgo.net:8899" : "https://ssc-dao.genesysgo.net", window.location.host.split('.')[0] as Cluster);
+            initWorkspace(window.location.host.startsWith("devnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net", window.location.host.split('.')[0] as Cluster);
             this.workspace = useWorkspace();
             this.loadWorkspace();
           }
@@ -647,21 +647,26 @@ export default defineComponent({
     }
   },
   created() {
+    if (this.aggrWorkspace === '') {
+      this.aggrWorkspace = window.location.host + "/workspaces/btc.json";
+    }
     this.tokenList = useTokenList();
     this.loadWallet();
     if (this.workspace === null) {
-     initWorkspace(window.location.host.startsWith("devnet") ? "https://psytrbhymqlkfrhudd.dev.genesysgo.net:8899" : "https://ssc-dao.genesysgo.net", window.location.host.split('.')[0] as Cluster);
+     initWorkspace(window.location.host.startsWith("devnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net", window.location.host.split('.')[0] as Cluster);
       this.workspace = useWorkspace();
       this.loadWorkspace();
     }
     
   },
   mounted() {
-    this.aggrWorkspace = window.location.host + "/workspaces/btc.json";
+    if (this.aggrWorkspace === '') {
+      this.aggrWorkspace = window.location.host + "/workspaces/btc.json";
+    }
     this.tokenList = useTokenList();
     this.loadWallet();
     if (this.workspace === null) {
-      initWorkspace(window.location.host.startsWith("devnet") ? "https://psytrbhymqlkfrhudd.dev.genesysgo.net:8899" : "https://ssc-dao.genesysgo.net", window.location.host.split('.')[0] as Cluster);
+      initWorkspace(window.location.host.startsWith("devnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net", window.location.host.split('.')[0] as Cluster);
       this.workspace = useWorkspace();
       this.loadWorkspace();
     }

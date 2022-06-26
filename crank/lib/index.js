@@ -48,6 +48,8 @@ const vault_1 = __importDefault(require("sdk/lib/accounts/vault"));
 const privateKeyEnvVariable = "PRIVATE_KEY";
 // ENVIRONMENT VARIABLE FOR THE BOT PRIVATE KEY
 const privateKey = process.env[privateKeyEnvVariable];
+const endpoint = process.env.ENDPOINT;
+const cluster = process.env.CLUSTER;
 if (privateKey === undefined) {
     console.error('need a ' + privateKeyEnvVariable + ' env variable');
     process.exit();
@@ -67,8 +69,9 @@ catch {
     }
 }
 const botWallet = new nodewallet_1.default(owner);
-const connection = new web3_js_2.Connection('http://localhost:8899');
-const workspace = sdk_1.Workspace.load(connection, botWallet, 'testnet', { commitment: 'confirmed' });
+// const connection: Connection = new Connection('http://localhost:8899');
+const connection = new web3_js_2.Connection(endpoint);
+const workspace = sdk_1.Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
 const mintKeypair = web3_js_2.Keypair.fromSecretKey(bs58_1.default.decode("3dS4W9gKuGQcvA4s9dSRKLGJ8UAdu9ZeFLxJfv6WLK4BzZZnt3L2WNSJchjtgLi7BnxMTcpPRU1AG9yfEkR2cxDT"));
 const mintDecimals = 6;
 let gameSeeds = [
