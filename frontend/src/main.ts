@@ -21,7 +21,7 @@ const walletOptions = {
   autoConnect: true,
 }
 import { initTokenList } from "./plugins/tokenList"
-await initTokenList('mainnet-beta');
+initTokenList('mainnet-beta');
 import Vue3Lottie from 'vue3-lottie'
 import 'vue3-lottie/dist/style.css'
 
