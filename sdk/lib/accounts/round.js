@@ -42,6 +42,8 @@ class Round {
                     game: game.account.address,
                     crank: crank.account.address,
                     round: roundPubkey,
+                    priceProgram: game.account.priceProgram,
+                    priceFeed: game.account.priceFeed,
                     systemProgram: anchor.web3.SystemProgram.programId
                 }).transaction().then(tx => {
                     workspace.sendTransaction(tx).then(txSignature => {
@@ -78,6 +80,8 @@ class Round {
                     crank: crank.account.address,
                     secondRound: roundPubkey,
                     firstRound: game.currentRound.account.address,
+                    priceProgram: game.account.priceProgram,
+                    priceFeed: game.account.priceFeed,
                     systemProgram: anchor.web3.SystemProgram.programId
                 }).transaction().then(tx => {
                     workspace.sendTransaction(tx).then(txSignature => {
@@ -120,6 +124,8 @@ class Round {
                     nextRound: roundPubkey,
                     currentRound: game.currentRound.account.address,
                     previousRound: game.previousRound.account.address,
+                    priceProgram: game.account.priceProgram,
+                    priceFeed: game.account.priceFeed,
                     systemProgram: anchor.web3.SystemProgram.programId
                 }).transaction().then(tx => {
                     workspace.sendTransaction(tx).then(txSignature => {
