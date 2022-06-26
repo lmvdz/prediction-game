@@ -1,5 +1,6 @@
 const { config } = require('dotenv')
 const bs58 = require('bs58')
+const { Keypair } = require('@solana/web3.js')
 
 config({path: '.env.local'})
 
