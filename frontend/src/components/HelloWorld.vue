@@ -12,23 +12,18 @@ import User, { UserAccount } from "sdk/lib/accounts/user";
 import Vault, { VaultAccount } from "sdk/lib/accounts/vault";
 import { Account, ASSOCIATED_TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAccount, getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { storeToRefs } from "pinia";
-import { inject, Ref, ref } from "vue";
+import { Ref, ref } from "vue";
 import { PredictionGame, USER_PREDICTION_MIN_AMOUNT, Workspace } from 'sdk'
 import Game, { GameAccount } from "sdk/lib/accounts/game";
 import { U64MAX } from 'sdk';
-import Logo from "./Logo.vue"
 import { useWorkspace, initWorkspace } from '../plugins/anchor'
 import { useWallet, WalletStore } from 'solana-wallets-vue'
 import { useTokenList } from "../plugins/tokenList";
 import CryptoIcon from './CryptoIcon.vue'
 import * as anchor from '@project-serum/anchor'
-import { WalletMultiButton } from 'solana-wallets-vue'
 import axios from 'axios';
-// import { request as undiciRequest } from 'undici';
-// import { createChart } from 'lightweight-charts';
 import { useStore } from "../stores/store";
 import bs58 from 'bs58';
-import { AccountsCoder } from '@project-serum/anchor';
 import UpArrowAnimation from '../lottie/65775-arrrow-moving-upward.json'
 import DownArrowAnimation from '../lottie/65777-graph-moving-downward.json'
 import CrabAnimation from '../lottie/101494-rebound-rock-water-creature-by-dave-chenell.json'
@@ -70,6 +65,9 @@ export type FrontendGameData = {
 
 export default defineComponent({
   name: 'HelloWorld',
+  components: {
+    CryptoIcon
+  },
   setup() {
     let games: Ref<Array<Game>> = ref([] as Array<Game>);
     let vaults: Ref<Map<string, Vault>> = ref(new Map<string, Vault>());
@@ -89,6 +87,13 @@ export default defineComponent({
     const { txStatusList } = storeToRefs(useStore());
 
     return {
+      Workspace,
+      CrabAnimation,
+      UpArrowAnimation,
+      DownArrowAnimation,
+      U64MAX,
+      anchor,
+      UpOrDown,
       games,
       vaults,
       userPredictions,
@@ -1229,8 +1234,8 @@ export default defineComponent({
                     <v-btn variant="outlined" v-if="getTokenAccount(game) === undefined" @click="async () => { initTokenAccountForGame(game); }">
                       Initialize Token Account
                     </v-btn>
-                    <v-btn variant="outlined" v-else-if="bnToNumber(new anchor.BN((getTokenAccount(game)).amount.toString()).add(user !== null ? user.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) < 1 && ((workspace as Workspace).cluster === 'devnet' || (workspace as Workspace).cluster === 'testnet')" @click="async () => { await airdrop(game) }">Airdrop</v-btn>
-                    <v-btn variant="outlined" v-else-if="bnToNumber(new anchor.BN((getTokenAccount(game)).amount.toString()).add(user !== null ? user.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) < 1 && (workspace as Workspace).cluster === 'mainnet-beta'" href="https://jup.ag/swap/SOL-USDC">SWAP</v-btn>
+                    <v-btn variant="outlined" v-else-if="bnToNumber(new anchor.BN((getTokenAccount(game)).amount.toString()).add(user !== null ? user.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) < 1 && (workspace.cluster === 'devnet' || workspace.cluster === 'testnet')" @click="async () => { await airdrop(game) }">Airdrop</v-btn>
+                    <v-btn variant="outlined" v-else-if="bnToNumber(new anchor.BN((getTokenAccount(game)).amount.toString()).add(user !== null ? user.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) < 1 && workspace.cluster === 'mainnet-beta'" href="https://jup.ag/swap/SOL-USDC">SWAP</v-btn>
                   <v-spacer></v-spacer>
                 </v-card-actions>
                 <v-divider v-if="user !== null && user.account.claimable.gt(new anchor.BN(0))"></v-divider>
