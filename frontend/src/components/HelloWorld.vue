@@ -1,4 +1,16 @@
 <script setup lang="ts">
+import { defineComponent } from 'vue'
+
+import { Program, ProgramAccount } from "@project-serum/anchor";
+import { Cluster, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
+import { confirmTxRetry, fetchAccountRetry } from "sdk/lib/util";
+import { TokenInfo } from "@solana/spl-token-registry";
+import { UpOrDown } from 'sdk'
+import UserPrediction, { UserPredictionAccount } from "sdk/lib/accounts/userPrediction";
+import User, { UserAccount } from "sdk/lib/accounts/user";
+import Vault, { VaultAccount } from "sdk/lib/accounts/vault";
+import { Account, ASSOCIATED_TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAccount, getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { storeToRefs } from "pinia";
 import { inject, Ref, ref } from "vue";
 import { PredictionGame, USER_PREDICTION_MIN_AMOUNT, Workspace } from 'sdk'
 import Game, { GameAccount } from "sdk/lib/accounts/game";
@@ -37,22 +49,27 @@ let aggrWorkspace: Ref<string> = ref('');
 
 const { txStatusList } = storeToRefs(useStore());
 
+return {
+  games,
+  vaults,
+  userPredictions,
+  frontendGameData,
+  wallet,
+  workspace,
+  tokenList,
+  updatingGames,
+  userDoesNotExist,
+  txStatus,
+  user,
+  tokenAccounts,
+  updateInterval,
+  aggrWorkspace,
+  txStatusList
+}
+
 </script>
 
 <script lang="ts">
-
-import { defineComponent } from 'vue'
-
-import { Program, ProgramAccount } from "@project-serum/anchor";
-import { Cluster, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
-import { confirmTxRetry, fetchAccountRetry } from "sdk/lib/util";
-import { TokenInfo } from "@solana/spl-token-registry";
-import { UpOrDown } from 'sdk'
-import UserPrediction, { UserPredictionAccount } from "sdk/lib/accounts/userPrediction";
-import User, { UserAccount } from "sdk/lib/accounts/user";
-import Vault, { VaultAccount } from "sdk/lib/accounts/vault";
-import { Account, ASSOCIATED_TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAccount, getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { storeToRefs } from "pinia";
 
 export type TxStatus = {
   index: number,
