@@ -1236,7 +1236,7 @@ export default defineComponent({
         
       </v-col-auto>
       <v-col style="padding: 8px;" class="d-none d-lg-flex">
-        <iframe id="aggr" :src="`http://localhost:8080?workspace-url=${aggrWorkspace}`" frameborder="0" style="width: 100%; height: 100%; min-height: 75vh; max-height: 75vh;"></iframe>
+        <iframe id="aggr" :src="`https://aggr.solpredict.io?workspace-url=${aggrWorkspace}`" frameborder="0" style="width: 100%; height: 100%; min-height: 75vh; max-height: 75vh;"></iframe>
       </v-col>
     </v-row>
   </v-container>

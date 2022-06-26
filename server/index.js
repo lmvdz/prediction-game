@@ -41,4 +41,4 @@ aggr.get('/*', (req, res) => {
 	res.sendFile(__dirname + 'aggr/index.html');
 })
 
-mainnet.listen(3002, () => {console.log('devnet started on port 3002')});
+mainnet.listen(3002, () => {console.log('aggr started on port 3002')});
