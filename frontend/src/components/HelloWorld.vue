@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { defineComponent } from 'vue'
+import { defineComponent, onMounted } from 'vue'
 
 import { Program, ProgramAccount } from "@project-serum/anchor";
 import { Cluster, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
@@ -44,21 +44,28 @@ let aggrWorkspace: Ref<string> = ref('');
 
 const { txStatusList } = storeToRefs(useStore());
 
-</script>
+onMounted(() => {
+  ;(async () => {
+    tokenList = ref(useTokenList());
+    if (tokenList.value === []) {
+      await initTokenList('mainnet-beta');
+      tokenList = ref(useTokenList());
+    }
+      
+    if (aggrWorkspace.value === '') {
+      aggrWorkspace = ref(window.location.host + "/workspaces/btc.json");
+    }
+    
+    loadWallet();
+    if (workspace.value === null) {
+      initWorkspace(window.location.host.startsWith("devnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net", window.location.host.split('.')[0] as Cluster);
+      workspace = useWorkspace();
+      loadWorkspace();
+    }
+  })();
+})
 
-<script lang="ts">
-
-export type TxStatus = {
-  index: number,
-  signatures: Array<string>,
-  color: string,
-  title: string,
-  subtitle: string
-  loading: boolean
-  show: boolean;
-}
-
-export type FrontendGameData = {
+type FrontendGameData = {
   img: any,
   mint: TokenInfo,
   priceProgram: string,
@@ -83,36 +90,25 @@ export type FrontendGameData = {
   needsToLoad: boolean
 }
 
-export default defineComponent({
-  name: 'HelloWorld',
-  components: {
-    CryptoIcon
-  },
-  data() {
-    return {
-      games,
-      vaults,
-      userPredictions,
-      frontendGameData,
-      wallet,
-      workspace,
-      tokenList,
-      user,
-      tokenAccounts,
-      updateInterval,
-      aggrWorkspace,
-      txStatusList
-    }
-  },
-  methods: {
-    bnToNumber(num: anchor.BN, decimals: number) : number {
+type TxStatus = {
+  index: number,
+  signatures: Array<string>,
+  color: string,
+  title: string,
+  subtitle: string
+  loading: boolean
+  show: boolean;
+}
+
+
+    function bnToNumber(num: anchor.BN, decimals: number) : number {
       let _10to = new anchor.BN(10).pow(new anchor.BN(decimals));
       return this.bnDivMod(num, _10to, decimals)
-    },
-    bnDivMod(num: anchor.BN, by: anchor.BN, decimals: number) : number {
+    }
+    function bnDivMod(num: anchor.BN, by: anchor.BN, decimals: number) : number {
       return (num.div(by).toNumber() + (num.mod(by).toNumber() / (10 ** decimals)))
-    },
-    initNewTxStatus() : TxStatus {
+    }
+    function initNewTxStatus() : TxStatus {
       let index = this.txStatusList.push({
           index: -1,
           signatures: new Array<string>(),
@@ -125,21 +121,21 @@ export default defineComponent({
       let txStatus = this.txStatusList[index-1];
       txStatus.index = index-1;
       return txStatus;
-    },
+    }
 
-    deleteTxStatus(txStatus: TxStatus | number) {
+    function deleteTxStatus(txStatus: TxStatus | number) {
       if ((txStatus as TxStatus).index !== undefined) {
         this.txStatusList.splice((txStatus as TxStatus).index, 1)
       } else {
         this.txStatusList.splice(txStatus as number, 1)
       }
-    },
+    }
 
-    patchTxStatus(txStatus: TxStatus) {
+    function patchTxStatus(txStatus: TxStatus) {
       this.txStatusList[txStatus.index] = txStatus;
-    },
+    }
 
-    hideTxStatus(txStatus: TxStatus | number, timeout = 0) {
+    function hideTxStatus(txStatus: TxStatus | number, timeout = 0) {
       setTimeout(() => {
         if ((txStatus as TxStatus).index !== undefined) {
           this.txStatusList[(txStatus as TxStatus).index].show = false;
@@ -148,31 +144,31 @@ export default defineComponent({
         }
       }, timeout)
       
-    },
+    }
 
-    getVault(game: Game): Vault {
+    function getVault(game: Game): Vault {
       return this.vaults.get(game.account.vault.toBase58())
-    },
+    }
 
-    async updateVault(vault: Vault): Promise<void> {
+    async function updateVault(vault: Vault): Promise<void> {
       if (vault)
         this.vaults.set(vault.account.address.toBase58(), new Vault(await fetchAccountRetry<VaultAccount>(this.workspace, 'vault', vault.account.address)))
       
-    },
+    }
 
-    async updateVaults(): Promise<void> {
+    async function updateVaults(): Promise<void> {
       await Promise.allSettled([...this.vaults.values()].map(async (vault: Vault) => {
         if (vault !== undefined) {
           await this.updateVault(vault);
         }
       }))
-    },
+    }
 
-    getTokenMint(game: Game) : PublicKey {
+    function getTokenMint(game: Game) : PublicKey {
       return (this.getVault(game)).account.tokenMint;
-    },
+    }
 
-    async makePrediction(game: (Game)) {
+    async function makePrediction(game: (Game)) {
 
       let txStatus = this.initNewTxStatus()
 
@@ -292,13 +288,13 @@ export default defineComponent({
         await this.updateUser();
         await this.loadPredictions();
       }
-    },
+    }
 
-    getTokenAccount(game: Game) : Account {
+    function getTokenAccount(game: Game) : Account {
       return this.tokenAccounts.get(this.getTokenMint(game).toBase58())
-    },
+    }
 
-    async updateTokenAccount(game: Game) : Promise<void> {
+    async function updateTokenAccount(game: Game) : Promise<void> {
       try {
 
         let mint = await this.getTokenMint(game);
@@ -324,9 +320,9 @@ export default defineComponent({
       } catch(error) {
         console.error(error);
       }
-    },
+    }
 
-    async initTokenAccountForGame(game: Game) {
+    async function initTokenAccountForGame(game: Game) {
       let tokenMint = await this.getTokenMint(game);
       const transaction = new Transaction().add(
           createAssociatedTokenAccountInstruction(
@@ -366,9 +362,9 @@ export default defineComponent({
       }
       this.hideTxStatus(txStatus.index, 5000);
       
-    },
+    }
 
-    async airdrop(game: Game) {
+    async function airdrop(game: Game) {
       if ((this.workspace as Workspace).cluster === 'devnet' || (this.workspace as Workspace).cluster === 'testnet') {
         let txStatus = this.initNewTxStatus();
         try {
@@ -400,9 +396,9 @@ export default defineComponent({
         await this.updateTokenAccountBalances();
         this.$forceUpdate();
       }
-    },
+    }
 
-    async initUser() : Promise<boolean> {
+    async function initUser() : Promise<boolean> {
       try {
         this.user = await User.initializeUser(this.workspace)
         return true;
@@ -410,9 +406,9 @@ export default defineComponent({
         console.error(error);
         return false;
       }
-    },
+    }
 
-    async loadUser() : Promise<boolean> {
+    async function loadUser() : Promise<boolean> {
         if (!this.wallet.connected) return false;
           try {
             this.user = new User(await this.workspace.program.account.user.fetch((await this.workspace.programAddresses.getUserPubkey(new PublicKey((this.wallet.publicKey as PublicKey).toBase58())))[0]))
@@ -421,18 +417,18 @@ export default defineComponent({
             console.error(error);
             return false;
           }
-    },
+    }
 
-    async updateUser() {
+    async function updateUser() {
       if (this.user !== null) {
         await (this.user as User).updateData(await fetchAccountRetry<UserAccount>(this.workspace, 'user', this.user.account.address))
       } else {
         await this.loadUser();
       }
       
-    },
+    }
 
-    async updateGames() {
+    async function updateGames() {
       await Promise.allSettled(this.games.map(async (game: Game, index: number) => {
         let frontendGameData = this.frontendGameData.get(game.account.address.toBase58())
         if (frontendGameData === undefined) {
@@ -462,13 +458,13 @@ export default defineComponent({
         
       }))
       
-    },
+    }
 
-    async updateTokenAccountBalances() {
+    async function updateTokenAccountBalances() {
       await Promise.allSettled(this.games.map(async (game: Game) => await this.updateTokenAccount(game)));
-    },
+    }
 
-    async initFrontendGameData (game: Game) {
+    async function initFrontendGameData (game: Game) {
       if (!this.frontendGameData.has(game.account.address.toBase58())) {
         this.frontendGameData.set(game.account.address.toBase58(), {
           img: null,
@@ -519,9 +515,9 @@ export default defineComponent({
         }
       }
       
-    },
+    }
 
-    async loadGames() {
+    async function loadGames() {
       ((await Promise.all((await this.workspace.program.account.game.all()).map(async (gameProgramAccount: ProgramAccount<GameAccount>) => (new Game(
         gameProgramAccount.account
       ))))) as Array<Game>).forEach(async newgame => {
@@ -530,18 +526,18 @@ export default defineComponent({
           await this.initFrontendGameData(newgame);
         }
       })
-    },
+    }
 
-    async loadVaults() {
+    async function loadVaults() {
         ((await Promise.all((await this.workspace.program.account.vault.all()).map(async (vaultProgramAccount: ProgramAccount<VaultAccount>) => (new Vault(
           vaultProgramAccount.account
         ))))) as Array<Vault>).forEach((vault: Vault) => {
           if (!this.vaults.has(vault.account.address.toBase58()))
             this.vaults.set(vault.account.address.toBase58(), vault);
         });
-    },
+    }
 
-    async loadWorkspace() {
+    async function loadWorkspace() {
       if (this.workspace.program instanceof Program<PredictionGame>) {
         await this.loadGames();
         await this.loadVaults();
@@ -558,9 +554,9 @@ export default defineComponent({
         }, 1000 * this.games.length)
       }
       
-    },
+    }
 
-    async loadPredictions() {
+    async function loadPredictions() {
       if (this.wallet !== null && this.wallet.connected && this.wallet.publicKey !== undefined && this.wallet.publicKey !== null) {
         try {
           this.userPredictions = (await (this.workspace as Workspace).program.account.userPrediction.all([ { memcmp: { offset: 8, bytes: bs58.encode((this.wallet.publicKey as PublicKey)?.toBuffer() as Buffer) }}])).map((programAccount: ProgramAccount<UserPredictionAccount>) => {
@@ -571,9 +567,9 @@ export default defineComponent({
           console.error(error);
         }
       }
-    },
+    }
 
-    loadWallet() {
+    function loadWallet() {
       setTimeout(() => {
           this.wallet = useWallet();
           if (!this.wallet.connected) {
@@ -584,9 +580,9 @@ export default defineComponent({
             this.loadWorkspace();
           }
       }, 1000)
-    },
+    }
 
-    async userClaim(game: Game) {
+    async function userClaim(game: Game) {
 
       let txStatus = this.initNewTxStatus()
       txStatus.title = "User Claim"
@@ -643,7 +639,16 @@ export default defineComponent({
       await this.updateUser();
       this.$forceUpdate();
       
-    },
+    }
+
+</script>
+
+<script lang="ts">
+
+export default defineComponent({
+  name: 'HelloWorld',
+  components: {
+    CryptoIcon
   },
   watch: {
     wallet: {
@@ -658,48 +663,6 @@ export default defineComponent({
       },
       deep: true
     }
-  },
-  created() {
-    ;(async () => {
-      this.tokenList = useTokenList();
-      if (this.tokenList === []) {
-        await initTokenList('mainnet-beta');
-        this.tokenList = useTokenList();
-      }
-        
-      if (this.aggrWorkspace === '') {
-        this.aggrWorkspace = window.location.host + "/workspaces/btc.json";
-      }
-      
-      this.loadWallet();
-      if (this.workspace === null) {
-        initWorkspace(window.location.host.startsWith("devnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net", window.location.host.split('.')[0] as Cluster);
-        this.workspace = useWorkspace();
-        this.loadWorkspace();
-      }
-    })();
-    
-    
-  },
-  mounted() {
-    ;(async () => {
-      this.tokenList = useTokenList();
-      if (this.tokenList === []) {
-        await initTokenList('mainnet-beta');
-        this.tokenList = useTokenList();
-      }
-        
-      if (this.aggrWorkspace === '') {
-        this.aggrWorkspace = window.location.host + "/workspaces/btc.json";
-      }
-      
-      this.loadWallet();
-      if (this.workspace === null) {
-        initWorkspace(window.location.host.startsWith("devnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net", window.location.host.split('.')[0] as Cluster);
-        this.workspace = useWorkspace();
-        this.loadWorkspace();
-      }
-    })();
   }
 })
 </script>
