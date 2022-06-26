@@ -35,6 +35,14 @@ export type GameAccount = {
     
     priceProgram: PublicKey
     priceFeed: PublicKey
+    oracle: number
+}
+
+export enum Oracle {
+    Undefined = 0,
+    Chainlink = 1,
+    Pyth = 2,
+    Switchboard = 3
 }
 
 export default class Game implements DataUpdatable<GameAccount> {
@@ -109,7 +117,7 @@ export default class Game implements DataUpdatable<GameAccount> {
             game: this.account.address,
             vault: vault.account.address,
             feeVaultAta: vault.account.feeVaultAta,
-            feeVaultAuthority: vault.account.feeVaultAuthority,
+            feeVaultAtaAuthority: vault.account.feeVaultAtaAuthority,
             toTokenAccount: (toTokenAccount as Account).address !== undefined ? (toTokenAccount as Account).address : (toTokenAccount as PublicKey),
             tokenProgram: TOKEN_PROGRAM_ID,
         }).instruction();
@@ -138,7 +146,7 @@ export default class Game implements DataUpdatable<GameAccount> {
             game: this.account.address,
             vault: vault.account.address,
             vaultAta: vault.account.vaultAta,
-            vaultAuthority: vault.account.vaultAuthority,
+            vaultAtaAuthority: vault.account.vaultAtaAuthority,
             feeVaultAta: vault.account.feeVaultAta,
             tokenProgram: TOKEN_PROGRAM_ID,
         }).instruction();
@@ -224,13 +232,13 @@ export default class Game implements DataUpdatable<GameAccount> {
         
     }
 
-    public static async initializeGame(workspace: Workspace, baseSymbol: string, vault: Vault, priceProgram: PublicKey, priceFeed: PublicKey, feeBps: number, crankBps: number): Promise<Game> {
+    public static async initializeGame(workspace: Workspace, baseSymbol: string, vault: Vault, oracle: Oracle, priceProgram: PublicKey, priceFeed: PublicKey, feeBps: number, crankBps: number): Promise<Game> {
         const [gamePubkey, _gamePubkeyBump] = await workspace.programAddresses.getGamePubkey(vault, priceProgram, priceFeed);
 
         // console.log(baseSymbol, vaultPubkeyBump, feeVaultPubkeyBump)
 
         return new Promise((resolve, reject) => {
-            workspace.program.methods.initGameInstruction(baseSymbol, feeBps, crankBps).accounts({
+            workspace.program.methods.initGameInstruction(oracle, baseSymbol, feeBps, crankBps).accounts({
                 owner: workspace.owner,
                 game: gamePubkey,
                 vault: vault.account.address,

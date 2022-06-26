@@ -23,7 +23,14 @@ export declare type GameAccount = {
     totalVolumeRollover: anchor.BN;
     priceProgram: PublicKey;
     priceFeed: PublicKey;
+    oracle: number;
 };
+export declare enum Oracle {
+    Undefined = 0,
+    Chainlink = 1,
+    Pyth = 2,
+    Switchboard = 3
+}
 export default class Game implements DataUpdatable<GameAccount> {
     account: GameAccount;
     currentRound: Round;
@@ -42,7 +49,7 @@ export default class Game implements DataUpdatable<GameAccount> {
     claimFee(workspace: Workspace, vault: Vault): Promise<Game>;
     payoutCranksInstruction(workspace: Workspace, remainingAccounts: AccountMeta[]): Promise<TransactionInstruction>;
     payoutCranks(workspace: Workspace): Promise<Game>;
-    static initializeGame(workspace: Workspace, baseSymbol: string, vault: Vault, priceProgram: PublicKey, priceFeed: PublicKey, feeBps: number, crankBps: number): Promise<Game>;
+    static initializeGame(workspace: Workspace, baseSymbol: string, vault: Vault, oracle: Oracle, priceProgram: PublicKey, priceFeed: PublicKey, feeBps: number, crankBps: number): Promise<Game>;
     updateGame(workspace: Workspace, crank: Crank): Promise<Game>;
     settlePredictionsInstruction(workspace: Workspace, crank: Crank, remainingAccounts: AccountMeta[]): Promise<TransactionInstruction>;
     settlePredictions(workspace: Workspace, crank: Crank): Promise<Game>;

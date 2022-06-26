@@ -26,12 +26,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Oracle = void 0;
 const anchor = __importStar(require("@project-serum/anchor"));
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
 const chunk_1 = __importDefault(require("../util/chunk"));
 const round_1 = __importDefault(require("../accounts/round"));
 const index_1 = require("../util/index");
+var Oracle;
+(function (Oracle) {
+    Oracle[Oracle["Undefined"] = 0] = "Undefined";
+    Oracle[Oracle["Chainlink"] = 1] = "Chainlink";
+    Oracle[Oracle["Pyth"] = 2] = "Pyth";
+    Oracle[Oracle["Switchboard"] = 3] = "Switchboard";
+})(Oracle = exports.Oracle || (exports.Oracle = {}));
 class Game {
     constructor(account) {
         this.account = account;
@@ -90,7 +98,7 @@ class Game {
             game: this.account.address,
             vault: vault.account.address,
             feeVaultAta: vault.account.feeVaultAta,
-            feeVaultAuthority: vault.account.feeVaultAuthority,
+            feeVaultAtaAuthority: vault.account.feeVaultAtaAuthority,
             toTokenAccount: toTokenAccount.address !== undefined ? toTokenAccount.address : toTokenAccount,
             tokenProgram: spl_token_1.TOKEN_PROGRAM_ID,
         }).instruction();
@@ -119,7 +127,7 @@ class Game {
             game: this.account.address,
             vault: vault.account.address,
             vaultAta: vault.account.vaultAta,
-            vaultAuthority: vault.account.vaultAuthority,
+            vaultAtaAuthority: vault.account.vaultAtaAuthority,
             feeVaultAta: vault.account.feeVaultAta,
             tokenProgram: spl_token_1.TOKEN_PROGRAM_ID,
         }).instruction();
@@ -206,11 +214,11 @@ class Game {
             return this;
         }
     }
-    static async initializeGame(workspace, baseSymbol, vault, priceProgram, priceFeed, feeBps, crankBps) {
+    static async initializeGame(workspace, baseSymbol, vault, oracle, priceProgram, priceFeed, feeBps, crankBps) {
         const [gamePubkey, _gamePubkeyBump] = await workspace.programAddresses.getGamePubkey(vault, priceProgram, priceFeed);
         // console.log(baseSymbol, vaultPubkeyBump, feeVaultPubkeyBump)
         return new Promise((resolve, reject) => {
-            workspace.program.methods.initGameInstruction(baseSymbol, feeBps, crankBps).accounts({
+            workspace.program.methods.initGameInstruction(oracle, baseSymbol, feeBps, crankBps).accounts({
                 owner: workspace.owner,
                 game: gamePubkey,
                 vault: vault.account.address,

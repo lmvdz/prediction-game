@@ -11,6 +11,7 @@ export declare type RoundAccount = {
     roundNumber: number;
     roundLength: number;
     finished: boolean;
+    invalid: boolean;
     settled: boolean;
     feeCollected: boolean;
     cranksPaid: boolean;
@@ -22,6 +23,7 @@ export declare type RoundAccount = {
     roundCurrentPrice: anchor.BN;
     roundEndPrice: anchor.BN;
     roundPriceDifference: anchor.BN;
+    roundPriceDecimals: number;
     roundWinningDirection: number;
     totalFeeCollected: anchor.BN;
     totalUpAmount: anchor.BN;

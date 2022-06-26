@@ -46,11 +46,11 @@ class ProgramAddresses {
     async getVaultATAPubkey(vaultPubkey) {
         return await web3_js_1.PublicKey.findProgramAddress([vaultPubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('vault_ata'))], this.program.programId);
     }
-    async getFeeVaultATAAuthorityPubkey(feeVaultAta) {
-        return await web3_js_1.PublicKey.findProgramAddress([feeVaultAta.toBuffer()], this.program.programId);
-    }
     async getVaultATAAuthorityPubkey(vaultAta) {
         return await web3_js_1.PublicKey.findProgramAddress([vaultAta.toBuffer()], this.program.programId);
+    }
+    async getFeeVaultATAAuthorityPubkey(feeVaultAta) {
+        return await web3_js_1.PublicKey.findProgramAddress([feeVaultAta.toBuffer()], this.program.programId);
     }
     async getVaultPubkey(tokenMint) {
         return await web3_js_1.PublicKey.findProgramAddress([this.owner.toBuffer(), tokenMint.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('vault'))], this.program.programId);

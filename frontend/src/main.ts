@@ -4,7 +4,6 @@ import vuetify from './plugins/vuetify'
 import { loadFonts } from './plugins/webfontloader'
 import router from './router'
 import { createPinia } from 'pinia'
-import { dragscrollNext } from "vue-dragscroll";
 import SolanaWallets from 'solana-wallets-vue';
 import 'solana-wallets-vue/styles.css';
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base"
@@ -23,6 +22,8 @@ const walletOptions = {
 }
 import { initTokenList } from "./plugins/tokenList"
 await initTokenList('mainnet-beta');
+import Vue3Lottie from 'vue3-lottie'
+import 'vue3-lottie/dist/style.css'
 
 loadFonts()
 
@@ -31,5 +32,5 @@ createApp(App)
   .use(router)
   .use(createPinia())
   .use(SolanaWallets, walletOptions)
-  .directive('dragscroll', dragscrollNext)
+  .use(Vue3Lottie, { name: 'LottieAnimation' })
   .mount('#app')

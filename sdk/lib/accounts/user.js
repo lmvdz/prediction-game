@@ -53,7 +53,7 @@ class User {
             toTokenAccount: toTokenAccount.address,
             vault: vault.account.address,
             vaultAta: vault.account.vaultAta,
-            vaultAuthority: vault.account.vaultAuthority,
+            vaultAtaAuthority: vault.account.vaultAtaAuthority,
             tokenMint: toTokenAccount.mint,
             tokenProgram: spl_token_1.TOKEN_PROGRAM_ID
         }).instruction();

@@ -59,6 +59,10 @@ export type PredictionGame = {
       ],
       "args": [
         {
+          "name": "oracle",
+          "type": "u8"
+        },
+        {
           "name": "baseSymbol",
           "type": "string"
         },
@@ -346,7 +350,7 @@ export type PredictionGame = {
           "isSigner": false
         },
         {
-          "name": "vaultAuthority",
+          "name": "vaultAtaAuthority",
           "isMut": false,
           "isSigner": false
         },
@@ -392,7 +396,7 @@ export type PredictionGame = {
           "isSigner": false
         },
         {
-          "name": "feeVaultAuthority",
+          "name": "feeVaultAtaAuthority",
           "isMut": false,
           "isSigner": false
         },
@@ -622,7 +626,7 @@ export type PredictionGame = {
           "isSigner": false
         },
         {
-          "name": "vaultAuthority",
+          "name": "vaultAtaAuthority",
           "isMut": false,
           "isSigner": false
         },
@@ -902,6 +906,10 @@ export type PredictionGame = {
             "type": "u128"
           },
           {
+            "name": "oracle",
+            "type": "u8"
+          },
+          {
             "name": "priceProgram",
             "type": "publicKey"
           },
@@ -958,6 +966,10 @@ export type PredictionGame = {
             "type": "bool"
           },
           {
+            "name": "invalid",
+            "type": "bool"
+          },
+          {
             "name": "settled",
             "type": "bool"
           },
@@ -1000,6 +1012,10 @@ export type PredictionGame = {
           {
             "name": "roundPriceDifference",
             "type": "i128"
+          },
+          {
+            "name": "roundPriceDecimals",
+            "type": "u8"
           },
           {
             "name": "roundWinningDirection",
@@ -1134,11 +1150,11 @@ export type PredictionGame = {
             "type": "publicKey"
           },
           {
-            "name": "vaultNonce",
+            "name": "vaultAtaAuthorityNonce",
             "type": "u8"
           },
           {
-            "name": "vaultAuthority",
+            "name": "vaultAtaAuthority",
             "type": "publicKey"
           },
           {
@@ -1146,11 +1162,11 @@ export type PredictionGame = {
             "type": "publicKey"
           },
           {
-            "name": "feeVaultNonce",
+            "name": "feeVaultAtaAuthorityNonce",
             "type": "u8"
           },
           {
-            "name": "feeVaultAuthority",
+            "name": "feeVaultAtaAuthority",
             "type": "publicKey"
           }
         ]
@@ -1158,6 +1174,26 @@ export type PredictionGame = {
     }
   ],
   "types": [
+    {
+      "name": "Oracle",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Undefined"
+          },
+          {
+            "name": "Chainlink"
+          },
+          {
+            "name": "Pyth"
+          },
+          {
+            "name": "Switchboard"
+          }
+        ]
+      }
+    },
     {
       "name": "UpOrDown",
       "type": {
@@ -1711,6 +1747,10 @@ export const IDL: PredictionGame = {
       ],
       "args": [
         {
+          "name": "oracle",
+          "type": "u8"
+        },
+        {
           "name": "baseSymbol",
           "type": "string"
         },
@@ -1998,7 +2038,7 @@ export const IDL: PredictionGame = {
           "isSigner": false
         },
         {
-          "name": "vaultAuthority",
+          "name": "vaultAtaAuthority",
           "isMut": false,
           "isSigner": false
         },
@@ -2044,7 +2084,7 @@ export const IDL: PredictionGame = {
           "isSigner": false
         },
         {
-          "name": "feeVaultAuthority",
+          "name": "feeVaultAtaAuthority",
           "isMut": false,
           "isSigner": false
         },
@@ -2274,7 +2314,7 @@ export const IDL: PredictionGame = {
           "isSigner": false
         },
         {
-          "name": "vaultAuthority",
+          "name": "vaultAtaAuthority",
           "isMut": false,
           "isSigner": false
         },
@@ -2554,6 +2594,10 @@ export const IDL: PredictionGame = {
             "type": "u128"
           },
           {
+            "name": "oracle",
+            "type": "u8"
+          },
+          {
             "name": "priceProgram",
             "type": "publicKey"
           },
@@ -2610,6 +2654,10 @@ export const IDL: PredictionGame = {
             "type": "bool"
           },
           {
+            "name": "invalid",
+            "type": "bool"
+          },
+          {
             "name": "settled",
             "type": "bool"
           },
@@ -2652,6 +2700,10 @@ export const IDL: PredictionGame = {
           {
             "name": "roundPriceDifference",
             "type": "i128"
+          },
+          {
+            "name": "roundPriceDecimals",
+            "type": "u8"
           },
           {
             "name": "roundWinningDirection",
@@ -2786,11 +2838,11 @@ export const IDL: PredictionGame = {
             "type": "publicKey"
           },
           {
-            "name": "vaultNonce",
+            "name": "vaultAtaAuthorityNonce",
             "type": "u8"
           },
           {
-            "name": "vaultAuthority",
+            "name": "vaultAtaAuthority",
             "type": "publicKey"
           },
           {
@@ -2798,11 +2850,11 @@ export const IDL: PredictionGame = {
             "type": "publicKey"
           },
           {
-            "name": "feeVaultNonce",
+            "name": "feeVaultAtaAuthorityNonce",
             "type": "u8"
           },
           {
-            "name": "feeVaultAuthority",
+            "name": "feeVaultAtaAuthority",
             "type": "publicKey"
           }
         ]
@@ -2810,6 +2862,26 @@ export const IDL: PredictionGame = {
     }
   ],
   "types": [
+    {
+      "name": "Oracle",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Undefined"
+          },
+          {
+            "name": "Chainlink"
+          },
+          {
+            "name": "Pyth"
+          },
+          {
+            "name": "Switchboard"
+          }
+        ]
+      }
+    },
     {
       "name": "UpOrDown",
       "type": {

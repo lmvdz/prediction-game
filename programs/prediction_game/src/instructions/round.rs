@@ -8,6 +8,10 @@ pub fn init_first_round(ctx: Context<InitFirstRound>, round_length: i64) -> Resu
     let round = &mut ctx.accounts.round;
     let game = &mut ctx.accounts.game;
 
+    let price_program = game.price_program;
+    let price_feed = game.price_feed;
+    let oracle = game.oracle;
+
     game.current_round = round.key();
     game.previous_round = round.key();
 
@@ -27,14 +31,20 @@ pub fn init_first_round(ctx: Context<InitFirstRound>, round_length: i64) -> Resu
 
     round.round_predictions_allowed = true;
 
-    // let price = get_price(price_program, price_feed).unwrap_or(0); // production
+    // let (price, decimals) = get_price(oracle, price_program, price_feed).unwrap_or(0); // production & devnet
     let price = 0; // localnet
+
+    // round.round_price_decimals = decimals; // production & devnet
+    round.round_price_decimals = 1;
 
     round.round_start_price = price;
     round.round_current_price = price;
     round.round_price_difference = 0;
 
+    
+
     round.finished = false;
+    round.invalid = false;
     round.settled = false;
     round.fee_collected = false;
     round.cranks_paid = false;
@@ -96,14 +106,16 @@ fn init_round_shared(next_round: &mut Box<Account<Round>>, current_round: &mut B
 
     next_round.round_predictions_allowed = true;
 
-    // let price = get_price(price_program, price_feed).unwrap_or(0);
+    // let (price, decimals) = get_price(oracle, price_program, price_feed).unwrap_or(0);
     let price = 0;
 
     next_round.round_start_price = price;
     next_round.round_current_price = price;
     next_round.round_price_difference = 0;
+    next_round.round_price_decimals = 1;
 
     next_round.finished = false;
+    next_round.invalid = false;
     next_round.settled = false;
     next_round.fee_collected = false;
     next_round.cranks_paid = false;
@@ -143,6 +155,7 @@ pub fn init_next_round_and_close_previous(ctx: Context<InitNextRoundAndClosePrev
 impl Round {
     pub fn update_round<'info>(
         &mut self, 
+        oracle: u8,
         price_program: &AccountInfo<'info>, 
         price_feed: &AccountInfo<'info>
 
@@ -152,29 +165,36 @@ impl Round {
             if self.round_predictions_allowed && self.round_time_difference >= (self.round_length / 2) { // for production
                 self.round_predictions_allowed = false;
             }
+
+            // update the round time
+            self.round_current_time = Clock::get()?.unix_timestamp;
+            // calculate the difference in time or set to zero
+            self.round_time_difference = self.round_current_time.checked_sub(self.round_start_time).unwrap_or(0);
+            
+            // update the round price
+            // self.round_current_price = get_price(oracle, price_program, price_feed).unwrap_or(self.round_start_price);  // production
+            self.round_current_price += 1; // localnet testing
+            
+            // calculate the difference in price or set to zero
+            self.round_price_difference = self.round_current_price.checked_sub(self.round_start_price).unwrap_or(0);
+
             // if self.round_time_difference > (2) { 
             if self.round_time_difference >= self.round_length { // for production
 
                 self.round_end_price = self.round_current_price;
-    
+                self.finished = true;
+
                 self.round_winning_direction = if self.round_end_price > self.round_start_price {
                     1
                 } else {
                     2
                 };
-                self.finished = true;
-            } else {
-                // update the round time
-                self.round_current_time = Clock::get()?.unix_timestamp;
-                // calculate the difference in time or set to zero
-                self.round_time_difference = self.round_current_time.checked_sub(self.round_start_time).unwrap_or(0);
+
+                // if the round finishes after 10% of the round_length invalidate the round
+                if self.round_time_difference >= self.round_length.saturating_add(self.round_length.saturating_mul(10).saturating_div(100)) {
+                    self.invalid = true;
+                }
                 
-                // update the round price
-                // self.round_current_price = get_price(price_program, price_feed).unwrap_or(self.round_start_price);  // production
-                self.round_current_price += 1; // localnet testing
-                
-                // calculate the difference in price or set to zero
-                self.round_price_difference = self.round_current_price.checked_sub(self.round_start_price).unwrap_or(0);
             }
         }
         Ok(())

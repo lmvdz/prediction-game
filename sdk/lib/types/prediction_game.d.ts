@@ -59,6 +59,10 @@ export declare type PredictionGame = {
             ];
             "args": [
                 {
+                    "name": "oracle";
+                    "type": "u8";
+                },
+                {
                     "name": "baseSymbol";
                     "type": "string";
                 },
@@ -346,7 +350,7 @@ export declare type PredictionGame = {
                     "isSigner": false;
                 },
                 {
-                    "name": "vaultAuthority";
+                    "name": "vaultAtaAuthority";
                     "isMut": false;
                     "isSigner": false;
                 },
@@ -392,7 +396,7 @@ export declare type PredictionGame = {
                     "isSigner": false;
                 },
                 {
-                    "name": "feeVaultAuthority";
+                    "name": "feeVaultAtaAuthority";
                     "isMut": false;
                     "isSigner": false;
                 },
@@ -622,7 +626,7 @@ export declare type PredictionGame = {
                     "isSigner": false;
                 },
                 {
-                    "name": "vaultAuthority";
+                    "name": "vaultAtaAuthority";
                     "isMut": false;
                     "isSigner": false;
                 },
@@ -902,6 +906,10 @@ export declare type PredictionGame = {
                         "type": "u128";
                     },
                     {
+                        "name": "oracle";
+                        "type": "u8";
+                    },
+                    {
                         "name": "priceProgram";
                         "type": "publicKey";
                     },
@@ -958,6 +966,10 @@ export declare type PredictionGame = {
                         "type": "bool";
                     },
                     {
+                        "name": "invalid";
+                        "type": "bool";
+                    },
+                    {
                         "name": "settled";
                         "type": "bool";
                     },
@@ -1000,6 +1012,10 @@ export declare type PredictionGame = {
                     {
                         "name": "roundPriceDifference";
                         "type": "i128";
+                    },
+                    {
+                        "name": "roundPriceDecimals";
+                        "type": "u8";
                     },
                     {
                         "name": "roundWinningDirection";
@@ -1134,11 +1150,11 @@ export declare type PredictionGame = {
                         "type": "publicKey";
                     },
                     {
-                        "name": "vaultNonce";
+                        "name": "vaultAtaAuthorityNonce";
                         "type": "u8";
                     },
                     {
-                        "name": "vaultAuthority";
+                        "name": "vaultAtaAuthority";
                         "type": "publicKey";
                     },
                     {
@@ -1146,11 +1162,11 @@ export declare type PredictionGame = {
                         "type": "publicKey";
                     },
                     {
-                        "name": "feeVaultNonce";
+                        "name": "feeVaultAtaAuthorityNonce";
                         "type": "u8";
                     },
                     {
-                        "name": "feeVaultAuthority";
+                        "name": "feeVaultAtaAuthority";
                         "type": "publicKey";
                     }
                 ];
@@ -1158,6 +1174,26 @@ export declare type PredictionGame = {
         }
     ];
     "types": [
+        {
+            "name": "Oracle";
+            "type": {
+                "kind": "enum";
+                "variants": [
+                    {
+                        "name": "Undefined";
+                    },
+                    {
+                        "name": "Chainlink";
+                    },
+                    {
+                        "name": "Pyth";
+                    },
+                    {
+                        "name": "Switchboard";
+                    }
+                ];
+            };
+        },
         {
             "name": "UpOrDown";
             "type": {

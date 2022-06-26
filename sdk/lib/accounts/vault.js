@@ -19,11 +19,11 @@ class Vault {
         return this;
     }
     static async initializeVaultInstruction(workspace, tokenMint, vaultPubkey) {
-        let [vaultAtaPubkey, vaultAtaPubkeyBump] = await workspace.programAddresses.getVaultATAPubkey(vaultPubkey);
-        let [vaultAtaAuthorityPubkey, _vaultAtaAuthorityPubkeyBump] = await workspace.programAddresses.getVaultATAAuthorityPubkey(vaultAtaPubkey);
-        let [feeVaultAtaPubkey, feeVaultAtaPubkeyBump] = await workspace.programAddresses.getFeeVaultATAPubkey(vaultPubkey);
-        let [feeVaultAtaAuthorityPubkey, _feeVaultAtaAuthorityPubkeyBump] = await workspace.programAddresses.getVaultATAAuthorityPubkey(feeVaultAtaPubkey);
-        return await workspace.program.methods.initVaultInstruction(vaultAtaPubkeyBump, feeVaultAtaPubkeyBump).accounts({
+        let [vaultAtaPubkey, _vaultAtaPubkeyBump] = await workspace.programAddresses.getVaultATAPubkey(vaultPubkey);
+        let [vaultAtaAuthorityPubkey, vaultAtaAuthorityPubkeyBump] = await workspace.programAddresses.getVaultATAAuthorityPubkey(vaultAtaPubkey);
+        let [feeVaultAtaPubkey, _feeVaultAtaPubkeyBump] = await workspace.programAddresses.getFeeVaultATAPubkey(vaultPubkey);
+        let [feeVaultAtaAuthorityPubkey, feeVaultAtaAuthorityPubkeyBump] = await workspace.programAddresses.getFeeVaultATAAuthorityPubkey(feeVaultAtaPubkey);
+        return await workspace.program.methods.initVaultInstruction(vaultAtaAuthorityPubkeyBump, feeVaultAtaAuthorityPubkeyBump).accounts({
             owner: workspace.owner,
             vault: vaultPubkey,
             vaultAta: vaultAtaPubkey,

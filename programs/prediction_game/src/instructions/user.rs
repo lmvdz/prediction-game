@@ -88,23 +88,23 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
 pub fn user_claim(ctx: Context<UserClaim>, amount: u64) -> Result<()> {
     let user = &mut ctx.accounts.user;
     let vault = &ctx.accounts.vault;
-    let vault_key = &vault.key();
-    let vault_ata = &ctx.accounts.vault_ata;
-    let vault_nonce = vault.vault_nonce;
-    let vault_authority = &ctx.accounts.vault_authority;
+    let vault_ata = &mut ctx.accounts.vault_ata;
+    let vault_ata_key = &vault_ata.key();
+    let vault_ata_authority_nonce = vault.vault_ata_authority_nonce;
+    let vault_ata_authority = &ctx.accounts.vault_ata_authority;
     let to_token_account = &mut ctx.accounts.to_token_account;
 
     let token_program = &ctx.accounts.token_program;
 
     require!(user.claimable.gt(&amount) || user.claimable.eq(&amount), ErrorCode::InsufficientClaimableAmount);
 
-    let signature_seeds = [vault_key.as_ref(), b"vault_ata", &[vault_nonce]];
+    let signature_seeds = [vault_ata_key.as_ref(), &[vault_ata_authority_nonce]];
     let signers = &[&signature_seeds[..]];
 
     require!(transfer_token_account_signed(
         vault_ata, //  from 
         to_token_account, // to 
-        &vault_authority.to_account_info(), // from auth
+        vault_ata_authority, // from auth
         signers, // signers
         token_program, // TOKEN_PROGRAM
         amount
@@ -153,15 +153,15 @@ pub struct UserClaim<'info> {
 
     #[account(
         mut,
-        constraint = vault_ata.owner == vault.vault_authority.key() @ ErrorCode::UserOwnerNotFromTokenAccountOwner
+        constraint = vault_ata.owner == vault.vault_ata_authority.key() 
     )]
     pub vault_ata: Box<Account<'info, TokenAccount>>,
 
     /// CHECK:
     #[account(
-        constraint = vault_authority.key() == vault_ata.owner @ ErrorCode::UserOwnerNotFromTokenAccountOwner
+        constraint = vault_ata_authority.key() == vault_ata.owner
     )]
-    pub vault_authority: AccountInfo<'info>,
+    pub vault_ata_authority: AccountInfo<'info>,
 
     pub token_mint: Box<Account<'info, Mint>>,
 
@@ -214,7 +214,7 @@ pub struct InitUserPrediction<'info> {
     #[account(
         init,
         seeds = [
-            user.owner.as_ref(), 
+            signer.key().as_ref(), 
             game.key().as_ref(), 
             current_round.key().as_ref(), 
             &[current_round.round_number.to_be_bytes()[0]], 
@@ -236,13 +236,13 @@ pub struct InitUserPrediction<'info> {
 
     #[account(
         mut,
-        constraint = vault_ata.owner == vault.vault_authority @ ErrorCode::RoundOwnerNotVaultOwner
+        constraint = vault_ata.owner == vault.vault_ata_authority @ ErrorCode::RoundOwnerNotVaultOwner
     )]
     pub vault_ata: Box<Account<'info, TokenAccount>>,
 
     #[account(
         mut,
-        constraint = from_token_account.amount > 0 @ ErrorCode::FromTokenAccountZeroBalance
+        constraint = from_token_account.amount.saturating_add(user.claimable) > 0 @ ErrorCode::FromTokenAccountZeroBalance
     )]
     pub from_token_account: Box<Account<'info, TokenAccount>>,
 
@@ -255,6 +255,7 @@ pub struct InitUserPrediction<'info> {
 
     pub token_mint: Box<Account<'info, Mint>>,
     pub token_program: Program<'info, Token>,
+
     pub system_program: Program<'info, System>,
 }
 

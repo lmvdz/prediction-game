@@ -18,6 +18,7 @@ export type RoundAccount = {
     roundLength: number
     
     finished: boolean
+    invalid: boolean
     settled: boolean
     feeCollected: boolean
     cranksPaid: boolean
@@ -32,6 +33,8 @@ export type RoundAccount = {
     roundCurrentPrice: anchor.BN
     roundEndPrice: anchor.BN
     roundPriceDifference: anchor.BN
+
+    roundPriceDecimals: number,
 
     roundWinningDirection: number
 

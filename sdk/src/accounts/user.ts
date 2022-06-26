@@ -76,7 +76,7 @@ export default class User implements DataUpdatable<UserAccount> {
             toTokenAccount: toTokenAccount.address,
             vault: vault.account.address,
             vaultAta: vault.account.vaultAta,
-            vaultAuthority: vault.account.vaultAuthority,
+            vaultAtaAuthority: vault.account.vaultAtaAuthority,
             tokenMint: toTokenAccount.mint,
             tokenProgram: TOKEN_PROGRAM_ID
         }).instruction();

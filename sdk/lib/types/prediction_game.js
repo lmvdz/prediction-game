@@ -62,6 +62,10 @@ exports.IDL = {
             ],
             "args": [
                 {
+                    "name": "oracle",
+                    "type": "u8"
+                },
+                {
                     "name": "baseSymbol",
                     "type": "string"
                 },
@@ -349,7 +353,7 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
-                    "name": "vaultAuthority",
+                    "name": "vaultAtaAuthority",
                     "isMut": false,
                     "isSigner": false
                 },
@@ -395,7 +399,7 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
-                    "name": "feeVaultAuthority",
+                    "name": "feeVaultAtaAuthority",
                     "isMut": false,
                     "isSigner": false
                 },
@@ -625,7 +629,7 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
-                    "name": "vaultAuthority",
+                    "name": "vaultAtaAuthority",
                     "isMut": false,
                     "isSigner": false
                 },
@@ -905,6 +909,10 @@ exports.IDL = {
                         "type": "u128"
                     },
                     {
+                        "name": "oracle",
+                        "type": "u8"
+                    },
+                    {
                         "name": "priceProgram",
                         "type": "publicKey"
                     },
@@ -961,6 +969,10 @@ exports.IDL = {
                         "type": "bool"
                     },
                     {
+                        "name": "invalid",
+                        "type": "bool"
+                    },
+                    {
                         "name": "settled",
                         "type": "bool"
                     },
@@ -1003,6 +1015,10 @@ exports.IDL = {
                     {
                         "name": "roundPriceDifference",
                         "type": "i128"
+                    },
+                    {
+                        "name": "roundPriceDecimals",
+                        "type": "u8"
                     },
                     {
                         "name": "roundWinningDirection",
@@ -1137,11 +1153,11 @@ exports.IDL = {
                         "type": "publicKey"
                     },
                     {
-                        "name": "vaultNonce",
+                        "name": "vaultAtaAuthorityNonce",
                         "type": "u8"
                     },
                     {
-                        "name": "vaultAuthority",
+                        "name": "vaultAtaAuthority",
                         "type": "publicKey"
                     },
                     {
@@ -1149,11 +1165,11 @@ exports.IDL = {
                         "type": "publicKey"
                     },
                     {
-                        "name": "feeVaultNonce",
+                        "name": "feeVaultAtaAuthorityNonce",
                         "type": "u8"
                     },
                     {
-                        "name": "feeVaultAuthority",
+                        "name": "feeVaultAtaAuthority",
                         "type": "publicKey"
                     }
                 ]
@@ -1161,6 +1177,26 @@ exports.IDL = {
         }
     ],
     "types": [
+        {
+            "name": "Oracle",
+            "type": {
+                "kind": "enum",
+                "variants": [
+                    {
+                        "name": "Undefined"
+                    },
+                    {
+                        "name": "Chainlink"
+                    },
+                    {
+                        "name": "Pyth"
+                    },
+                    {
+                        "name": "Switchboard"
+                    }
+                ]
+            }
+        },
         {
             "name": "UpOrDown",
             "type": {

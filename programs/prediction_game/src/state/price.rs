@@ -1,6 +1,9 @@
-use pyth_sdk_solana::load_price_feed_from_account_info;
+// use pyth_sdk_solana::load_price_feed_from_account_info;
 use chainlink_solana as chainlink;
-use std::str::FromStr;
+use pyth_sdk_solana::load_price_feed_from_account_info;
+use switchboard::{AggregatorAccountData};
+use switchboard_v2 as switchboard;
+use num_enum::FromPrimitive;
 
 use anchor_lang::prelude::*;
 
@@ -9,6 +12,16 @@ use anchor_lang::prelude::*;
 pub struct Decimal {
     pub value: i128,
     pub decimals: u32,
+}
+
+#[derive(Debug, Eq, PartialEq, FromPrimitive)]
+#[repr(u8)]
+pub enum Oracle {
+    #[num_enum(default)]
+    Undefined = 0,
+    Chainlink = 1,
+    Pyth = 2,
+    Switchboard = 3
 }
 
 impl Decimal {
@@ -33,25 +46,35 @@ impl std::fmt::Display for Decimal {
     }
 }
 
-pub fn get_price<'info>(price_program: &AccountInfo<'info>, price_feed: &AccountInfo<'info>) -> Result<i128> {
-    let mut price: i128 = 0;
-    if Pubkey::from_str("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny").unwrap().eq(&price_program.key()) { // chainlink
-        let round = chainlink::latest_round_data(
-            price_program.to_account_info(),
-            price_feed.to_account_info(),
-        )?;
-        let decimals = chainlink::decimals(
-            price_program.to_account_info(),
-            price_feed.to_account_info(),
-        )?;
-        price = Decimal::new(round.answer, u32::from(decimals)).value;
-    } else if 
-        Pubkey::from_str("gSbePebfvPy7tRqimPoVecS2UsBvYv46ynrzWocc92s").unwrap().eq(&price_program.key()) // pyth devnet
-        ||
-        Pubkey::from_str("FsJ3A3u2vn5cTVofAjvy6y5kwABJAqYWpe4975bi2epH").unwrap().eq(&price_program.key())  // pyth mainnet
-    { 
-        let price_feed_result = load_price_feed_from_account_info(price_feed).unwrap();
-        price = price_feed_result.get_current_price().unwrap().price.into();
-    }
-    Ok(price)
+pub fn get_price<'info>(oracle: u8, price_program: &AccountInfo<'info>, price_feed: &AccountInfo<'info>) -> Result<(i128, u8)> {
+    
+    let oracle_from_u8 = Oracle::from(oracle);
+
+    let (price, decimals) = match oracle_from_u8 {
+        Oracle::Chainlink => {
+            let round = chainlink::latest_round_data(
+                price_program.to_account_info(),
+                price_feed.to_account_info(),
+            )?;
+            
+            let decimals = chainlink::decimals(
+                price_program.to_account_info(),
+                price_feed.to_account_info(),
+            )?;
+    
+            (Decimal::new(round.answer, u32::from(decimals)).value, decimals)
+        },
+        Oracle::Pyth => {
+            let price_feed_result = load_price_feed_from_account_info(price_feed).unwrap();
+            let current_price = price_feed_result.get_current_price().unwrap();
+            ( current_price.price.into(), current_price.expo.try_into().unwrap())
+        },
+        Oracle::Switchboard => {
+            let switchboard_decimal = AggregatorAccountData::new(price_feed)?.get_result()?;
+            ( switchboard_decimal.mantissa, switchboard_decimal.scale.try_into().unwrap())
+        },
+        Oracle::Undefined => (0, 0)
+    };
+
+    Ok((price, decimals))
 }

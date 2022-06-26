@@ -5,7 +5,7 @@ import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
 import * as anchor from "@project-serum/anchor"
 import { config } from 'dotenv';
 import bs58 from 'bs58';
-import Game, { GameAccount } from "sdk/lib/accounts/game";
+import Game, { GameAccount, Oracle } from "sdk/lib/accounts/game";
 import { createMint, getMint, Mint, MintLayout, mintTo } from "@solana/spl-token";
 import Round, { RoundAccount } from "sdk/lib/accounts/round";
 import { fetchAccountRetry } from "sdk/lib/util";
@@ -50,7 +50,29 @@ const connection: Connection = new Connection('http://localhost:8899')
 const workspace: Workspace = Workspace.load(connection, botWallet, 'testnet', { commitment: 'confirmed' })
 const mintKeypair = Keypair.fromSecretKey(bs58.decode("3dS4W9gKuGQcvA4s9dSRKLGJ8UAdu9ZeFLxJfv6WLK4BzZZnt3L2WNSJchjtgLi7BnxMTcpPRU1AG9yfEkR2cxDT"))
 const mintDecimals = 6;
-
+let gameSeeds: Array<GameSeed> = [ 
+    { 
+        baseSymbol: "SOL", 
+        priceProgram: new PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"), 
+        priceFeed: new PublicKey("HgTtcbcmp5BeThax5AU8vg4VwK79qAvAKKFMs8txMLW6"),
+        roundLength: new anchor.BN(300),
+        oracle: Oracle.Chainlink
+    }, 
+    {
+        baseSymbol: "BTC", 
+        priceProgram: new PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"), 
+        priceFeed: new PublicKey("CzZQBrJCLqjXRfMjRN3fhbxur2QYHUzkpaRwkWsiPqbz"),
+        roundLength: new anchor.BN(300),
+        oracle: Oracle.Chainlink
+    }, 
+    {
+        baseSymbol: "ETH", 
+        priceProgram: new PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"), 
+        priceFeed: new PublicKey("2ypeVyYnZaW2TNYXXTaZq9YhYvnqcjCiifW1C6n8b7Go"),
+        roundLength: new anchor.BN(300),
+        oracle: Oracle.Chainlink
+    }
+] as Array<GameSeed>;
 
 async function createFakeMint(connection: Connection, keypair?: Keypair, mintDecimals = 6) : Promise<Mint> {
     const mintKey = keypair || Keypair.generate();
@@ -95,12 +117,13 @@ const loadVault = (workspace: Workspace, tokenMint: PublicKey) : Promise<Vault> 
     }) 
 }
 
-const startGame = (workspace: Workspace, baseSymbol: string, vault: Vault, priceProgram: PublicKey, priceFeed: PublicKey) : Promise<Game> => {
+const startGame = (workspace: Workspace, baseSymbol: string, vault: Vault, oracle: Oracle, priceProgram: PublicKey, priceFeed: PublicKey) : Promise<Game> => {
     return new Promise((resolve, reject) => {
         Game.initializeGame(
             workspace, 
             baseSymbol,
             vault, 
+            oracle,
             priceProgram, 
             priceFeed,
             30,
@@ -113,7 +136,7 @@ const startGame = (workspace: Workspace, baseSymbol: string, vault: Vault, price
     })
 }
 
-const loadGame = (workspace: Workspace, baseSymbol: string, vault: Vault, priceProgram: PublicKey, priceFeed: PublicKey) : Promise<Game> => {
+const loadGame = (workspace: Workspace, baseSymbol: string, vault: Vault, oracle: Oracle, priceProgram: PublicKey, priceFeed: PublicKey) : Promise<Game> => {
     return new Promise((resolve, reject) => {
         workspace.programAddresses.getGamePubkey(vault, priceProgram, priceFeed).then(([gamePubkey, _gamePubkeyBump]) => {
             fetchAccountRetry<GameAccount>(workspace, 'game', (gamePubkey)).then(gameAccount => {
@@ -122,7 +145,7 @@ const loadGame = (workspace: Workspace, baseSymbol: string, vault: Vault, priceP
                 ));
             }).catch(error => {
                 console.error(error);
-                startGame(workspace, baseSymbol, vault, priceProgram, priceFeed).then((game: Game) => {
+                startGame(workspace, baseSymbol, vault, oracle, priceProgram, priceFeed).then((game: Game) => {
                     resolve(game);
                 }).catch((error) => {
                     reject(error);
@@ -234,14 +257,22 @@ const settleOrInitNext = (workspace: Workspace, game: Game, crank: Crank) : Prom
     })
 }
 
+let loopCount = 0;
+
 const updateLoop = (workspace: Workspace, vault: Vault, game: Game, crank: Crank) => {
+    if (loopCount > (60 * 60)) {
+        run();
+        loopCount = 0;
+        return;
+    }
+    loopCount++;
     setTimeout(() => {
         workspace.program.provider.connection.getTokenAccountBalance(vault.account.vaultAta).then(vaultTokenAccountBalanaceResponse => {
             workspace.program.provider.connection.getTokenAccountBalance(vault.account.feeVaultAta).then(feeVaultTokenAccountBalanaceResponse => {
                 console.log(
                     vaultTokenAccountBalanaceResponse.value.uiAmount,
                     feeVaultTokenAccountBalanaceResponse.value.uiAmount,
-                    game.account.unclaimedFees.toNumber(),
+                    ((game.account.unclaimedFees.div(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() + ((game.account.unclaimedFees.mod(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() / (10 ** vault.account.tokenDecimals))),
                     game.account.baseSymbol,
                     game.currentRound.account.roundNumber, 
                     game.currentRound.account.roundTimeDifference.toNumber(),
@@ -250,6 +281,7 @@ const updateLoop = (workspace: Workspace, vault: Vault, game: Game, crank: Crank
                     game.currentRound.account.feeCollected,
                     game.currentRound.account.cranksPaid,
                     game.currentRound.account.settled,
+                    game.currentRound.account.invalid,
                     game.currentRound.account.totalUniqueCrankers,
                     game.currentRound.account.totalCranksPaid
                 );
@@ -287,14 +319,16 @@ const updateLoop = (workspace: Workspace, vault: Vault, game: Game, crank: Crank
             updateLoop(workspace, vault, game, crank)
         })
         
-    }, 1000)
+    }, 10 * 1000)
 }
+
+
 
 const crankLoop = async (workspace: Workspace, mint: Mint, gameSeed: GameSeed) => {
     try {
         // load required accounts to crank
         let vault = await loadVault(workspace, mint.address);
-        let game = await loadGame(workspace, gameSeed.baseSymbol, vault, gameSeed.priceProgram, gameSeed.priceFeed);
+        let game = await loadGame(workspace, gameSeed.baseSymbol, vault, gameSeed.oracle, gameSeed.priceProgram, gameSeed.priceFeed);
         let user = await loadUser(workspace);
         let crank = await loadCrank(workspace, game, user);
 
@@ -319,32 +353,13 @@ type GameSeed = {
     baseSymbol: string,
     priceProgram: PublicKey,
     priceFeed: PublicKey,
-    roundLength: anchor.BN
+    roundLength: anchor.BN,
+    oracle: Oracle
 }
 
 async function run() {
 
     let mint = await createFakeMint(connection, mintKeypair, mintDecimals);
-    let gameSeeds: Array<GameSeed> = [ 
-        { 
-            baseSymbol: "SOL", 
-            priceProgram: new PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"), 
-            priceFeed: new PublicKey("HgTtcbcmp5BeThax5AU8vg4VwK79qAvAKKFMs8txMLW6"),
-            roundLength: new anchor.BN(300)
-        }, 
-        {
-            baseSymbol: "BTC", 
-            priceProgram: new PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"), 
-            priceFeed: new PublicKey("CzZQBrJCLqjXRfMjRN3fhbxur2QYHUzkpaRwkWsiPqbz"),
-            roundLength: new anchor.BN(300)
-        }, 
-        {
-            baseSymbol: "ETH", 
-            priceProgram: new PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"), 
-            priceFeed: new PublicKey("2ypeVyYnZaW2TNYXXTaZq9YhYvnqcjCiifW1C6n8b7Go"),
-            roundLength: new anchor.BN(300)
-        }
-    ] as Array<GameSeed>;
 
     gameSeeds.forEach(async (gameSeed : GameSeed) => {
         crankLoop(workspace, mint, gameSeed)

@@ -12,6 +12,7 @@ pub struct Round {
     pub round_length: i64,
 
     pub finished: bool,
+    pub invalid: bool,
     pub settled: bool,
     pub fee_collected: bool,
     pub cranks_paid: bool,
@@ -26,6 +27,7 @@ pub struct Round {
     pub round_current_price: i128,
     pub round_end_price: i128,
     pub round_price_difference: i128,
+    pub round_price_decimals: u8,
 
     pub round_winning_direction: u8,
 

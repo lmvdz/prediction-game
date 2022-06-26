@@ -12,8 +12,8 @@ export declare class ProgramAddresses<T extends anchor.Idl> {
     getGamePubkey(vault: Vault, priceProgram: PublicKey, priceFeed: PublicKey): Promise<[PublicKey, number]>;
     getFeeVaultATAPubkey(vaultPubkey: PublicKey): Promise<[PublicKey, number]>;
     getVaultATAPubkey(vaultPubkey: PublicKey): Promise<[PublicKey, number]>;
-    getFeeVaultATAAuthorityPubkey(feeVaultAta: PublicKey): Promise<[PublicKey, number]>;
     getVaultATAAuthorityPubkey(vaultAta: PublicKey): Promise<[PublicKey, number]>;
+    getFeeVaultATAAuthorityPubkey(feeVaultAta: PublicKey): Promise<[PublicKey, number]>;
     getVaultPubkey(tokenMint: PublicKey): Promise<[PublicKey, number]>;
     getRoundPubkey(gamePubkey: PublicKey, roundNumber: anchor.BN): Promise<[PublicKey, number]>;
     getUserPredictionPubkey(game: Game, round: Round, user: User | PublicKey): Promise<[PublicKey, number]>;

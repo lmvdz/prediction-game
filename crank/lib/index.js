@@ -33,7 +33,7 @@ const nodewallet_1 = __importDefault(require("@project-serum/anchor/dist/cjs/nod
 const anchor = __importStar(require("@project-serum/anchor"));
 const dotenv_1 = require("dotenv");
 const bs58_1 = __importDefault(require("bs58"));
-const game_1 = __importDefault(require("sdk/lib/accounts/game"));
+const game_1 = __importStar(require("sdk/lib/accounts/game"));
 const spl_token_2 = require("@solana/spl-token");
 const round_1 = __importDefault(require("sdk/lib/accounts/round"));
 const util_1 = require("sdk/lib/util");
@@ -71,6 +71,29 @@ const connection = new web3_js_2.Connection('http://localhost:8899');
 const workspace = sdk_1.Workspace.load(connection, botWallet, 'testnet', { commitment: 'confirmed' });
 const mintKeypair = web3_js_2.Keypair.fromSecretKey(bs58_1.default.decode("3dS4W9gKuGQcvA4s9dSRKLGJ8UAdu9ZeFLxJfv6WLK4BzZZnt3L2WNSJchjtgLi7BnxMTcpPRU1AG9yfEkR2cxDT"));
 const mintDecimals = 6;
+let gameSeeds = [
+    {
+        baseSymbol: "SOL",
+        priceProgram: new web3_js_1.PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"),
+        priceFeed: new web3_js_1.PublicKey("HgTtcbcmp5BeThax5AU8vg4VwK79qAvAKKFMs8txMLW6"),
+        roundLength: new anchor.BN(300),
+        oracle: game_1.Oracle.Chainlink
+    },
+    {
+        baseSymbol: "BTC",
+        priceProgram: new web3_js_1.PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"),
+        priceFeed: new web3_js_1.PublicKey("CzZQBrJCLqjXRfMjRN3fhbxur2QYHUzkpaRwkWsiPqbz"),
+        roundLength: new anchor.BN(300),
+        oracle: game_1.Oracle.Chainlink
+    },
+    {
+        baseSymbol: "ETH",
+        priceProgram: new web3_js_1.PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"),
+        priceFeed: new web3_js_1.PublicKey("2ypeVyYnZaW2TNYXXTaZq9YhYvnqcjCiifW1C6n8b7Go"),
+        roundLength: new anchor.BN(300),
+        oracle: game_1.Oracle.Chainlink
+    }
+];
 async function createFakeMint(connection, keypair, mintDecimals = 6) {
     const mintKey = keypair || web3_js_2.Keypair.generate();
     try {
@@ -108,23 +131,23 @@ const loadVault = (workspace, tokenMint) => {
         });
     });
 };
-const startGame = (workspace, baseSymbol, vault, priceProgram, priceFeed) => {
+const startGame = (workspace, baseSymbol, vault, oracle, priceProgram, priceFeed) => {
     return new Promise((resolve, reject) => {
-        game_1.default.initializeGame(workspace, baseSymbol, vault, priceProgram, priceFeed, 30, 1000).then(game => {
+        game_1.default.initializeGame(workspace, baseSymbol, vault, oracle, priceProgram, priceFeed, 30, 1000).then(game => {
             resolve(game);
         }).catch(error => {
             reject(error);
         });
     });
 };
-const loadGame = (workspace, baseSymbol, vault, priceProgram, priceFeed) => {
+const loadGame = (workspace, baseSymbol, vault, oracle, priceProgram, priceFeed) => {
     return new Promise((resolve, reject) => {
         workspace.programAddresses.getGamePubkey(vault, priceProgram, priceFeed).then(([gamePubkey, _gamePubkeyBump]) => {
             (0, util_1.fetchAccountRetry)(workspace, 'game', (gamePubkey)).then(gameAccount => {
                 resolve(new game_1.default(gameAccount));
             }).catch(error => {
                 console.error(error);
-                startGame(workspace, baseSymbol, vault, priceProgram, priceFeed).then((game) => {
+                startGame(workspace, baseSymbol, vault, oracle, priceProgram, priceFeed).then((game) => {
                     resolve(game);
                 }).catch((error) => {
                     reject(error);
@@ -228,11 +251,18 @@ const settleOrInitNext = (workspace, game, crank) => {
         });
     });
 };
+let loopCount = 0;
 const updateLoop = (workspace, vault, game, crank) => {
+    if (loopCount > (60 * 60)) {
+        run();
+        loopCount = 0;
+        return;
+    }
+    loopCount++;
     setTimeout(() => {
         workspace.program.provider.connection.getTokenAccountBalance(vault.account.vaultAta).then(vaultTokenAccountBalanaceResponse => {
             workspace.program.provider.connection.getTokenAccountBalance(vault.account.feeVaultAta).then(feeVaultTokenAccountBalanaceResponse => {
-                console.log(vaultTokenAccountBalanaceResponse.value.uiAmount, feeVaultTokenAccountBalanaceResponse.value.uiAmount, game.account.unclaimedFees.toNumber(), game.account.baseSymbol, game.currentRound.account.roundNumber, game.currentRound.account.roundTimeDifference.toNumber(), game.currentRound.account.roundCurrentPrice.toNumber(), game.currentRound.account.finished, game.currentRound.account.feeCollected, game.currentRound.account.cranksPaid, game.currentRound.account.settled, game.currentRound.account.totalUniqueCrankers, game.currentRound.account.totalCranksPaid);
+                console.log(vaultTokenAccountBalanaceResponse.value.uiAmount, feeVaultTokenAccountBalanaceResponse.value.uiAmount, ((game.account.unclaimedFees.div(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() + ((game.account.unclaimedFees.mod(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() / (10 ** vault.account.tokenDecimals))), game.account.baseSymbol, game.currentRound.account.roundNumber, game.currentRound.account.roundTimeDifference.toNumber(), game.currentRound.account.roundCurrentPrice.toNumber(), game.currentRound.account.finished, game.currentRound.account.feeCollected, game.currentRound.account.cranksPaid, game.currentRound.account.settled, game.currentRound.account.invalid, game.currentRound.account.totalUniqueCrankers, game.currentRound.account.totalCranksPaid);
             });
         });
         vault.updateVaultData(workspace).then((vault) => {
@@ -266,13 +296,13 @@ const updateLoop = (workspace, vault, game, crank) => {
             console.error(error);
             updateLoop(workspace, vault, game, crank);
         });
-    }, 1000);
+    }, 10 * 1000);
 };
 const crankLoop = async (workspace, mint, gameSeed) => {
     try {
         // load required accounts to crank
         let vault = await loadVault(workspace, mint.address);
-        let game = await loadGame(workspace, gameSeed.baseSymbol, vault, gameSeed.priceProgram, gameSeed.priceFeed);
+        let game = await loadGame(workspace, gameSeed.baseSymbol, vault, gameSeed.oracle, gameSeed.priceProgram, gameSeed.priceFeed);
         let user = await loadUser(workspace);
         let crank = await loadCrank(workspace, game, user);
         // first round initialization
@@ -293,26 +323,6 @@ const crankLoop = async (workspace, mint, gameSeed) => {
 };
 async function run() {
     let mint = await createFakeMint(connection, mintKeypair, mintDecimals);
-    let gameSeeds = [
-        {
-            baseSymbol: "SOL",
-            priceProgram: new web3_js_1.PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"),
-            priceFeed: new web3_js_1.PublicKey("HgTtcbcmp5BeThax5AU8vg4VwK79qAvAKKFMs8txMLW6"),
-            roundLength: new anchor.BN(300)
-        },
-        {
-            baseSymbol: "BTC",
-            priceProgram: new web3_js_1.PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"),
-            priceFeed: new web3_js_1.PublicKey("CzZQBrJCLqjXRfMjRN3fhbxur2QYHUzkpaRwkWsiPqbz"),
-            roundLength: new anchor.BN(300)
-        },
-        {
-            baseSymbol: "ETH",
-            priceProgram: new web3_js_1.PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"),
-            priceFeed: new web3_js_1.PublicKey("2ypeVyYnZaW2TNYXXTaZq9YhYvnqcjCiifW1C6n8b7Go"),
-            roundLength: new anchor.BN(300)
-        }
-    ];
     gameSeeds.forEach(async (gameSeed) => {
         crankLoop(workspace, mint, gameSeed);
     });
@@ -329,9 +339,9 @@ app.get('/airdrop/:destination', async (req, res) => {
                 let account = await (0, spl_token_1.getAccount)(connection, address);
                 if (account.isInitialized) {
                     (0, spl_token_2.mintTo)(connection, owner, mintKeypair.publicKey, address, owner, BigInt(((new anchor.BN(1000)).mul((new anchor.BN(10)).pow(new anchor.BN(mintDecimals)))).toString()), [owner]).then((signature) => {
-                        res.send(signature);
+                        return res.send(signature);
                     }).catch(error => {
-                        res.status(500).send(error);
+                        return res.status(500).send(error);
                     });
                 }
                 else {
@@ -347,7 +357,7 @@ app.get('/airdrop/:destination', async (req, res) => {
             }
         }
         else {
-            res.status(400).send(new Error("Airdrop failed"));
+            return res.status(400).send(new Error("Airdrop failed"));
         }
     };
     await tryAirdrop();

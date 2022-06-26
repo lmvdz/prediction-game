@@ -25,6 +25,7 @@ pub struct Game {
     pub total_volume: u128,
     pub total_volume_rollover: u128,
 
+    pub oracle: u8,
     pub price_program: Pubkey,
     pub price_feed: Pubkey,
 }

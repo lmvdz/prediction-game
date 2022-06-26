@@ -35,9 +35,16 @@ export class ProgramAddresses<T extends anchor.Idl> {
       this.program.programId
     )
   }
+  
   async getVaultATAPubkey(vaultPubkey: PublicKey): Promise<[PublicKey, number]> {
     return await PublicKey.findProgramAddress(
       [vaultPubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('vault_ata'))],
+      this.program.programId
+    )
+  }
+  async getVaultATAAuthorityPubkey(vaultAta: PublicKey): Promise<[PublicKey, number]> {
+    return await PublicKey.findProgramAddress(
+      [vaultAta.toBuffer()],
       this.program.programId
     )
   }
@@ -49,12 +56,7 @@ export class ProgramAddresses<T extends anchor.Idl> {
     )
   }
 
-  async getVaultATAAuthorityPubkey(vaultAta: PublicKey): Promise<[PublicKey, number]> {
-    return await PublicKey.findProgramAddress(
-      [vaultAta.toBuffer()],
-      this.program.programId
-    )
-  }
+  
 
 
  async getVaultPubkey(tokenMint: PublicKey): Promise<[PublicKey, number]> {

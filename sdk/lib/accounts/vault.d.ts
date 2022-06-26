@@ -7,11 +7,11 @@ export declare type VaultAccount = {
     tokenMint: PublicKey;
     tokenDecimals: number;
     feeVaultAta: PublicKey;
-    feeVaultAuthority: PublicKey;
-    feeVaultNonce: number;
+    feeVaultAtaAuthority: PublicKey;
+    feeVaultAtaAuthorityNonce: number;
     vaultAta: PublicKey;
-    vaultAuthority: PublicKey;
-    vaultNonce: number;
+    vaultAtaAuthority: PublicKey;
+    vaultAtaAuthorityNonce: number;
 };
 export default class Vault implements DataUpdatable<VaultAccount> {
     account: VaultAccount;

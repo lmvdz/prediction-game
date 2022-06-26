@@ -54,9 +54,9 @@ export default defineComponent({
           <GithubLink :height="28" heightUnits="px" :width="28" widthUnits="px" class="hover-move-up github"/>
         </a>
         
-        <a class="hover-move-up-container" href="https://discord.gg/sol-degenaire" target="_blank">
+        <!-- <a class="hover-move-up-container" href="https://discord.gg/sol-degenaire" target="_blank">
           <DiscordLink :height="32" heightUnits="px" :width="32" widthUnits="px" class="hover-move-up discord"/>
-        </a>
+        </a> -->
         
       </v-row>
     </v-footer>
@@ -121,7 +121,6 @@ export default defineComponent({
   position: relative;
   bottom: 1em;
   transition: all 0.3s;
-  color: black;
 }
 
 .account-button {

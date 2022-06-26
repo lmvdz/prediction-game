@@ -2008,6 +2008,11 @@ loglevel@^1.8.0:
   resolved "https://registry.yarnpkg.com/loglevel/-/loglevel-1.8.0.tgz#e7ec73a57e1e7b419cb6c6ac06bf050b67356114"
   integrity sha512-G6A/nJLRgWOuuwdNuA6koovfEV1YpqqAG4pRUlFaz3jj2QNZ8M4vBqnVA+HBTmU/AMNUtlOsMmSpF6NyOjztbA==
 
+lottie-web@^5.8.1:
+  version "5.9.4"
+  resolved "https://registry.yarnpkg.com/lottie-web/-/lottie-web-5.9.4.tgz#c01478ee5dd47f916cb4bb79040c11d427872d57"
+  integrity sha512-bSs1ZTPifnBVejO1MnQHdfrKfcn02YTCmgOh2wcAEICqRA0V7GzDh8FnwXY6+EzT+i8XOunaIloo/5xC5YNbsA==
+
 lower-case@^2.0.2:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/lower-case/-/lower-case-2.0.2.tgz#6fa237c63dbdc4a82ca0fd882e4722dc5e634e28"
@@ -2838,11 +2843,6 @@ vue-demi@*:
   resolved "https://registry.yarnpkg.com/vue-demi/-/vue-demi-0.13.1.tgz#7604904c88be338418a10abbc94d5b8caa14cb8c"
   integrity sha512-xmkJ56koG3ptpLnpgmIzk9/4nFf4CqduSJbUM0OdPoU87NwRuZ6x49OLhjSa/fC15fV+5CbEnrxU4oyE022svg==
 
-vue-dragscroll@^3.0.1:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/vue-dragscroll/-/vue-dragscroll-3.0.1.tgz#572c68ca021209accf8fe6f1bc7540c627c26453"
-  integrity sha512-4Oq3S1RGm94YMy/DcjcvM+itRLoTGnKaxlpUUVICPPkNEvMMKzArZUNDXxmDInVa8t4GtrfM0uGAShFP+0JIUw==
-
 vue-router@4:
   version "4.0.16"
   resolved "https://registry.yarnpkg.com/vue-router/-/vue-router-4.0.16.tgz#9477beeeef36e80e04d041a1738801a55e6e862e"
@@ -2856,6 +2856,13 @@ vue-tsc@^0.37.8:
   integrity sha512-7UDietFPPfLFm2JeG0OodUhtOWbD66tFrALX3NdqNl8LjVHKLId5oTQpuHNUIme2vbNj/fcwaENPfEX2BCSgMw==
   dependencies:
     "@volar/vue-typescript" "0.37.9"
+
+vue3-lottie@^2.2.5:
+  version "2.2.5"
+  resolved "https://registry.yarnpkg.com/vue3-lottie/-/vue3-lottie-2.2.5.tgz#0e5842335a8c3d30dd5495a79afcb56bb534b63b"
+  integrity sha512-r9J5mSJpKjHmwf8OE2sFl3Xi7vRm+F8IDArMBGddLjKxXmFh2PZhdNR85faHt1/MBWLjPjLlKU5VR0N+l1yF8Q==
+  dependencies:
+    lottie-web "^5.8.1"
 
 vue@^3.2.25:
   version "3.2.37"

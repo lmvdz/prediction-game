@@ -16,12 +16,12 @@ export type VaultAccount = {
     tokenDecimals: number
 
     feeVaultAta: PublicKey
-    feeVaultAuthority: PublicKey
-    feeVaultNonce: number
+    feeVaultAtaAuthority: PublicKey
+    feeVaultAtaAuthorityNonce: number
 
     vaultAta: PublicKey
-    vaultAuthority: PublicKey
-    vaultNonce: number
+    vaultAtaAuthority: PublicKey
+    vaultAtaAuthorityNonce: number
 
 }
 
@@ -49,13 +49,13 @@ export default class Vault implements DataUpdatable<VaultAccount> {
 
     public static async initializeVaultInstruction(workspace: Workspace, tokenMint: PublicKey, vaultPubkey: PublicKey): Promise<TransactionInstruction> {
 
-        let [vaultAtaPubkey, vaultAtaPubkeyBump] = await workspace.programAddresses.getVaultATAPubkey(vaultPubkey);
-        let [vaultAtaAuthorityPubkey, _vaultAtaAuthorityPubkeyBump] = await workspace.programAddresses.getVaultATAAuthorityPubkey(vaultAtaPubkey);
-        
-        let [feeVaultAtaPubkey, feeVaultAtaPubkeyBump] = await workspace.programAddresses.getFeeVaultATAPubkey(vaultPubkey);
-        let [feeVaultAtaAuthorityPubkey, _feeVaultAtaAuthorityPubkeyBump] = await workspace.programAddresses.getVaultATAAuthorityPubkey(feeVaultAtaPubkey);
+        let [vaultAtaPubkey, _vaultAtaPubkeyBump] = await workspace.programAddresses.getVaultATAPubkey(vaultPubkey);
+        let [vaultAtaAuthorityPubkey, vaultAtaAuthorityPubkeyBump] = await workspace.programAddresses.getVaultATAAuthorityPubkey(vaultAtaPubkey);
 
-        return await workspace.program.methods.initVaultInstruction(vaultAtaPubkeyBump, feeVaultAtaPubkeyBump).accounts({
+        let [feeVaultAtaPubkey, _feeVaultAtaPubkeyBump] = await workspace.programAddresses.getFeeVaultATAPubkey(vaultPubkey);
+        let [feeVaultAtaAuthorityPubkey, feeVaultAtaAuthorityPubkeyBump] = await workspace.programAddresses.getFeeVaultATAAuthorityPubkey(feeVaultAtaPubkey);
+
+        return await workspace.program.methods.initVaultInstruction(vaultAtaAuthorityPubkeyBump, feeVaultAtaAuthorityPubkeyBump).accounts({
             owner: workspace.owner,
             vault: vaultPubkey,
             vaultAta: vaultAtaPubkey,

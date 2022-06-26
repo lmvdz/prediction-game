@@ -9,7 +9,7 @@ use crate::errors::ErrorCode;
 use crate::state::Vault;
 use crate::utils::close_token_account;
 
-pub fn init_vault(ctx: Context<InitializeVault>, vault_nonce: u8, fee_vault_nonce: u8) -> Result<()> {
+pub fn init_vault(ctx: Context<InitializeVault>, vault_ata_nonce: u8, fee_vault_ata_nonce: u8) -> Result<()> {
     let vault = &mut ctx.accounts.vault;
     let owner = ctx.accounts.owner.key();
     let token_mint = ctx.accounts.token_mint.key();
@@ -22,12 +22,12 @@ pub fn init_vault(ctx: Context<InitializeVault>, vault_nonce: u8, fee_vault_nonc
     vault.token_decimals = token_decimals;
 
     vault.fee_vault_ata = ctx.accounts.fee_vault_ata.key();
-    vault.fee_vault_authority = ctx.accounts.fee_vault_ata_authority.key();
-    vault.fee_vault_nonce = fee_vault_nonce;
+    vault.fee_vault_ata_authority = ctx.accounts.fee_vault_ata_authority.key();
+    vault.fee_vault_ata_authority_nonce = fee_vault_ata_nonce;
 
     vault.vault_ata = ctx.accounts.vault_ata.key();
-    vault.vault_authority = ctx.accounts.vault_ata_authority.key();
-    vault.vault_nonce = vault_nonce;
+    vault.vault_ata_authority = ctx.accounts.vault_ata_authority.key();
+    vault.vault_ata_authority_nonce = vault_ata_nonce;
 
     Ok(())
 }
