@@ -35,9 +35,9 @@ class Round {
         this.account = data;
         return true;
     }
-    convertOraclePriceToNumber(game) {
+    convertOraclePriceToNumber(oraclePrice, game) {
         if (game.account.oracle === game_1.Oracle.Chainlink) {
-            let scaled_val = this.account.roundCurrentPrice.toString();
+            let scaled_val = oraclePrice.toString();
             if (scaled_val.length <= (this.account.roundPriceDecimals * 8)) {
                 let zeros = "";
                 for (let x = 0; x < (this.account.roundPriceDecimals * 8) - scaled_val.length; x++) {
@@ -55,8 +55,8 @@ class Round {
             }
         }
         else if (game.account.oracle === game_1.Oracle.Pyth || game.account.oracle === game_1.Oracle.Switchboard) {
-            return parseFloat((this.account.roundCurrentPrice.div(new anchor.BN(10).pow(new anchor.BN(this.account.roundPriceDecimals))).toNumber() +
-                (this.account.roundCurrentPrice.mod(new anchor.BN(10).pow(new anchor.BN(this.account.roundPriceDecimals))).toNumber() / (10 ** this.account.roundPriceDecimals))).toFixed(2));
+            return parseFloat((oraclePrice.div(new anchor.BN(10).pow(new anchor.BN(this.account.roundPriceDecimals))).toNumber() +
+                (oraclePrice.mod(new anchor.BN(10).pow(new anchor.BN(this.account.roundPriceDecimals))).toNumber() / (10 ** this.account.roundPriceDecimals))).toFixed(2));
         }
     }
     static initializeFirst(workspace, game, crank, roundLength) {

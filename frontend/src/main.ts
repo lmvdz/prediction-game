@@ -22,13 +22,20 @@ const walletOptions = {
 }
 import Vue3Lottie from 'vue3-lottie'
 import 'vue3-lottie/dist/style.css'
+import { initTokenList } from "./plugins/tokenList"
 
 loadFonts()
 
-createApp(App)
+;(async () => {
+  await initTokenList('mainnet-beta');
+  
+  createApp(App)
   .use(vuetify)
   .use(router)
   .use(createPinia())
   .use(SolanaWallets, walletOptions)
   .use(Vue3Lottie, { name: 'LottieAnimation' })
   .mount('#app')
+})();
+
+

@@ -28,6 +28,7 @@ let workspace: any = null
 export const useWorkspace = () => workspace
 
 export const initWorkspace = (rpcUrl: string, cluster: Cluster) => {
+  console.log(cluster);
   const wallet = useAnchorWallet()
   let connection = new Connection(rpcUrl, { commitment: 'confirmed'});
   let provider = computed(() => new AnchorProvider(connection, wallet.value! as Wallet || new TempWallet(Keypair.generate()), { commitment: 'confirmed'}))

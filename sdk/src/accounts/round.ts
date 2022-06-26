@@ -66,9 +66,9 @@ export default class Round implements DataUpdatable<RoundAccount> {
         return true;
     }
 
-    public convertOraclePriceToNumber(game: Game) : number {
+    public convertOraclePriceToNumber(oraclePrice: anchor.BN, game: Game) : number {
         if (game.account.oracle === Oracle.Chainlink) {
-            let scaled_val = this.account.roundCurrentPrice.toString();
+            let scaled_val = oraclePrice.toString();
             if (scaled_val.length <= (this.account.roundPriceDecimals * 8)) {
                 let zeros = "";
                 for(let x = 0; x < (this.account.roundPriceDecimals * 8) - scaled_val.length; x++) {
@@ -84,8 +84,8 @@ export default class Round implements DataUpdatable<RoundAccount> {
                 return parseFloat(charArray.join(""))
             }
         } else if (game.account.oracle === Oracle.Pyth || game.account.oracle === Oracle.Switchboard) {
-            return parseFloat((this.account.roundCurrentPrice.div(new anchor.BN(10).pow(new anchor.BN(this.account.roundPriceDecimals))).toNumber() +
-            (this.account.roundCurrentPrice.mod(new anchor.BN(10).pow(new anchor.BN(this.account.roundPriceDecimals))).toNumber() / (10 ** this.account.roundPriceDecimals))).toFixed(2))
+            return parseFloat((oraclePrice.div(new anchor.BN(10).pow(new anchor.BN(this.account.roundPriceDecimals))).toNumber() +
+            (oraclePrice.mod(new anchor.BN(10).pow(new anchor.BN(this.account.roundPriceDecimals))).toNumber() / (10 ** this.account.roundPriceDecimals))).toFixed(2))
         }
         
     }
