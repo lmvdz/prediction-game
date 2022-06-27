@@ -31,7 +31,6 @@ const web3_js_1 = require("@solana/web3.js");
 const web3_js_2 = require("@solana/web3.js");
 const nodewallet_1 = __importDefault(require("@project-serum/anchor/dist/cjs/nodewallet"));
 const anchor = __importStar(require("@project-serum/anchor"));
-const bs58_1 = __importDefault(require("bs58"));
 const game_1 = __importStar(require("./accounts/game"));
 const spl_token_1 = require("@solana/spl-token");
 const util_1 = require("./util");
@@ -72,7 +71,8 @@ async function createFakeMint(connection, owner, keypair, mintDecimals = 6) {
 }
 const loadGame = (workspace, baseSymbol, vault, oracle, priceProgram, priceFeed, roundLength) => {
     return new Promise((resolve, reject) => {
-        workspace.programAddresses.getGamePubkey(vault, priceProgram, priceProgram).then(([gamePubkey, _vaultPubkeyBump]) => {
+        workspace.programAddresses.getGamePubkey(vault, priceProgram, priceFeed).then(([gamePubkey, _vaultPubkeyBump]) => {
+            console.log(gamePubkey.toBase58(), vault.account.address.toBase58());
             (0, util_1.fetchAccountRetry)(workspace, 'game', (gamePubkey)).then(gameAccount => {
                 resolve(new game_1.default(gameAccount));
             }).catch(error => {
@@ -109,7 +109,7 @@ const loadVault = (workspace, tokenMint) => {
 async function initFromGameSeed(workspace, gameSeed, mint) {
     try {
         let vault = await loadVault(workspace, mint);
-        let game = await loadGame(workspace, gameSeed.baseSymbol, vault, gameSeed.oracle, gameSeed.priceProgram, gameSeed.priceProgram, gameSeed.roundLength);
+        let game = await loadGame(workspace, gameSeed.baseSymbol, vault, gameSeed.oracle, gameSeed.priceProgram, gameSeed.priceFeed, gameSeed.roundLength);
         return [vault, game];
     }
     catch (error) {
@@ -120,16 +120,20 @@ async function initFromGameSeed(workspace, gameSeed, mint) {
 async function init(owner, connection, cluster, mint) {
     const botWallet = new nodewallet_1.default(owner);
     const workspace = workspace_1.Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
-    if (cluster === 'devnet') {
-        // devnet mint
-        const mintKeypair = web3_js_2.Keypair.fromSecretKey(bs58_1.default.decode("3dS4W9gKuGQcvA4s9dSRKLGJ8UAdu9ZeFLxJfv6WLK4BzZZnt3L2WNSJchjtgLi7BnxMTcpPRU1AG9yfEkR2cxDT"));
-        const mintDecimals = 6;
-        mint = await createFakeMint(connection, mintKeypair, owner, mintDecimals);
-    }
+    let vaults = (await workspace.program.account.vault.all());
+    await Promise.allSettled((await workspace.program.account.game.all()).map(async (gameAccount) => {
+        let game = new game_1.default(gameAccount.account);
+        console.log(game.account.address.toBase58(), game.account.unclaimedFees.toNumber());
+        if (game.account.unclaimedFees.gt(new anchor.BN(0))) {
+            await game.claimFee(workspace, new vault_1.default(vaults.find(v => v.account.address.toBase58() === game.account.vault.toBase58()).account));
+        }
+        await (game).closeGame(workspace);
+    }));
     (await Promise.all(exports.gameSeeds.map(async (gameSeed) => {
+        console.log(gameSeed);
         return await initFromGameSeed(workspace, gameSeed, mint.address);
     }))).forEach(([vault, game]) => {
-        console.log(vault.account.address.toBase58(), game.account.baseSymbol);
+        console.log(vault.account.address.toBase58(), game.account.baseSymbol, game.account.vault.toBase58());
     });
 }
 exports.init = init;

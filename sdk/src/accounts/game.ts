@@ -233,6 +233,42 @@ export default class Game implements DataUpdatable<GameAccount> {
         
     }
 
+    public async closeGame(workspace: Workspace) {
+        return new Promise((resolve, reject) => {
+            workspace.program.methods.closeGameInstruction().accounts({
+                signer: workspace.owner,
+                receiver: workspace.owner,
+                game: this.account.address,
+                systemProgram: SystemProgram.programId,
+            }).transaction().then((tx) => {
+                tx.feePayer = workspace.wallet.payer.publicKey;
+                workspace.program.provider.connection.getLatestBlockhash().then(blockhash => {
+                    tx.recentBlockhash = blockhash.blockhash;
+                    tx.sign(workspace.wallet.payer)
+                    let message = tx.compileMessage();
+                    console.log(message);
+                    workspace.program.provider.connection.simulateTransaction(message).then((simulation) => {
+                        console.log(simulation.value.logs);
+                        workspace.sendTransaction(tx).then(txSignature => {
+                            confirmTxRetry(workspace, txSignature).then(() => {
+                                resolve(true);
+                            }).catch(error => {
+                                reject(error);
+                            })
+                        }).catch(error => {
+                            reject(error);
+                        })
+                    })
+                })
+                
+                
+            }).catch(error => {
+                reject(error);
+            })
+            
+        })
+    }
+
     public static async initializeGame(workspace: Workspace, baseSymbol: string, vault: Vault, oracle: Oracle, priceProgram: PublicKey, priceFeed: PublicKey, feeBps: number, crankBps: number, roundLength: anchor.BN): Promise<Game> {
         const [gamePubkey, _gamePubkeyBump] = await workspace.programAddresses.getGamePubkey(vault, priceProgram, priceFeed);
 

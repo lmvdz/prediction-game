@@ -8,6 +8,7 @@ import { createMint, getMint, Mint, MintLayout, mintTo } from "@solana/spl-token
 import { fetchAccountRetry } from "./util";
 import { Workspace } from "./workspace";
 import Vault, { VaultAccount } from "./accounts/vault";
+import { ProgramAccount } from "@project-serum/anchor";
 
 export const gameSeeds: Array<GameSeed> = [ 
     { 
@@ -55,7 +56,8 @@ async function createFakeMint(connection: Connection, owner: Keypair, keypair?: 
 
 const loadGame = (workspace: Workspace, baseSymbol: string, vault: Vault, oracle: Oracle, priceProgram: PublicKey, priceFeed: PublicKey, roundLength: anchor.BN) : Promise<Game> => {
     return new Promise((resolve, reject) => {
-        workspace.programAddresses.getGamePubkey(vault, priceProgram, priceProgram).then(([gamePubkey, _vaultPubkeyBump]) => {
+        workspace.programAddresses.getGamePubkey(vault, priceProgram, priceFeed).then(([gamePubkey, _vaultPubkeyBump]) => {
+            console.log(gamePubkey.toBase58(), vault.account.address.toBase58());
             fetchAccountRetry<GameAccount>(workspace, 'game', (gamePubkey)).then(gameAccount => {
                 resolve(new Game(
                     gameAccount
@@ -108,7 +110,7 @@ const loadVault = (workspace: Workspace, tokenMint: PublicKey) : Promise<Vault> 
 async function initFromGameSeed(workspace: Workspace, gameSeed: GameSeed, mint: PublicKey) : Promise<[Vault, Game]> {
     try {
         let vault = await loadVault(workspace, mint)
-        let game = await loadGame(workspace, gameSeed.baseSymbol, vault, gameSeed.oracle, gameSeed.priceProgram, gameSeed.priceProgram, gameSeed.roundLength)
+        let game = await loadGame(workspace, gameSeed.baseSymbol, vault, gameSeed.oracle, gameSeed.priceProgram, gameSeed.priceFeed, gameSeed.roundLength)
         return [vault, game]
     } catch (error) {
         console.error(error);
@@ -120,20 +122,22 @@ async function initFromGameSeed(workspace: Workspace, gameSeed: GameSeed, mint: 
 export async function init(owner: Keypair, connection: Connection, cluster: Cluster, mint: Mint) {
 
     const botWallet: NodeWallet = new NodeWallet(owner);
-    const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' })
-
-    if (cluster === 'devnet') {
-        // devnet mint
-        const mintKeypair = Keypair.fromSecretKey(bs58.decode("3dS4W9gKuGQcvA4s9dSRKLGJ8UAdu9ZeFLxJfv6WLK4BzZZnt3L2WNSJchjtgLi7BnxMTcpPRU1AG9yfEkR2cxDT"))
-        const mintDecimals = 6;
-
-        mint = await createFakeMint(connection, mintKeypair, owner, mintDecimals);
-    }
-
+    const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
+    let vaults = (await workspace.program.account.vault.all()) as Array<ProgramAccount<VaultAccount>>
+    await Promise.allSettled( (await workspace.program.account.game.all()).map(async gameAccount => {
+        let game = new Game(gameAccount.account as unknown as GameAccount);
+        console.log(game.account.address.toBase58(), game.account.unclaimedFees.toNumber());
+        if (game.account.unclaimedFees.gt(new anchor.BN(0))) {
+            await game.claimFee(workspace, new Vault(vaults.find(v => v.account.address.toBase58() === game.account.vault.toBase58()).account))
+        }
+        await (game).closeGame(workspace);
+    }));
+    
     (await Promise.all(gameSeeds.map(async (gameSeed : GameSeed) => {
+        console.log(gameSeed);
         return await initFromGameSeed(workspace, gameSeed, mint.address);
     }))).forEach(([vault, game]) => {
-        console.log(vault.account.address.toBase58(), game.account.baseSymbol)
+        console.log(vault.account.address.toBase58(), game.account.baseSymbol, game.account.vault.toBase58())
     })
 
 }

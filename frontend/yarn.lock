@@ -442,9 +442,9 @@
     "@solana/wallet-adapter-torus" "^0.11.10"
 
 "@solana/web3.js@^1.20.0", "@solana/web3.js@^1.32.0", "@solana/web3.js@^1.32.1", "@solana/web3.js@^1.35.0", "@solana/web3.js@^1.36.0":
-  version "1.44.2"
-  resolved "https://registry.yarnpkg.com/@solana/web3.js/-/web3.js-1.44.2.tgz#5303efd94a7f2d6054a1483a4b4db4a26eb2a392"
-  integrity sha512-DvrJMoKonLuaX0/KyyJXcP/+w+9q8mve4gN3hC2Ptg51K/Gi1/cx6oQN2lbRZb4wYPBd2s2GDAJAJUAwZGsEug==
+  version "1.44.3"
+  resolved "https://registry.yarnpkg.com/@solana/web3.js/-/web3.js-1.44.3.tgz#a4a6ac593c3b4b0ab47fa7d716ffd9ab03542f7b"
+  integrity sha512-x6IUi1ikwgXe2fgZGeMhuGRRRp2JbqzP+Qos/zsDhkZP0TpaZhJtPXUy7h5EhmXBK4JneSpIj1SQvakVvEJ+Mw==
   dependencies:
     "@babel/runtime" "^7.12.5"
     "@ethersproject/sha2" "^5.5.0"
@@ -1179,6 +1179,11 @@ dot-case@^3.0.4:
   dependencies:
     no-case "^3.0.4"
     tslib "^2.0.3"
+
+dotenv@^16.0.1:
+  version "16.0.1"
+  resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-16.0.1.tgz#8f8f9d94876c35dac989876a5d3a82a267fdce1d"
+  integrity sha512-1K6hR6wtk2FviQ4kEiSjFiH5rpzEVi8WW0x96aztHVMhEspNpc4DVOUTEHtEva5VThQ8IaBX1Pe4gSzpVVUsKQ==
 
 drbg.js@^1.0.1:
   version "1.0.1"
@@ -2509,6 +2514,7 @@ scrypt-js@^3.0.0:
   dependencies:
     "@project-serum/anchor" "^0.25.0-beta.1"
     "@solana/spl-token" "^0.2.0"
+    dotenv "^16.0.1"
 
 secp256k1@^3.8.0:
   version "3.8.0"

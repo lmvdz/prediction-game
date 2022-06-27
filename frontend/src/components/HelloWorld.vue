@@ -13,7 +13,7 @@ import Vault, { VaultAccount } from "sdk/lib/accounts/vault";
 import Round, { RoundAccount } from "sdk/lib/accounts/round";
 import { Account, ASSOCIATED_TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAccount, getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { storeToRefs } from "pinia";
-import { Ref, ref } from "vue";
+import { Ref, ref, shallowRef } from "vue";
 import { PredictionGame, USER_PREDICTION_MIN_AMOUNT, Workspace } from 'sdk'
 import Game, { GameAccount } from "sdk/lib/accounts/game";
 import { U64MAX } from 'sdk';
@@ -29,16 +29,26 @@ import UpArrowAnimation from '../lottie/65775-arrrow-moving-upward.json'
 import DownArrowAnimation from '../lottie/65777-graph-moving-downward.json'
 import CrabAnimation from '../lottie/101494-rebound-rock-water-creature-by-dave-chenell.json'
 
+type TxStatus = {
+    index: number,
+    signatures: Array<string>,
+    color: string,
+    title: string,
+    subtitle: string
+    loading: boolean
+    show: boolean;
+}
+
 
 
 let games = ref([] as Array<Game>);
 let vaults = ref(new Map<string, Vault>());
 let userPredictions = ref([] as Array<UserPrediction>);
 let frontendGameData = ref(new Map<string, FrontendGameData>());
-let wallet = ref(null as WalletStore); 
-let workspace = ref(null as Workspace);
+let wallet = shallowRef(null as WalletStore); 
+let workspace = shallowRef(null as Workspace);
 let tokenList = ref(null as TokenInfo[]);
-let user = ref(null as User);
+let user = shallowRef(null as User);
 let tokenAccounts = ref(new Map<string, Account>());
 let updateInterval = ref(null as NodeJS.Timer);
 let aggrWorkspace = ref('');
@@ -89,16 +99,6 @@ type FrontendGameData = {
   needsToLoad: boolean
 }
 
-type TxStatus = {
-  index: number,
-  signatures: Array<string>,
-  color: string,
-  title: string,
-  subtitle: string
-  loading: boolean
-  show: boolean;
-}
-
 
 function bnToNumber(num: anchor.BN, decimals: number) : number {
   let _10to = new anchor.BN(10).pow(new anchor.BN(decimals));
@@ -146,12 +146,14 @@ function hideTxStatus(txStatus: TxStatus | number, timeout = 0) {
 }
 
 function getVault(game: Game): Vault {
+  console.log(vaults.value);
+  console.log(game.account.vault.toBase58());
   return vaults.value.get(game.account.vault.toBase58())
 }
 
 async function updateVault(vault: Vault): Promise<void> {
   if (vault)
-    vaults.value.set(vault.account.address.toBase58(), new Vault(await fetchAccountRetry<VaultAccount>(workspace as Workspace, 'vault', vault.account.address)))
+    vaults.value.set(vault.account.address.toBase58(), new Vault(await fetchAccountRetry<VaultAccount>(workspace.value as Workspace, 'vault', vault.account.address)))
   
 }
 
@@ -164,19 +166,24 @@ async function updateVaults(): Promise<void> {
 }
 
 function getTokenMint(game: Game) : PublicKey {
-  return (getVault(game)).account.tokenMint;
+  let vault = (getVault(game));
+  console.log(vault);
+  if (vault) {
+    return vault.account.tokenMint;
+  }
+  
 }
 
 async function makePrediction(game: (Game)) {
 
   let txStatus = initNewTxStatus()
 
-  let gameFrontendData = frontendGameData.get(game.account.address.toBase58())
+  let gameFrontendData = frontendGameData.value.get(game.account.address.toBase58())
 
   if (wallet.value.connected && wallet.value.publicKey !== undefined && wallet.value.publicKey !== null) {
     // update the game
-    await game.updateGameData(workspace as Workspace);
-    await game.updateRoundData(workspace as Workspace);
+    await game.updateGameData(workspace.value as Workspace);
+    await game.updateRoundData(workspace.value as Workspace);
 
     if (!game.currentRound.account.roundPredictionsAllowed)  {
       txStatus.color = 'error';
@@ -197,15 +204,15 @@ async function makePrediction(game: (Game)) {
       txStatus.show = true;
     }
     // if the user doesn't exist try and load otherwise add it as a tx
-    let [userPubkey, _userPubkeyBump] = await (workspace as Workspace).programAddresses.getUserPubkey(workspace.owner);
+    let [userPubkey, _userPubkeyBump] = await (workspace.value as Workspace).programAddresses.getUserPubkey((workspace.value as Workspace).owner);
     let tx = new Transaction();
     let txTitle = '';
     if (user === undefined || user === null) {
       if (!(await loadUser())) {
-        let initUserIX = await User.initializeUserInstruction(workspace as Workspace, userPubkey);
+        let initUserIX = await User.initializeUserInstruction(workspace.value as Workspace, userPubkey);
         // let initUserTX = new Transaction().add(initUserIX);
-        // initUserTX.feePayer = (workspace as Workspace).owner;
-        // initUserTX.recentBlockhash = (await (workspace as Workspace).program.provider.connection.getLatestBlockhash()).blockhash
+        // initUserTX.feePayer = (workspace.value as Workspace).owner;
+        // initUserTX.recentBlockhash = (await (workspace.value as Workspace).program.provider.connection.getLatestBlockhash()).blockhash
         tx.add(initUserIX)
         txTitle = "Initialize User & "
       }
@@ -215,16 +222,16 @@ async function makePrediction(game: (Game)) {
     let fromTokenAccount = await getTokenAccount(game);
     let vault = getVault(game);
     
-    let [userPredictionPubkey, _userPredictionPubkeyBump] = await (workspace as Workspace).programAddresses.getUserPredictionPubkey(game, game.currentRound, user || workspace.owner);
+    let [userPredictionPubkey, _userPredictionPubkeyBump] = await (workspace.value as Workspace).programAddresses.getUserPredictionPubkey(game, game.currentRound, user.value || (workspace.value as Workspace).owner);
 
     let initUserPredictionIX = await UserPrediction.initializeUserPredictionInstruction(
-      workspace as Workspace,
+      workspace.value as Workspace,
       vault,
       game, 
       game.currentRound, 
       user.value || userPubkey, 
       fromTokenAccount,
-      workspace.owner,
+      (workspace.value as Workspace).owner,
       userPredictionPubkey,
       gameFrontendData.prediction.direction, 
       amount
@@ -235,7 +242,7 @@ async function makePrediction(game: (Game)) {
     txTitle += "Initialize User Prediction"
 
     let closeUserPredictionInstructions = await Promise.all<TransactionInstruction>(userPredictions.value.filter((prediction: UserPrediction) => prediction.account.settled).map(async (prediction: UserPrediction) : Promise<TransactionInstruction> => {
-      return await UserPrediction.closeUserPredictionInstruction(workspace as Workspace, prediction)
+      return await UserPrediction.closeUserPredictionInstruction(workspace.value as Workspace, prediction)
     }));
     
     
@@ -245,16 +252,16 @@ async function makePrediction(game: (Game)) {
     }
       
 
-    tx.feePayer = (workspace as Workspace).owner;
-    tx.recentBlockhash = (await (workspace as Workspace).program.provider.connection.getLatestBlockhash()).blockhash
-    tx = await (workspace as Workspace).wallet.signTransaction(tx);
+    tx.feePayer = (workspace.value as Workspace).owner;
+    tx.recentBlockhash = (await (workspace.value as Workspace).program.provider.connection.getLatestBlockhash()).blockhash
+    tx = await (workspace.value as Workspace).wallet.signTransaction(tx);
     
     txStatus.show = true;
     txStatus.loading = true;
     try {
-      let simulation = await (workspace as Workspace).program.provider.connection.simulateTransaction(tx);
+      let simulation = await (workspace.value as Workspace).program.provider.connection.simulateTransaction(tx);
       console.log(simulation.value.logs);
-      let signature = await (workspace as Workspace).program.provider.connection.sendRawTransaction(tx.serialize());
+      let signature = await (workspace.value as Workspace).program.provider.connection.sendRawTransaction(tx.serialize());
     
       txStatus.signatures.push(signature);
       txStatus.color = 'success'
@@ -265,7 +272,7 @@ async function makePrediction(game: (Game)) {
       try {
         txStatus.color = 'warning'
         txStatus.subtitle = "Confirming TX!"
-        await confirmTxRetry(workspace as Workspace, signature);
+        await confirmTxRetry(workspace.value as Workspace, signature);
         txStatus.loading = false;
         txStatus.color = "success"
         txStatus.subtitle = "Confirmed TX!"
@@ -296,18 +303,18 @@ function getTokenAccount(game: Game) : Account {
 async function updateTokenAccount(game: Game) : Promise<void> {
   try {
 
-    let mint = await getTokenMint(game);
+    let mint = getTokenMint(game);
     let address: PublicKey;
 
     if (!tokenAccounts.value.has(mint.toBase58())) {
-      address = await getAssociatedTokenAddress(mint, workspace.owner); 
+      address = await getAssociatedTokenAddress(mint, (workspace.value as Workspace).owner); 
     } else {
-      address = tokenAccounts.get(mint.toBase58()).address;
+      address = tokenAccounts.value.get(mint.toBase58()).address;
     }
 
     try {
-      let tokenAccount = await getAccount(workspace.program.provider.connection, address);
-      if (tokenAccount.owner.toBase58() === workspace.owner.toBase58()) {
+      let tokenAccount = await getAccount((workspace.value as Workspace).program.provider.connection, address);
+      if (tokenAccount.owner.toBase58() === (workspace.value as Workspace).owner.toBase58()) {
         tokenAccounts.value.set(mint.toBase58(), tokenAccount);
       } else {
         tokenAccounts.value.delete(mint.toBase58());
@@ -325,9 +332,9 @@ async function initTokenAccountForGame(game: Game) {
   let tokenMint = await getTokenMint(game);
   const transaction = new Transaction().add(
       createAssociatedTokenAccountInstruction(
-          workspace.owner,
-          await getAssociatedTokenAddress(tokenMint, workspace.owner),
-          workspace.owner,
+          (workspace.value as Workspace).owner,
+          await getAssociatedTokenAddress(tokenMint, (workspace.value as Workspace).owner),
+          (workspace.value as Workspace).owner,
           tokenMint,
           TOKEN_PROGRAM_ID,
           ASSOCIATED_TOKEN_PROGRAM_ID
@@ -342,10 +349,10 @@ async function initTokenAccountForGame(game: Game) {
     txStatus.loading = true;
     txStatus.show = true;
 
-    let txSignature = await (workspace as Workspace).sendTransaction(transaction);
+    let txSignature = await (workspace.value as Workspace).sendTransaction(transaction);
     
     txStatus.subtitle = "Sent and Confirming";
-    await confirmTxRetry(workspace as Workspace, txSignature)
+    await confirmTxRetry(workspace.value as Workspace, txSignature)
     txStatus.color = "success"
     txStatus.subtitle = "Sent and Confirmed";
     txStatus.loading = false;
@@ -364,7 +371,7 @@ async function initTokenAccountForGame(game: Game) {
 }
 
 async function airdrop(game: Game) {
-  if ((workspace as Workspace).cluster === 'devnet' || (workspace as Workspace).cluster === 'testnet') {
+  if ((workspace.value as Workspace).cluster === 'devnet' || (workspace.value as Workspace).cluster === 'testnet') {
     let txStatus = initNewTxStatus();
     try {
       txStatus.color = 'warning',
@@ -398,7 +405,7 @@ async function airdrop(game: Game) {
 
 async function initUser() : Promise<boolean> {
   try {
-    user.value = await User.initializeUser(workspace as Workspace)
+    user.value = await User.initializeUser(workspace.value as Workspace)
     return true;
   } catch (error) {
     console.error(error);
@@ -407,10 +414,10 @@ async function initUser() : Promise<boolean> {
 }
 
 async function loadUser() : Promise<boolean> {
-  console.log(wallet.value.publicKey.toBase58())
+  console.log(wallet.value.publicKey.value.toBase58())
     if (!wallet.value.connected) return false;
       try {
-        user.value = new User(await (workspace as Workspace).program.account.user.fetch((await (workspace as Workspace).programAddresses.getUserPubkey(new PublicKey((wallet.value.publicKey as PublicKey || wallet.publicKey as unknown as PublicKey).toBase58())))[0]))
+        user.value = new User(await (workspace.value as Workspace).program.account.user.fetch((await (workspace.value as Workspace).programAddresses.getUserPubkey(new PublicKey((wallet.value.publicKey.value as PublicKey).toBase58())))[0]))
         return true;
       } catch (error) {
         console.error(error);
@@ -420,7 +427,7 @@ async function loadUser() : Promise<boolean> {
 
 async function updateUser() {
   if (user.value !== null) {
-    await (user.value as User).updateData(await fetchAccountRetry<UserAccount>(workspace as Workspace, 'user', user.value.account.address))
+    await (user.value as User).updateData(await fetchAccountRetry<UserAccount>(workspace.value as Workspace, 'user', user.value.account.address))
   } else {
     await loadUser();
   }
@@ -434,11 +441,11 @@ async function updateGames() {
       await initFrontendGameData(game);
     }
     try {
-      await game.updateGameData(workspace as Workspace);
+      await game.updateGameData(workspace.value as Workspace);
       if (game.currentRound && game.previousRound) {
-        await game.updateRoundData(workspace as Workspace);
+        await game.updateRoundData(workspace.value as Workspace);
       } else {
-        await game.loadRoundData(workspace as Workspace);
+        await game.loadRoundData(workspace.value as Workspace);
       }
     } catch(error) {
       console.error(error);
@@ -480,7 +487,7 @@ async function initFrontendGameData (game: Game) {
     try {
       let img = ((await import( /* @vite-ignore */ `../../node_modules/cryptocurrency-icons/32/color/${game.account.baseSymbol.toLowerCase()}.png`)));
       let mint;
-      if ((workspace.cluster !== 'mainnet-beta' && workspace.cluster !== 'devnet') || window.location.host.startsWith("localhost")) {
+      if (((workspace.value as Workspace).cluster !== 'mainnet-beta' && (workspace.value as Workspace).cluster !== 'devnet') || window.location.host.startsWith("localhost")) {
         mint = tokenList.value.find((token: TokenInfo) => token.symbol === "USDC");
       } else {
         mint = tokenList.value.find(async (token: TokenInfo) => token.address === getTokenMint(game).toBase58())
@@ -505,29 +512,33 @@ async function initFrontendGameData (game: Game) {
 }
 
 async function loadGames() {
-  ((await Promise.all((await (workspace as Workspace).program.account.game.all()).map(async (gameProgramAccount: ProgramAccount<GameAccount>) => (new Game(
-    gameProgramAccount.account
-  ))))) as Array<Game>).forEach(async newgame => {
+  return await Promise.allSettled(((await Promise.all((await (workspace.value as Workspace).program.account.game.all()).map(async (gameProgramAccount) => (new Game(
+    gameProgramAccount.account as unknown as GameAccount
+  ))))) as Array<Game>).map(async newgame => {
+    console.log(newgame.account.vault.toBase58());
     if (!games.value.some(game => game.account.address.toBase58() === newgame.account.address.toBase58())) {
       games.value.push(newgame);
       await initFrontendGameData(newgame);
     }
-  })
+    return;
+  }))
 }
 
 async function loadVaults() {
-    ((await Promise.all((await (workspace as Workspace).program.account.vault.all()).map(async (vaultProgramAccount: ProgramAccount<VaultAccount>) => (new Vault(
+    return await Promise.allSettled(((await Promise.all((await (workspace.value as Workspace).program.account.vault.all()).map(async (vaultProgramAccount: ProgramAccount<VaultAccount>) => (new Vault(
       vaultProgramAccount.account
-    ))))) as Array<Vault>).forEach((vault: Vault) => {
+    ))))) as Array<Vault>).map((vault: Vault) => {
+      console.log(vault.account.address.toBase58());
       if (!vaults.value.has(vault.account.address.toBase58()))
         vaults.value.set(vault.account.address.toBase58(), vault);
-    });
+      return;
+    }));
 }
 
 async function loadWorkspace() {
-  if ((workspace as Workspace).program instanceof Program<PredictionGame>) {
-    await loadGames();
+  if ((workspace.value as Workspace) !== undefined && (workspace.value as Workspace).program !== undefined) {
     await loadVaults();
+    await loadGames();
     if (updateInterval.value) clearInterval(updateInterval.value)
     updateInterval.value = setInterval(async () => {
       await Promise.allSettled([
@@ -545,7 +556,7 @@ async function loadWorkspace() {
 async function loadPredictions() {
   if (wallet.value !== null && wallet.value.connected && wallet.value.publicKey !== undefined && wallet.value.publicKey !== null) {
     try {
-      userPredictions.value = (await (workspace as Workspace).program.account.userPrediction.all([ { memcmp: { offset: 8, bytes: bs58.encode((wallet.value.publicKey as PublicKey || wallet.publicKey as unknown as PublicKey)?.toBuffer() as Buffer) }}])).map((programAccount: ProgramAccount<UserPredictionAccount>) => {
+      userPredictions.value = (await (workspace.value as Workspace).program.account.userPrediction.all([ { memcmp: { offset: 8, bytes: bs58.encode((wallet.value.publicKey.value as PublicKey)?.toBuffer() as Buffer) }}])).map((programAccount: ProgramAccount<UserPredictionAccount>) => {
         return new UserPrediction(programAccount.account)
       })
     } catch (error) {
@@ -566,9 +577,11 @@ function loadWallet() {
       }
   }, 1000)
 
-  function getHost() {
-    return window.location.host;
-  }
+  
+}
+
+function getHost() {
+  return window.location.host;
 }
 
 async function userClaim(game: Game) {
@@ -582,32 +595,32 @@ async function userClaim(game: Game) {
   try {
     // console.log(game.account.feeV)
 
-    let ix = await (user.value as User).userClaimInstruction(workspace as Workspace, getVault(game), await getTokenAccount(game), (user.value as User).account.claimable);
+    let ix = await (user.value as User).userClaimInstruction(workspace.value as Workspace, getVault(game), await getTokenAccount(game), (user.value as User).account.claimable);
 
     ix.keys.forEach(key => console.log(key.pubkey.toBase58()));
 
     let tx = new Transaction().add(ix);
 
     let closeUserPredictionInstructions = await Promise.all<TransactionInstruction>(userPredictions.value.filter((prediction: UserPrediction) => prediction.account.settled).map(async (prediction: UserPrediction) : Promise<TransactionInstruction> => {
-      return await UserPrediction.closeUserPredictionInstruction(workspace as Workspace, prediction)
+      return await UserPrediction.closeUserPredictionInstruction(workspace.value as Workspace, prediction)
     }));
     
     if (closeUserPredictionInstructions.length > 0)
       tx.add(...closeUserPredictionInstructions)
     
-    tx.feePayer = workspace.owner;
-    tx.recentBlockhash = (await (workspace as Workspace).program.provider.connection.getLatestBlockhash()).blockhash;
-    tx = await (workspace as Workspace).wallet.signTransaction(tx);
-    // let simulation = await (workspace as Workspace).program.provider.connection.simulateTransaction(tx);
+    tx.feePayer = (workspace.value as Workspace).owner;
+    tx.recentBlockhash = (await (workspace.value as Workspace).program.provider.connection.getLatestBlockhash()).blockhash;
+    tx = await (workspace.value as Workspace).wallet.signTransaction(tx);
+    // let simulation = await (workspace.value as Workspace).program.provider.connection.simulateTransaction(tx);
     // console.log(simulation.logs)
-    // let simulate = await (workspace as Workspace).program.provider.connection.simulateTransaction(tx);
+    // let simulate = await (workspace.value as Workspace).program.provider.connection.simulateTransaction(tx);
     // console.log(simulate.logs)
-    let signature = await (workspace as Workspace).program.provider.connection.sendRawTransaction(tx.serialize());
+    let signature = await (workspace.value as Workspace).program.provider.connection.sendRawTransaction(tx.serialize());
     
     txStatus.subtitle = "Sent"
     try {
       txStatus.subtitle = "Confirming"
-      await confirmTxRetry(workspace as Workspace, signature);
+      await confirmTxRetry(workspace.value as Workspace, signature);
       txStatus.subtitle = "Confirmed"
       txStatus.color = "success"
       txStatus.loading = false;
@@ -659,7 +672,7 @@ export default defineComponent({
   <v-container>
     <div style="position: fixed; top: 0em; left: 0; margin: 0 auto; z-index: 1008;">
         
-        <v-card tonal :class="`txStatus ${txStatus.color}`" v-for="txStatus in txStatusList.filter(txStatus => txStatus.show)" >
+        <v-card tonal :class="`txStatus ${txStatus.color}`" v-for="(txStatus, index) in txStatusList.filter(txStatus => txStatus.show)" :key="`txStatus-`+index" >
           <v-progress-linear :indeterminate="txStatus.loading" :color="txStatus.color"></v-progress-linear>
           <v-btn variant="plain" @click="hideTxStatus(txStatus.index, 0)" size="16px" style="position: absolute; top: 1em; right: 1em;"><v-icon>mdi-close</v-icon></v-btn>
           <v-card-title v-if="txStatus.title">{{ txStatus.title }}</v-card-title>
@@ -850,7 +863,7 @@ export default defineComponent({
                           <v-tooltip
                             top
                           >
-                            <template v-slot:activator="{ props }">
+                            <template v-slot:activator="{  }">
                               <CryptoIcon style="margin: 0 auto;" max-width="32px" :icon="game.account.baseSymbol.toLowerCase()"/>
                               <v-divider vertical style="margin: 0 auto;"></v-divider>
                               <CryptoIcon v-if="frontendGameData.get(game.account.address.toBase58()).mint !== null && frontendGameData.get(game.account.address.toBase58()).mint !== undefined" style="margin: 0 auto;" max-width="32px" :icon="frontendGameData.get(game.account.address.toBase58()).mint.symbol.toLowerCase()"/>
@@ -1125,7 +1138,7 @@ export default defineComponent({
                       :step="0.01" 
                       :label="`Prediction Amount ${frontendGameData.get(game.account.address.toBase58()).mint !== null ? '(' + frontendGameData.get(game.account.address.toBase58()).mint.symbol + ')' : ''}`" 
                       v-model="frontendGameData.get(game.account.address.toBase58()).prediction.amount"
-                      @update:model-value="(value: any) => {
+                      @update:model-value="(value) => {
                         if (
                             bnToNumber(new anchor.BN((getTokenAccount(game)).amount.toString()).add(user !== null ? user.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) < parseFloat(value)
                           ) {
@@ -1148,7 +1161,7 @@ export default defineComponent({
                     <v-slider
                       hide-details
                       v-model="frontendGameData.get(game.account.address.toBase58()).prediction.sliderAmount"
-                      @update:model-value="(value: number) => {
+                      @update:model-value="(value) => {
                         frontendGameData.get(game.account.address.toBase58()).prediction.amount = new Number(
                           (
                             (

@@ -7,8 +7,6 @@ config({path: '.env.local'})
 const privateKeyEnvVariable = "PRIVATE_KEY"
 const privateKey = process.env[privateKeyEnvVariable]
 
-console.log(privateKey);
-
 if (privateKey === undefined) {
     console.error('need a ' + privateKeyEnvVariable +' env variable');
     process.exit()

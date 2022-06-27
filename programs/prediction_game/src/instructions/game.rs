@@ -549,7 +549,6 @@ pub struct CloseGame<'info> {
     #[account(
         mut,
         constraint = game.owner == signer.key() @ ErrorCode::SignerNotOwner,
-        constraint = game.unclaimed_fees.eq(&0),
         close = receiver
     )]
     pub game: Box<Account<'info, Game>>,

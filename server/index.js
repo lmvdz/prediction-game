@@ -17,6 +17,17 @@ let connection = new Connection(process.env.ENDPOINT.toString());
 const mintKeypair = Keypair.fromSecretKey(bs58.decode("3dS4W9gKuGQcvA4s9dSRKLGJ8UAdu9ZeFLxJfv6WLK4BzZZnt3L2WNSJchjtgLi7BnxMTcpPRU1AG9yfEkR2cxDT"))
 
 ;(async () => {
+    try {
+        if (process.env.CLUSTER === 'devnet') {
+            // devnet mint
+            const mintDecimals = 6;
+    
+            mint = await createFakeMint(connection, mintKeypair, owner, mintDecimals);
+        }
+    } catch (error) {
+        
+    }
+    
     const mint = await getMint(connection, mintKeypair.publicKey)
     admin.init(owner, connection, process.env.CLUSTER, mint)
 })();
@@ -28,19 +39,19 @@ exec('rm -rf ./aggr')
 exec('mkdir frontend')
 exec('mkdir aggr')
 
-exec('cp -r ../frontend/dist/* frontend/*')
-exec('cp -r ../aggr/dist/* aggr/*')
+exec('cp -r ../frontend/dist/* frontend')
+exec('cp -r ../aggr/dist/* aggr')
 
-const devnet = express();
-devnet.use(cors());
-devnet.use(bodyParser.json());
+// const devnet = express();
+// devnet.use(cors());
+// devnet.use(bodyParser.json());
 
-devnet.use(express.static('frontend'));
-devnet.get('/*', (req, res) => {
-	res.sendFile(__dirname + '/frontend/index.html');
-})
+// devnet.use(express.static('frontend'));
+// devnet.get('/*', (req, res) => {
+// 	res.sendFile(__dirname + '/frontend/index.html');
+// })
 
-devnet.listen(3000, () => {console.log('devnet started on port 3000')});
+// devnet.listen(3000, () => {console.log('devnet started on port 3000')});
 
 const mainnet = express();
 mainnet.use(cors());
