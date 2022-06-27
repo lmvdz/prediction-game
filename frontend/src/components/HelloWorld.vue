@@ -259,8 +259,8 @@ async function makePrediction(game: (Game)) {
     txStatus.show = true;
     txStatus.loading = true;
     try {
-      // let simulation = await (getWorkspace()).program.provider.connection.simulateTransaction(tx);
-      // console.log(simulation.value.logs);
+      let simulation = await (getWorkspace()).program.provider.connection.simulateTransaction(tx);
+      console.log(simulation.value.logs);
       let signature = await (getWorkspace()).program.provider.connection.sendRawTransaction(tx.serialize());
     
       txStatus.signatures.push(signature);
