@@ -59,7 +59,7 @@ onMounted(() => {
   ;(async () => {
     tokenList.value = useTokenList();
 
-    console.log(tokenList.value);
+    // console.log(tokenList.value);
       
     if (aggrWorkspace.value === '') {
       aggrWorkspace.value = window.location.host + "/workspaces/btc.json";
@@ -69,7 +69,7 @@ onMounted(() => {
     if (workspace.value === null) {
       initWorkspace(window.location.host.startsWith("localhost") || window.location.host.startsWith("devnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net", window.location.host.startsWith("localhost") ? 'devnet' : window.location.host.split('.')[0] as Cluster);
       workspace.value = useWorkspace();
-      loadWorkspace();
+      await loadWorkspace();
     }
   })();
 })
@@ -146,8 +146,8 @@ function hideTxStatus(txStatus: TxStatus | number, timeout = 0) {
 }
 
 function getVault(game: Game): Vault {
-  console.log(vaults.value);
-  console.log(game.account.vault.toBase58());
+  // console.log(vaults.value);
+  // console.log(game.account.vault.toBase58());
   return vaults.value.get(game.account.vault.toBase58())
 }
 
@@ -167,7 +167,7 @@ async function updateVaults(): Promise<void> {
 
 function getTokenMint(game: Game) : PublicKey {
   let vault = (getVault(game));
-  console.log(vault);
+  // console.log(vault);
   if (vault) {
     return vault.account.tokenMint;
   }
@@ -259,8 +259,8 @@ async function makePrediction(game: (Game)) {
     txStatus.show = true;
     txStatus.loading = true;
     try {
-      let simulation = await (workspace.value as Workspace).program.provider.connection.simulateTransaction(tx);
-      console.log(simulation.value.logs);
+      // let simulation = await (workspace.value as Workspace).program.provider.connection.simulateTransaction(tx);
+      // console.log(simulation.value.logs);
       let signature = await (workspace.value as Workspace).program.provider.connection.sendRawTransaction(tx.serialize());
     
       txStatus.signatures.push(signature);
@@ -414,7 +414,7 @@ async function initUser() : Promise<boolean> {
 }
 
 async function loadUser() : Promise<boolean> {
-  console.log(wallet.value.publicKey.value.toBase58())
+  // console.log(wallet.value.publicKey.value.toBase58())
     if (!wallet.value.connected) return false;
       try {
         user.value = new User(await (workspace.value as Workspace).program.account.user.fetch((await (workspace.value as Workspace).programAddresses.getUserPubkey(new PublicKey((wallet.value.publicKey.value as PublicKey).toBase58())))[0]))
@@ -487,10 +487,10 @@ async function initFrontendGameData (game: Game) {
     try {
       let img = ((await import( /* @vite-ignore */ `../../node_modules/cryptocurrency-icons/32/color/${game.account.baseSymbol.toLowerCase()}.png`)));
       let mint;
-      if (((workspace.value as Workspace).cluster !== 'mainnet-beta' && (workspace.value as Workspace).cluster !== 'devnet') || window.location.host.startsWith("localhost")) {
+      if ((workspace.value as Workspace).cluster === 'devnet' || window.location.host.startsWith("localhost")) {
         mint = tokenList.value.find((token: TokenInfo) => token.symbol === "USDC");
-      } else {
-        mint = tokenList.value.find(async (token: TokenInfo) => token.address === getTokenMint(game).toBase58())
+      } else if ((workspace.value as Workspace).cluster !== 'mainnet-beta') {
+        mint = tokenList.value.find(async (token: TokenInfo) => token.address === getTokenMint(game).toBase58()) || tokenList.value.find((token: TokenInfo) => token.symbol === "USDC")
       }
       let priceProgram = game.account.priceProgram.toBase58()
       let priceFeed = game.account.priceFeed.toBase58()
@@ -515,7 +515,7 @@ async function loadGames() {
   return await Promise.allSettled(((await Promise.all((await (workspace.value as Workspace).program.account.game.all()).map(async (gameProgramAccount) => (new Game(
     gameProgramAccount.account as unknown as GameAccount
   ))))) as Array<Game>).map(async newgame => {
-    console.log(newgame.account.vault.toBase58());
+    // console.log(newgame.account.vault.toBase58());
     if (!games.value.some(game => game.account.address.toBase58() === newgame.account.address.toBase58())) {
       games.value.push(newgame);
       await initFrontendGameData(newgame);
@@ -528,7 +528,7 @@ async function loadVaults() {
     return await Promise.allSettled(((await Promise.all((await (workspace.value as Workspace).program.account.vault.all()).map(async (vaultProgramAccount: ProgramAccount<VaultAccount>) => (new Vault(
       vaultProgramAccount.account
     ))))) as Array<Vault>).map((vault: Vault) => {
-      console.log(vault.account.address.toBase58());
+      // console.log(vault.account.address.toBase58());
       if (!vaults.value.has(vault.account.address.toBase58()))
         vaults.value.set(vault.account.address.toBase58(), vault);
       return;
@@ -536,7 +536,7 @@ async function loadVaults() {
 }
 
 async function loadWorkspace() {
-  if ((workspace.value as Workspace) !== undefined && (workspace.value as Workspace).program !== undefined) {
+  if ((workspace.value as Workspace) !== null && (workspace.value as Workspace) !== undefined && (workspace.value as Workspace).program instanceof Program<PredictionGame>) {
     await loadVaults();
     await loadGames();
     if (updateInterval.value) clearInterval(updateInterval.value)
@@ -548,7 +548,7 @@ async function loadWorkspace() {
         await updateUser(),
         await updateTokenAccountBalances()
       ]);
-    }, 10000)
+    }, 5000)
   }
   
 }
@@ -687,6 +687,7 @@ export default defineComponent({
         </v-card>
 
     </div>
+    {{ workspace }}
     
     <v-row justify="center" class="text-center" style="width: 100%; min-height: 75vh; margin: 0 auto;">
       <v-col-auto>
