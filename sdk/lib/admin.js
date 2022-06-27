@@ -120,15 +120,15 @@ async function initFromGameSeed(workspace, gameSeed, mint) {
 async function init(owner, connection, cluster, mint) {
     const botWallet = new nodewallet_1.default(owner);
     const workspace = workspace_1.Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
-    let vaults = (await workspace.program.account.vault.all());
-    await Promise.allSettled((await workspace.program.account.game.all()).map(async (gameAccount) => {
-        let game = new game_1.default(gameAccount.account);
-        console.log(game.account.address.toBase58(), game.account.unclaimedFees.toNumber());
-        if (game.account.unclaimedFees.gt(new anchor.BN(0))) {
-            await game.claimFee(workspace, new vault_1.default(vaults.find(v => v.account.address.toBase58() === game.account.vault.toBase58()).account));
-        }
-        await (game).closeGame(workspace);
-    }));
+    // let vaults = (await workspace.program.account.vault.all()) as Array<ProgramAccount<VaultAccount>>
+    // await Promise.allSettled( (await workspace.program.account.game.all()).map(async gameAccount => {
+    //     let game = new Game(gameAccount.account as unknown as GameAccount);
+    //     // console.log(game.account.address.toBase58(), game.account.unclaimedFees.toNumber());
+    //     // if (game.account.unclaimedFees.gt(new anchor.BN(0))) {
+    //     //     await game.claimFee(workspace, new Vault(vaults.find(v => v.account.address.toBase58() === game.account.vault.toBase58()).account))
+    //     // }
+    //     await (game).closeGame(workspace);
+    // }));
     (await Promise.all(exports.gameSeeds.map(async (gameSeed) => {
         console.log(gameSeed);
         return await initFromGameSeed(workspace, gameSeed, mint.address);

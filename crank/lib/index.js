@@ -143,21 +143,24 @@ const initNext = (workspace, game, crank) => {
 };
 const settleOrInitNext = (workspace, game, crank) => {
     return new Promise((resolve, reject) => {
-        if (game.currentRound.account.finished) {
+        if (game.currentRound.account.finished && !game.currentRound.account.feeCollected) {
+            console.log('collecting game fee');
             game.collectFee(workspace, crank).then((game) => {
                 resolve(game);
             }).catch(error => {
                 reject(error);
             });
         }
-        else if (game.currentRound.account.feeCollected) {
+        else if (game.currentRound.account.feeCollected && !game.currentRound.account.settled) {
+            console.log('settling game positions');
             game.settlePredictions(workspace, crank).then((game) => {
                 resolve(game);
             }).catch(error => {
                 reject(error);
             });
         }
-        else if (game.currentRound.account.settled) {
+        else if (game.currentRound.account.settled && !game.currentRound.account.cranksPaid) {
+            console.log('paying out game cranks');
             game.payoutCranks(workspace).then(game => {
                 resolve(game);
             }).catch(error => {
@@ -165,6 +168,7 @@ const settleOrInitNext = (workspace, game, crank) => {
             });
         }
         else if (game.currentRound.account.cranksPaid) {
+            console.log('initializing next round');
             initNext(workspace, game, crank).then(game => {
                 resolve(game);
             }).catch(error => {
@@ -187,7 +191,7 @@ const updateLoop = (workspace, vault, game, crank) => {
     setTimeout(() => {
         workspace.program.provider.connection.getTokenAccountBalance(vault.account.vaultAta).then(vaultTokenAccountBalanaceResponse => {
             workspace.program.provider.connection.getTokenAccountBalance(vault.account.feeVaultAta).then(feeVaultTokenAccountBalanaceResponse => {
-                console.log(game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundStartPrice, game), vaultTokenAccountBalanaceResponse.value.uiAmount, feeVaultTokenAccountBalanaceResponse.value.uiAmount, ((game.account.unclaimedFees.div(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() + ((game.account.unclaimedFees.mod(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() / (10 ** vault.account.tokenDecimals))), game.account.baseSymbol, game.currentRound.account.roundNumber, game.currentRound.account.roundTimeDifference.toNumber(), game.currentRound.account.roundCurrentPrice.toNumber(), game.currentRound.account.finished, game.currentRound.account.feeCollected, game.currentRound.account.cranksPaid, game.currentRound.account.settled, game.currentRound.account.invalid, game.currentRound.account.totalUniqueCrankers, game.currentRound.account.totalCranksPaid);
+                console.log(game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundStartPrice, game), game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game), vaultTokenAccountBalanaceResponse.value.uiAmount, feeVaultTokenAccountBalanaceResponse.value.uiAmount, ((game.account.unclaimedFees.div(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() + ((game.account.unclaimedFees.mod(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() / (10 ** vault.account.tokenDecimals))), game.account.baseSymbol, game.currentRound.account.roundNumber, game.currentRound.account.roundTimeDifference.toNumber(), game.currentRound.account.roundCurrentPrice.toNumber(), game.currentRound.account.finished, game.currentRound.account.feeCollected, game.currentRound.account.cranksPaid, game.currentRound.account.settled, game.currentRound.account.invalid, game.currentRound.account.totalUniqueCrankers, game.currentRound.account.totalCranksPaid);
             });
         });
         vault.updateVaultData(workspace).then((vault) => {
@@ -255,5 +259,15 @@ async function run() {
         }
     });
 }
-run();
+const runLoop = () => {
+    try {
+        run();
+    }
+    catch (error) {
+        setTimeout(() => {
+            runLoop();
+        }, 1000);
+    }
+};
+runLoop();
 //# sourceMappingURL=index.js.map

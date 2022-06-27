@@ -45,10 +45,10 @@ let games = ref([] as Array<Game>);
 let vaults = ref(new Map<string, Vault>());
 let userPredictions = ref([] as Array<UserPrediction>);
 let frontendGameData = ref(new Map<string, FrontendGameData>());
-let wallet = shallowRef(null as WalletStore); 
-let workspace = shallowRef(null as Workspace);
+let wallet = ref(null as WalletStore); 
+let workspace = ref(null as Workspace);
 let tokenList = ref(null as TokenInfo[]);
-let user = shallowRef(null as User);
+let user = ref(null as User);
 let tokenAccounts = ref(new Map<string, Account>());
 let updateInterval = ref(null as NodeJS.Timer);
 let aggrWorkspace = ref('');
@@ -153,7 +153,7 @@ function getVault(game: Game): Vault {
 
 async function updateVault(vault: Vault): Promise<void> {
   if (vault)
-    vaults.value.set(vault.account.address.toBase58(), new Vault(await fetchAccountRetry<VaultAccount>(workspace.value as Workspace, 'vault', vault.account.address)))
+    vaults.value.set(vault.account.address.toBase58(), new Vault(await fetchAccountRetry<VaultAccount>(getWorkspace(), 'vault', vault.account.address)))
   
 }
 
@@ -182,8 +182,8 @@ async function makePrediction(game: (Game)) {
 
   if (wallet.value.connected && wallet.value.publicKey !== undefined && wallet.value.publicKey !== null) {
     // update the game
-    await game.updateGameData(workspace.value as Workspace);
-    await game.updateRoundData(workspace.value as Workspace);
+    await game.updateGameData(getWorkspace());
+    await game.updateRoundData(getWorkspace());
 
     if (!game.currentRound.account.roundPredictionsAllowed)  {
       txStatus.color = 'error';
@@ -204,15 +204,15 @@ async function makePrediction(game: (Game)) {
       txStatus.show = true;
     }
     // if the user doesn't exist try and load otherwise add it as a tx
-    let [userPubkey, _userPubkeyBump] = await (workspace.value as Workspace).programAddresses.getUserPubkey((workspace.value as Workspace).owner);
+    let [userPubkey, _userPubkeyBump] = await (getWorkspace()).programAddresses.getUserPubkey((getWorkspace()).owner);
     let tx = new Transaction();
     let txTitle = '';
     if (user === undefined || user === null) {
       if (!(await loadUser())) {
-        let initUserIX = await User.initializeUserInstruction(workspace.value as Workspace, userPubkey);
+        let initUserIX = await User.initializeUserInstruction(getWorkspace(), userPubkey);
         // let initUserTX = new Transaction().add(initUserIX);
-        // initUserTX.feePayer = (workspace.value as Workspace).owner;
-        // initUserTX.recentBlockhash = (await (workspace.value as Workspace).program.provider.connection.getLatestBlockhash()).blockhash
+        // initUserTX.feePayer = (getWorkspace()).owner;
+        // initUserTX.recentBlockhash = (await (getWorkspace()).program.provider.connection.getLatestBlockhash()).blockhash
         tx.add(initUserIX)
         txTitle = "Initialize User & "
       }
@@ -222,16 +222,16 @@ async function makePrediction(game: (Game)) {
     let fromTokenAccount = await getTokenAccount(game);
     let vault = getVault(game);
     
-    let [userPredictionPubkey, _userPredictionPubkeyBump] = await (workspace.value as Workspace).programAddresses.getUserPredictionPubkey(game, game.currentRound, user.value || (workspace.value as Workspace).owner);
+    let [userPredictionPubkey, _userPredictionPubkeyBump] = await (getWorkspace()).programAddresses.getUserPredictionPubkey(game, game.currentRound, user.value || (getWorkspace()).owner);
 
     let initUserPredictionIX = await UserPrediction.initializeUserPredictionInstruction(
-      workspace.value as Workspace,
+      getWorkspace(),
       vault,
       game, 
       game.currentRound, 
       user.value || userPubkey, 
       fromTokenAccount,
-      (workspace.value as Workspace).owner,
+      (getWorkspace()).owner,
       userPredictionPubkey,
       gameFrontendData.prediction.direction, 
       amount
@@ -242,7 +242,7 @@ async function makePrediction(game: (Game)) {
     txTitle += "Initialize User Prediction"
 
     let closeUserPredictionInstructions = await Promise.all<TransactionInstruction>(userPredictions.value.filter((prediction: UserPrediction) => prediction.account.settled).map(async (prediction: UserPrediction) : Promise<TransactionInstruction> => {
-      return await UserPrediction.closeUserPredictionInstruction(workspace.value as Workspace, prediction)
+      return await UserPrediction.closeUserPredictionInstruction(getWorkspace(), prediction)
     }));
     
     
@@ -252,16 +252,16 @@ async function makePrediction(game: (Game)) {
     }
       
 
-    tx.feePayer = (workspace.value as Workspace).owner;
-    tx.recentBlockhash = (await (workspace.value as Workspace).program.provider.connection.getLatestBlockhash()).blockhash
-    tx = await (workspace.value as Workspace).wallet.signTransaction(tx);
+    tx.feePayer = (getWorkspace()).owner;
+    tx.recentBlockhash = (await (getWorkspace()).program.provider.connection.getLatestBlockhash()).blockhash
+    tx = await (getWorkspace()).wallet.signTransaction(tx);
     
     txStatus.show = true;
     txStatus.loading = true;
     try {
-      // let simulation = await (workspace.value as Workspace).program.provider.connection.simulateTransaction(tx);
+      // let simulation = await (getWorkspace()).program.provider.connection.simulateTransaction(tx);
       // console.log(simulation.value.logs);
-      let signature = await (workspace.value as Workspace).program.provider.connection.sendRawTransaction(tx.serialize());
+      let signature = await (getWorkspace()).program.provider.connection.sendRawTransaction(tx.serialize());
     
       txStatus.signatures.push(signature);
       txStatus.color = 'success'
@@ -272,7 +272,7 @@ async function makePrediction(game: (Game)) {
       try {
         txStatus.color = 'warning'
         txStatus.subtitle = "Confirming TX!"
-        await confirmTxRetry(workspace.value as Workspace, signature);
+        await confirmTxRetry(getWorkspace(), signature);
         txStatus.loading = false;
         txStatus.color = "success"
         txStatus.subtitle = "Confirmed TX!"
@@ -307,14 +307,14 @@ async function updateTokenAccount(game: Game) : Promise<void> {
     let address: PublicKey;
 
     if (!tokenAccounts.value.has(mint.toBase58())) {
-      address = await getAssociatedTokenAddress(mint, (workspace.value as Workspace).owner); 
+      address = await getAssociatedTokenAddress(mint, (getWorkspace()).owner); 
     } else {
       address = tokenAccounts.value.get(mint.toBase58()).address;
     }
 
     try {
-      let tokenAccount = await getAccount((workspace.value as Workspace).program.provider.connection, address);
-      if (tokenAccount.owner.toBase58() === (workspace.value as Workspace).owner.toBase58()) {
+      let tokenAccount = await getAccount((getWorkspace()).program.provider.connection, address);
+      if (tokenAccount.owner.toBase58() === (getWorkspace()).owner.toBase58()) {
         tokenAccounts.value.set(mint.toBase58(), tokenAccount);
       } else {
         tokenAccounts.value.delete(mint.toBase58());
@@ -332,9 +332,9 @@ async function initTokenAccountForGame(game: Game) {
   let tokenMint = await getTokenMint(game);
   const transaction = new Transaction().add(
       createAssociatedTokenAccountInstruction(
-          (workspace.value as Workspace).owner,
-          await getAssociatedTokenAddress(tokenMint, (workspace.value as Workspace).owner),
-          (workspace.value as Workspace).owner,
+          (getWorkspace()).owner,
+          await getAssociatedTokenAddress(tokenMint, (getWorkspace()).owner),
+          (getWorkspace()).owner,
           tokenMint,
           TOKEN_PROGRAM_ID,
           ASSOCIATED_TOKEN_PROGRAM_ID
@@ -349,10 +349,10 @@ async function initTokenAccountForGame(game: Game) {
     txStatus.loading = true;
     txStatus.show = true;
 
-    let txSignature = await (workspace.value as Workspace).sendTransaction(transaction);
+    let txSignature = await (getWorkspace()).sendTransaction(transaction);
     
     txStatus.subtitle = "Sent and Confirming";
-    await confirmTxRetry(workspace.value as Workspace, txSignature)
+    await confirmTxRetry(getWorkspace(), txSignature)
     txStatus.color = "success"
     txStatus.subtitle = "Sent and Confirmed";
     txStatus.loading = false;
@@ -371,7 +371,7 @@ async function initTokenAccountForGame(game: Game) {
 }
 
 async function airdrop(game: Game) {
-  if ((workspace.value as Workspace).cluster === 'devnet' || (workspace.value as Workspace).cluster === 'testnet') {
+  if ((getWorkspace()).cluster === 'devnet' || (getWorkspace()).cluster === 'testnet') {
     let txStatus = initNewTxStatus();
     try {
       txStatus.color = 'warning',
@@ -405,7 +405,7 @@ async function airdrop(game: Game) {
 
 async function initUser() : Promise<boolean> {
   try {
-    user.value = await User.initializeUser(workspace.value as Workspace)
+    user.value = await User.initializeUser(getWorkspace())
     return true;
   } catch (error) {
     console.error(error);
@@ -417,7 +417,7 @@ async function loadUser() : Promise<boolean> {
   // console.log(wallet.value.publicKey.value.toBase58())
     if (!wallet.value.connected) return false;
       try {
-        user.value = new User(await (workspace.value as Workspace).program.account.user.fetch((await (workspace.value as Workspace).programAddresses.getUserPubkey(new PublicKey((wallet.value.publicKey.value as PublicKey).toBase58())))[0]))
+        user.value = new User(await (getWorkspace()).program.account.user.fetch((await (getWorkspace()).programAddresses.getUserPubkey(new PublicKey((wallet.value.publicKey as PublicKey).toBase58())))[0]))
         return true;
       } catch (error) {
         console.error(error);
@@ -427,7 +427,7 @@ async function loadUser() : Promise<boolean> {
 
 async function updateUser() {
   if (user.value !== null) {
-    await (user.value as User).updateData(await fetchAccountRetry<UserAccount>(workspace.value as Workspace, 'user', user.value.account.address))
+    await (user.value as User).updateData(await fetchAccountRetry<UserAccount>(getWorkspace(), 'user', user.value.account.address))
   } else {
     await loadUser();
   }
@@ -441,17 +441,22 @@ async function updateGames() {
       await initFrontendGameData(game);
     }
     try {
-      await game.updateGameData(workspace.value as Workspace);
+      await game.updateGameData(getWorkspace());
       if (game.currentRound && game.previousRound) {
-        await game.updateRoundData(workspace.value as Workspace);
+        await game.updateRoundData(getWorkspace());
       } else {
-        await game.loadRoundData(workspace.value as Workspace);
+        await game.loadRoundData(getWorkspace());
       }
     } catch(error) {
       console.error(error);
     }
   }))
   
+}
+
+function getWorkspace() : Workspace {
+  //@ts-ignore
+  return workspace
 }
 
 async function updateTokenAccountBalances() {
@@ -487,9 +492,9 @@ async function initFrontendGameData (game: Game) {
     try {
       let img = ((await import( /* @vite-ignore */ `../../node_modules/cryptocurrency-icons/32/color/${game.account.baseSymbol.toLowerCase()}.png`)));
       let mint;
-      if ((workspace.value as Workspace).cluster === 'devnet' || window.location.host.startsWith("localhost")) {
+      if ((getWorkspace()).cluster === 'devnet' || window.location.host.startsWith("localhost")) {
         mint = tokenList.value.find((token: TokenInfo) => token.symbol === "USDC");
-      } else if ((workspace.value as Workspace).cluster !== 'mainnet-beta') {
+      } else if ((getWorkspace()).cluster !== 'mainnet-beta') {
         mint = tokenList.value.find(async (token: TokenInfo) => token.address === getTokenMint(game).toBase58()) || tokenList.value.find((token: TokenInfo) => token.symbol === "USDC")
       }
       let priceProgram = game.account.priceProgram.toBase58()
@@ -512,7 +517,7 @@ async function initFrontendGameData (game: Game) {
 }
 
 async function loadGames() {
-  return await Promise.allSettled(((await Promise.all((await (workspace.value as Workspace).program.account.game.all()).map(async (gameProgramAccount) => (new Game(
+  return await Promise.allSettled(((await Promise.all((await (getWorkspace()).program.account.game.all()).map(async (gameProgramAccount) => (new Game(
     gameProgramAccount.account as unknown as GameAccount
   ))))) as Array<Game>).map(async newgame => {
     // console.log(newgame.account.vault.toBase58());
@@ -525,7 +530,7 @@ async function loadGames() {
 }
 
 async function loadVaults() {
-    return await Promise.allSettled(((await Promise.all((await (workspace.value as Workspace).program.account.vault.all()).map(async (vaultProgramAccount: ProgramAccount<VaultAccount>) => (new Vault(
+    return await Promise.allSettled(((await Promise.all((await (getWorkspace()).program.account.vault.all()).map(async (vaultProgramAccount: ProgramAccount<VaultAccount>) => (new Vault(
       vaultProgramAccount.account
     ))))) as Array<Vault>).map((vault: Vault) => {
       // console.log(vault.account.address.toBase58());
@@ -536,7 +541,7 @@ async function loadVaults() {
 }
 
 async function loadWorkspace() {
-  if ((workspace.value as Workspace) !== null && (workspace.value as Workspace) !== undefined && (workspace.value as Workspace).program instanceof Program<PredictionGame>) {
+  if ((getWorkspace()) !== null && (getWorkspace()) !== undefined && (getWorkspace()).program instanceof Program<PredictionGame>) {
     await loadVaults();
     await loadGames();
     if (updateInterval.value) clearInterval(updateInterval.value)
@@ -556,7 +561,7 @@ async function loadWorkspace() {
 async function loadPredictions() {
   if (wallet.value !== null && wallet.value.connected && wallet.value.publicKey !== undefined && wallet.value.publicKey !== null) {
     try {
-      userPredictions.value = (await (workspace.value as Workspace).program.account.userPrediction.all([ { memcmp: { offset: 8, bytes: bs58.encode((wallet.value.publicKey.value as PublicKey)?.toBuffer() as Buffer) }}])).map((programAccount: ProgramAccount<UserPredictionAccount>) => {
+      userPredictions.value = (await (getWorkspace()).program.account.userPrediction.all([ { memcmp: { offset: 8, bytes: bs58.encode((wallet.value.publicKey as PublicKey)?.toBuffer() as Buffer) }}])).map((programAccount: ProgramAccount<UserPredictionAccount>) => {
         return new UserPrediction(programAccount.account)
       })
     } catch (error) {
@@ -567,7 +572,8 @@ async function loadPredictions() {
 
 function loadWallet() {
   setTimeout(() => {
-      wallet.value = useWallet() as WalletStore;
+      //@ts-ignore
+      wallet.value = useWallet();
       if (!wallet.value.connected) {
         loadWallet();
       } else {
@@ -578,6 +584,10 @@ function loadWallet() {
   }, 1000)
 
   
+}
+
+function getProtocol() {
+  return window.location.protocol;
 }
 
 function getHost() {
@@ -595,32 +605,32 @@ async function userClaim(game: Game) {
   try {
     // console.log(game.account.feeV)
 
-    let ix = await (user.value as User).userClaimInstruction(workspace.value as Workspace, getVault(game), await getTokenAccount(game), (user.value as User).account.claimable);
+    let ix = await (user.value as User).userClaimInstruction(getWorkspace(), getVault(game), await getTokenAccount(game), (user.value as User).account.claimable);
 
     ix.keys.forEach(key => console.log(key.pubkey.toBase58()));
 
     let tx = new Transaction().add(ix);
 
     let closeUserPredictionInstructions = await Promise.all<TransactionInstruction>(userPredictions.value.filter((prediction: UserPrediction) => prediction.account.settled).map(async (prediction: UserPrediction) : Promise<TransactionInstruction> => {
-      return await UserPrediction.closeUserPredictionInstruction(workspace.value as Workspace, prediction)
+      return await UserPrediction.closeUserPredictionInstruction(getWorkspace(), prediction)
     }));
     
     if (closeUserPredictionInstructions.length > 0)
       tx.add(...closeUserPredictionInstructions)
     
-    tx.feePayer = (workspace.value as Workspace).owner;
-    tx.recentBlockhash = (await (workspace.value as Workspace).program.provider.connection.getLatestBlockhash()).blockhash;
-    tx = await (workspace.value as Workspace).wallet.signTransaction(tx);
-    // let simulation = await (workspace.value as Workspace).program.provider.connection.simulateTransaction(tx);
+    tx.feePayer = (getWorkspace()).owner;
+    tx.recentBlockhash = (await (getWorkspace()).program.provider.connection.getLatestBlockhash()).blockhash;
+    tx = await (getWorkspace()).wallet.signTransaction(tx);
+    // let simulation = await (getWorkspace()).program.provider.connection.simulateTransaction(tx);
     // console.log(simulation.logs)
-    // let simulate = await (workspace.value as Workspace).program.provider.connection.simulateTransaction(tx);
+    // let simulate = await (getWorkspace()).program.provider.connection.simulateTransaction(tx);
     // console.log(simulate.logs)
-    let signature = await (workspace.value as Workspace).program.provider.connection.sendRawTransaction(tx.serialize());
+    let signature = await (getWorkspace()).program.provider.connection.sendRawTransaction(tx.serialize());
     
     txStatus.subtitle = "Sent"
     try {
       txStatus.subtitle = "Confirming"
-      await confirmTxRetry(workspace.value as Workspace, signature);
+      await confirmTxRetry(getWorkspace(), signature);
       txStatus.subtitle = "Confirmed"
       txStatus.color = "success"
       txStatus.loading = false;
@@ -723,7 +733,7 @@ export default defineComponent({
               <v-icon class="information-icon">{{ !frontendGameData.get(game.account.address.toBase58()).information.show ? 'mdi-information-variant' : 'mdi-close' }}</v-icon>
             </v-btn>
 
-            <v-btn icon size="x-small" style="right: 0; bottom: 0; z-index: 1;" variant="text" @click.stop="() => { aggrWorkspace = getHost()+'/workspaces/'+game.account.baseSymbol.toLowerCase()+'.json'  }">
+            <v-btn icon size="x-small" style="right: 0; bottom: 0; z-index: 1;" variant="text" @click.stop="() => { aggrWorkspace = getProtocol()+'//'+getHost()+'/workspaces/'+game.account.baseSymbol.toLowerCase()+'.json'  }">
               <v-tooltip
                 activator="parent"
                 location="top"
@@ -1235,7 +1245,7 @@ export default defineComponent({
         
       </v-col-auto>
       <v-col style="padding: 8px;" class="d-none d-lg-flex">
-        <iframe id="aggr" :src="`https://aggr.solpredict.io?workspace-url=${aggrWorkspace}`" frameborder="0" style="width: 100%; height: 100%; min-height: 75vh; max-height: 75vh;"></iframe>
+        <iframe id="aggr" :src="`${getHost().startsWith('localhost') ? getProtocol()+'//'+'localhost:8080' : 'https://aggr.solpredict.io'}?workspace-url=${aggrWorkspace}`" frameborder="0" style="width: 100%; height: 100%; min-height: 75vh; max-height: 75vh;"></iframe>
       </v-col>
     </v-row>
   </v-container>

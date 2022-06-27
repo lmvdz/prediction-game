@@ -373,7 +373,7 @@ export default class Game implements DataUpdatable<GameAccount> {
                     }
                 ]
             }))).flat(Infinity) as AccountMeta[], 20);
-    
+
             if (unSettledPredictionChunks.length > 0) {
                 await Promise.allSettled(unSettledPredictionChunks.map(async (chunk: AccountMeta[]): Promise<String | any> => {
                     try {

@@ -131,25 +131,29 @@ const initNext = (workspace: Workspace, game: Game, crank: Crank) : Promise<Game
 
 const settleOrInitNext = (workspace: Workspace, game: Game, crank: Crank) : Promise<Game> => {
     return new Promise((resolve, reject) => {
-        if (game.currentRound.account.finished) {
+        if (game.currentRound.account.finished && !game.currentRound.account.feeCollected) {
+            console.log('collecting game fee')
             game.collectFee(workspace, crank).then((game) => {
                 resolve(game);
             }).catch(error => {
                 reject(error);
             })
-        } else if (game.currentRound.account.feeCollected) {
+        } else if (game.currentRound.account.feeCollected && !game.currentRound.account.settled) {
+            console.log('settling game positions')
             game.settlePredictions(workspace, crank).then((game) => {
                 resolve(game);
             }).catch(error => {
                 reject(error);
             })
-        } else if (game.currentRound.account.settled) {
+        } else if (game.currentRound.account.settled && !game.currentRound.account.cranksPaid) {
+            console.log('paying out game cranks')
             game.payoutCranks(workspace).then(game => {
                 resolve(game);
             }).catch(error => {
                 reject(error);
             })
         } else if (game.currentRound.account.cranksPaid) {
+            console.log('initializing next round')
             initNext(workspace, game, crank).then(game => {
                 resolve(game);
             }).catch(error => {
@@ -176,6 +180,7 @@ const updateLoop = (workspace: Workspace, vault: Vault, game: Game, crank: Crank
             workspace.program.provider.connection.getTokenAccountBalance(vault.account.feeVaultAta).then(feeVaultTokenAccountBalanaceResponse => {
                 console.log(
                     game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundStartPrice, game),
+                    game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game),
                     vaultTokenAccountBalanaceResponse.value.uiAmount,
                     feeVaultTokenAccountBalanaceResponse.value.uiAmount,
                     ((game.account.unclaimedFees.div(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() + ((game.account.unclaimedFees.mod(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() / (10 ** vault.account.tokenDecimals))),
@@ -271,4 +276,15 @@ async function run() {
     
 }
 
-run();
+const runLoop = () => {
+    try {
+        run();
+    } catch (error) {
+        setTimeout(() => {
+            runLoop();
+        }, 1000)
+    }
+}
+
+runLoop();
+
