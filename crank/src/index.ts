@@ -46,36 +46,6 @@ try {
 const botWallet: NodeWallet = new NodeWallet(owner);
 
 
-const loadVault = (workspace: Workspace, vaultPubkey: PublicKey) : Promise<Vault> => {
-    return new Promise((resolve, reject) => {
-        fetchAccountRetry<VaultAccount>(workspace, 'vault', (vaultPubkey)).then(vaultAccount => {
-            resolve(new Vault(
-                vaultAccount
-            ));
-        }).catch(error => {
-            console.error(error);
-            reject(error);
-        })
-    }) 
-}
-
-
-
-const loadGame = (workspace: Workspace, gamePubkey: PublicKey) : Promise<Game> => {
-    return new Promise((resolve, reject) => {
-        fetchAccountRetry<GameAccount>(workspace, 'game', (gamePubkey)).then(gameAccount => {
-            resolve(new Game(
-                gameAccount
-            ));
-        }).catch(error => {
-            console.error(error);
-            reject(error);
-        })
-        
-    })
-}
-
-
 const loadCrank = (workspace: Workspace, game: Game, user: User) : Promise<Crank> => {
     return new Promise((resolve, reject) => {
         workspace.programAddresses.getCrankPubkey(workspace.owner, game.account.address, user.account.address).then(([crankAccountPubkey, _crankAccountPubkeyBump] ) => {
@@ -137,41 +107,58 @@ const initUser = (workspace: Workspace) : Promise<User> => {
 
 const initNext = (workspace: Workspace, game: Game, crank: Crank) : Promise<Game> => {
     return new Promise((resolve, reject) => {
-        if (game.account.currentRound.toBase58() === game.account.previousRound.toBase58()) {
-            Round.initializeSecond(workspace, game, crank).then((game) => {
-                resolve(game);
-            }).catch(error => {
-                reject(error);
-            })
+        if (game.currentRound.account.cranksPaid, game.currentRound.account.finished, game.currentRound.account.feeCollected, game.currentRound.account.settled) {
+            if (game.account.currentRound.toBase58() === game.account.previousRound.toBase58()) {
+            
+                Round.initializeSecond(workspace, game, crank).then((game) => {
+                    resolve(game);
+                }).catch(error => {
+                    reject(error);
+                })
+            } else {
+                Round.initializeNext(workspace, game, crank).then(game => {
+                    resolve(game)
+                }).catch(error => {
+                    reject(error);
+                })
+            }
         } else {
-            Round.initializeNext(workspace, game, crank).then(game => {
-                resolve(game)
-            }).catch(error => {
-                reject(error);
-            })
+            resolve(game);
         }
+        
     })
 }
 
 const settleOrInitNext = (workspace: Workspace, game: Game, crank: Crank) : Promise<Game> => {
     return new Promise((resolve, reject) => {
-        game.collectFee(workspace, crank).then((game) => {
-            game.settlePredictions(workspace, crank).then((game) => {
-                game.payoutCranks(workspace).then(game => {
-                    initNext(workspace, game, crank).then(game => {
-                        resolve(game);
-                    }).catch(error => {
-                        reject(error);
-                    })
-                }).catch(error => {
-                    reject(error);
-                })
+        if (game.currentRound.account.finished) {
+            game.collectFee(workspace, crank).then((game) => {
+                resolve(game);
             }).catch(error => {
                 reject(error);
             })
-        }).catch(error => {
-            reject(error);
-        })
+        } else if (game.currentRound.account.feeCollected) {
+            game.settlePredictions(workspace, crank).then((game) => {
+                resolve(game);
+            }).catch(error => {
+                reject(error);
+            })
+        } else if (game.currentRound.account.settled) {
+            game.payoutCranks(workspace).then(game => {
+                resolve(game);
+            }).catch(error => {
+                reject(error);
+            })
+        } else if (game.currentRound.account.cranksPaid) {
+            initNext(workspace, game, crank).then(game => {
+                resolve(game);
+            }).catch(error => {
+                reject(error);
+            })
+        } else {
+            resolve(game);
+        }
+        
     })
 }
 
@@ -210,16 +197,12 @@ const updateLoop = (workspace: Workspace, vault: Vault, game: Game, crank: Crank
             game.updateGame(workspace, crank).then((game: Game) => {
                 game.updateGameData(workspace).then((game: Game) => {
                     game.updateRoundData(workspace).then((game: Game) => {
-                        if (game.currentRound.account.finished) {
-                            settleOrInitNext(workspace, game, crank).then((game: Game) => {
-                                updateLoop(workspace, vault, game, crank)
-                            }).catch(error => {
-                                console.error(error);
-                                updateLoop(workspace, vault, game, crank)
-                            })
-                        } else {
+                        settleOrInitNext(workspace, game, crank).then((game: Game) => {
                             updateLoop(workspace, vault, game, crank)
-                        }
+                        }).catch(error => {
+                            console.error(error);
+                            updateLoop(workspace, vault, game, crank)
+                        })
                     }).catch(error => {
                         console.error(error);
                         updateLoop(workspace, vault, game, crank)
@@ -238,7 +221,7 @@ const updateLoop = (workspace: Workspace, vault: Vault, game: Game, crank: Crank
             updateLoop(workspace, vault, game, crank)
         })
         
-    }, 10 * 1000)
+    }, game.currentRound.account.finished ? 3 * 1000 : 10 * 1000)
 }
 
 
@@ -283,8 +266,8 @@ async function run() {
     let vaults = (await workspace.program.account.vault.all()).map(vaultProgramAccount => {
         return new Vault(vaultProgramAccount.account)
     })
-    let games = (await workspace.program.account.game.all()).map((gameProgramAccount: ProgramAccount<GameAccount>) => {
-        return new Game(gameProgramAccount.account)
+    let games = (await workspace.program.account.game.all()).map((gameProgramAccount) => {
+        return new Game(gameProgramAccount.account as unknown as GameAccount)
     })
 
     games.forEach(game => {
