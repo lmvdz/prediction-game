@@ -250,14 +250,6 @@ const crankLoop = async (workspace: Workspace, vault: Vault, game: Game) => {
     }
 }
 
-type GameSeed = {
-    baseSymbol: string,
-    priceProgram: PublicKey,
-    priceFeed: PublicKey,
-    roundLength: anchor.BN,
-    oracle: Oracle
-}
-
 async function run() {
 
     const connection: Connection = new Connection(endpoint)

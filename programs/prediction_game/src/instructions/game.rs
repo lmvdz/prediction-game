@@ -329,7 +329,7 @@ pub struct InitializeGame<'info> {
 
     #[account(
         init,
-        seeds = [ owner.key().as_ref(), vault.key().as_ref(), price_program.key().as_ref(), price_feed.key().as_ref(), b"game"], 
+        seeds = [ env!("CARGO_PKG_VERSION").as_bytes(), owner.key().as_ref(), vault.key().as_ref(), price_program.key().as_ref(), price_feed.key().as_ref(), b"game"], 
         bump, 
         payer = owner,
         space = std::mem::size_of::<Game>() + 8

@@ -1,5 +1,4 @@
 import { PublicKey } from "@solana/web3.js"
-import { Workspace } from "./workspace"
 import * as anchor from '@project-serum/anchor'
 import Game from "./accounts/game"
 import Round from "./accounts/round"
@@ -19,6 +18,7 @@ export class ProgramAddresses<T extends anchor.Idl> {
  async getGamePubkey(vault: Vault, priceProgram: PublicKey, priceFeed: PublicKey): Promise<[PublicKey, number]> {
     return await PublicKey.findProgramAddress(
       [
+        Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), 
         this.owner.toBuffer(), 
         vault.account.address.toBuffer(), 
         priceProgram.toBuffer(), 
@@ -31,14 +31,20 @@ export class ProgramAddresses<T extends anchor.Idl> {
 
  async getFeeVaultATAPubkey(vaultPubkey: PublicKey): Promise<[PublicKey, number]> {
     return await PublicKey.findProgramAddress(
-      [vaultPubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('fee_vault_ata'))],
+      [Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), vaultPubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('fee_vault_ata'))],
+      this.program.programId
+    )
+  }
+  async getFeeVaultATAAuthorityPubkey(feeVaultAta: PublicKey): Promise<[PublicKey, number]> {
+    return await PublicKey.findProgramAddress(
+      [feeVaultAta.toBuffer()],
       this.program.programId
     )
   }
   
   async getVaultATAPubkey(vaultPubkey: PublicKey): Promise<[PublicKey, number]> {
     return await PublicKey.findProgramAddress(
-      [vaultPubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('vault_ata'))],
+      [Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), vaultPubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('vault_ata'))],
       this.program.programId
     )
   }
@@ -49,19 +55,14 @@ export class ProgramAddresses<T extends anchor.Idl> {
     )
   }
 
-  async getFeeVaultATAAuthorityPubkey(feeVaultAta: PublicKey): Promise<[PublicKey, number]> {
-    return await PublicKey.findProgramAddress(
-      [feeVaultAta.toBuffer()],
-      this.program.programId
-    )
-  }
+  
 
   
 
 
  async getVaultPubkey(tokenMint: PublicKey): Promise<[PublicKey, number]> {
     return await PublicKey.findProgramAddress(
-      [this.owner.toBuffer(), tokenMint.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('vault'))],
+      [Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), this.owner.toBuffer(), tokenMint.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('vault'))],
       this.program.programId
     )
   }
@@ -70,6 +71,7 @@ export class ProgramAddresses<T extends anchor.Idl> {
     const roundNumberBuffer = new anchor.BN(roundNumber).toArrayLike(Buffer, 'be', 4);
     return  await PublicKey.findProgramAddress(
         [
+          Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), 
           gamePubkey.toBuffer(),
           roundNumberBuffer.subarray(0, 1),
           roundNumberBuffer.subarray(1, 2),
@@ -85,6 +87,7 @@ export class ProgramAddresses<T extends anchor.Idl> {
     const roundNumberBuffer = new anchor.BN(round.account.roundNumber).toArrayLike(Buffer, 'be', 4);
     return  await PublicKey.findProgramAddress(
         [
+          Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), 
           (user as User).account !== undefined ? (user as User).account.owner.toBuffer() : (user as PublicKey).toBuffer(), 
           game.account.address.toBuffer(),
           round.account.address.toBuffer(),
@@ -101,6 +104,7 @@ export class ProgramAddresses<T extends anchor.Idl> {
  async getUserPubkey(userOwner: PublicKey) : Promise<[PublicKey, number]> {
     return await PublicKey.findProgramAddress(
       [
+        Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), 
         userOwner.toBuffer(),
         Buffer.from(anchor.utils.bytes.utf8.encode('user'))
       ],
@@ -111,6 +115,7 @@ export class ProgramAddresses<T extends anchor.Idl> {
   async getCrankPubkey(crankOwner: PublicKey, gamePubkey: PublicKey, userPubkey: PublicKey) : Promise<[PublicKey, number]> {
     return await PublicKey.findProgramAddress(
       [
+        Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), 
         crankOwner.toBuffer(),
         userPubkey.toBuffer(),
         gamePubkey.toBuffer(),

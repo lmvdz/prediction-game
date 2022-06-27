@@ -860,7 +860,7 @@ checksum = "eb9f9e6e233e5c4a35559a617bf40a4ec447db2e84c20b55a6f83167b7e57872"
 
 [[package]]
 name = "prediction_game_v1"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anchor-lang",
  "anchor-spl",

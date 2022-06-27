@@ -28,14 +28,14 @@ loadFonts()
 
 ;(async () => {
   await initTokenList('mainnet-beta');
-  
-  createApp(App)
+})();
+
+createApp(App)
   .use(vuetify)
   .use(router)
   .use(createPinia())
   .use(SolanaWallets, walletOptions)
   .use(Vue3Lottie, { name: 'LottieAnimation' })
   .mount('#app')
-})();
 
 

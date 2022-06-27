@@ -1,5 +1,5 @@
 export type PredictionGame = {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "name": "prediction_game",
   "instructions": [
     {
@@ -1720,7 +1720,7 @@ export type PredictionGame = {
 };
 
 export const IDL: PredictionGame = {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "name": "prediction_game",
   "instructions": [
     {

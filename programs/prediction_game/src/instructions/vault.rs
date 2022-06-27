@@ -63,7 +63,7 @@ pub struct InitializeVault<'info> {
 
     #[account(
         init,
-        seeds = [vault.key().as_ref(), b"fee_vault_ata"], 
+        seeds = [env!("CARGO_PKG_VERSION").as_bytes(), vault.key().as_ref(), b"fee_vault_ata"], 
         bump, 
         payer = owner,
         token::mint = token_mint,
@@ -76,7 +76,7 @@ pub struct InitializeVault<'info> {
 
     #[account(
         init,
-        seeds = [vault.key().as_ref(), b"vault_ata"],
+        seeds = [env!("CARGO_PKG_VERSION").as_bytes(), vault.key().as_ref(), b"vault_ata"],
         bump,
         payer = owner,
         token::mint = token_mint,
@@ -89,7 +89,7 @@ pub struct InitializeVault<'info> {
 
     #[account(
         init,
-        seeds = [owner.key().as_ref(), token_mint.key().as_ref(), b"vault"],
+        seeds = [env!("CARGO_PKG_VERSION").as_bytes(), owner.key().as_ref(), token_mint.key().as_ref(), b"vault"],
         bump,
         payer = owner,
         space = std::mem::size_of::<Vault>() + 8

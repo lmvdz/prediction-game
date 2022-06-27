@@ -239,7 +239,7 @@ pub struct InitFirstRound<'info> {
     #[account(
         init,
         seeds = [
-            
+            env!("CARGO_PKG_VERSION").as_bytes(), 
             game.key().as_ref(), 
             &[(1_u32).to_be_bytes()[0]], 
             &[(1_u32).to_be_bytes()[1]], 
@@ -284,6 +284,7 @@ pub struct InitSecondRound<'info> {
     #[account(
         init,
         seeds = [
+            env!("CARGO_PKG_VERSION").as_bytes(), 
             game.key().as_ref(), 
             &[if game.round_number.eq(&u32::MAX) { (1_u32).to_be_bytes()[0] } else { game.round_number.saturating_add(1).to_be_bytes()[0] }], 
             &[if game.round_number.eq(&u32::MAX) { (1_u32).to_be_bytes()[1] } else { game.round_number.saturating_add(1).to_be_bytes()[1] }], 
@@ -342,7 +343,7 @@ pub struct InitNextRoundAndClosePrevious<'info> {
     #[account(
         init,
         seeds = [
-            
+            env!("CARGO_PKG_VERSION").as_bytes(), 
             game.key().as_ref(), 
             &[if game.round_number.eq(&u32::MAX) { (1_u32).to_be_bytes()[0] } else { game.round_number.saturating_add(1).to_be_bytes()[0] }], 
             &[if game.round_number.eq(&u32::MAX) { (1_u32).to_be_bytes()[1] } else { game.round_number.saturating_add(1).to_be_bytes()[1] }], 

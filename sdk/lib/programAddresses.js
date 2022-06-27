@@ -33,6 +33,7 @@ class ProgramAddresses {
     }
     async getGamePubkey(vault, priceProgram, priceFeed) {
         return await web3_js_1.PublicKey.findProgramAddress([
+            Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)),
             this.owner.toBuffer(),
             vault.account.address.toBuffer(),
             priceProgram.toBuffer(),
@@ -41,23 +42,24 @@ class ProgramAddresses {
         ], this.program.programId);
     }
     async getFeeVaultATAPubkey(vaultPubkey) {
-        return await web3_js_1.PublicKey.findProgramAddress([vaultPubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('fee_vault_ata'))], this.program.programId);
-    }
-    async getVaultATAPubkey(vaultPubkey) {
-        return await web3_js_1.PublicKey.findProgramAddress([vaultPubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('vault_ata'))], this.program.programId);
-    }
-    async getVaultATAAuthorityPubkey(vaultAta) {
-        return await web3_js_1.PublicKey.findProgramAddress([vaultAta.toBuffer()], this.program.programId);
+        return await web3_js_1.PublicKey.findProgramAddress([Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), vaultPubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('fee_vault_ata'))], this.program.programId);
     }
     async getFeeVaultATAAuthorityPubkey(feeVaultAta) {
         return await web3_js_1.PublicKey.findProgramAddress([feeVaultAta.toBuffer()], this.program.programId);
     }
+    async getVaultATAPubkey(vaultPubkey) {
+        return await web3_js_1.PublicKey.findProgramAddress([Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), vaultPubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('vault_ata'))], this.program.programId);
+    }
+    async getVaultATAAuthorityPubkey(vaultAta) {
+        return await web3_js_1.PublicKey.findProgramAddress([vaultAta.toBuffer()], this.program.programId);
+    }
     async getVaultPubkey(tokenMint) {
-        return await web3_js_1.PublicKey.findProgramAddress([this.owner.toBuffer(), tokenMint.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('vault'))], this.program.programId);
+        return await web3_js_1.PublicKey.findProgramAddress([Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), this.owner.toBuffer(), tokenMint.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('vault'))], this.program.programId);
     }
     async getRoundPubkey(gamePubkey, roundNumber) {
         const roundNumberBuffer = new anchor.BN(roundNumber).toArrayLike(Buffer, 'be', 4);
         return await web3_js_1.PublicKey.findProgramAddress([
+            Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)),
             gamePubkey.toBuffer(),
             roundNumberBuffer.subarray(0, 1),
             roundNumberBuffer.subarray(1, 2),
@@ -69,6 +71,7 @@ class ProgramAddresses {
     async getUserPredictionPubkey(game, round, user) {
         const roundNumberBuffer = new anchor.BN(round.account.roundNumber).toArrayLike(Buffer, 'be', 4);
         return await web3_js_1.PublicKey.findProgramAddress([
+            Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)),
             user.account !== undefined ? user.account.owner.toBuffer() : user.toBuffer(),
             game.account.address.toBuffer(),
             round.account.address.toBuffer(),
@@ -81,12 +84,14 @@ class ProgramAddresses {
     }
     async getUserPubkey(userOwner) {
         return await web3_js_1.PublicKey.findProgramAddress([
+            Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)),
             userOwner.toBuffer(),
             Buffer.from(anchor.utils.bytes.utf8.encode('user'))
         ], this.program.programId);
     }
     async getCrankPubkey(crankOwner, gamePubkey, userPubkey) {
         return await web3_js_1.PublicKey.findProgramAddress([
+            Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)),
             crankOwner.toBuffer(),
             userPubkey.toBuffer(),
             gamePubkey.toBuffer(),

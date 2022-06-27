@@ -21,3 +21,5 @@ programs/prediction_game/src/state/user.rs:
 programs/prediction_game/src/state/vault.rs:
 programs/prediction_game/src/state/crank.rs:
 programs/prediction_game/src/errors.rs:
+
+# env-dep:CARGO_PKG_VERSION=1.0.1

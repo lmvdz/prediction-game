@@ -670,16 +670,16 @@ export default defineComponent({
 
 <template>
   <v-container>
-    <div style="position: fixed; top: 0em; left: 0; margin: 0 auto; z-index: 1008;">
+    <div style="position: fixed; top: 0em; left: 0; margin: 0 auto; z-index: 1008;" v-if="workspace !== null">
         
-        <v-card tonal :class="`txStatus ${txStatus.color}`" v-for="(txStatus, index) in txStatusList.filter(txStatus => txStatus.show)" :key="`txStatus-`+index" >
+        <v-card tonal :class="`txStatus ${txStatus.color}`" v-for="(txStatus, txindex) in txStatusList.filter(txStatus => txStatus.show)" :key="`txStatus-`+txindex" >
           <v-progress-linear :indeterminate="txStatus.loading" :color="txStatus.color"></v-progress-linear>
           <v-btn variant="plain" @click="hideTxStatus(txStatus.index, 0)" size="16px" style="position: absolute; top: 1em; right: 1em;"><v-icon>mdi-close</v-icon></v-btn>
           <v-card-title v-if="txStatus.title">{{ txStatus.title }}</v-card-title>
           <v-card-subtitle v-if="txStatus.subtitle">{{ txStatus.subtitle }}</v-card-subtitle>
           <v-card-text v-if="txStatus.signatures.length > 0">
             <ul>
-              <li style="list-style: none;" v-for="(signature, index) in txStatus.signatures" :key="'tx-signature-'+index">
+              <li style="list-style: none;" v-for="(signature, index) in txStatus.signatures" :key="'tx-signature-'+txindex+'-'+index">
                 <a target="_blank" :href="`https://solscan.io/tx/${signature}?cluster=${workspace.cluster}`"> {{ index+1 }} / {{ txStatus.signatures.length }} View on Solscan.io</a>
               </li>
             </ul>
@@ -687,7 +687,6 @@ export default defineComponent({
         </v-card>
 
     </div>
-    {{ workspace }}
     
     <v-row justify="center" class="text-center" style="width: 100%; min-height: 75vh; margin: 0 auto;">
       <v-col-auto>

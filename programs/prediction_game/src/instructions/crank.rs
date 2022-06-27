@@ -56,7 +56,7 @@ pub struct InitCrank<'info> {
 
     #[account(
         init,
-        seeds = [ owner.key().as_ref(), user.key().as_ref(), game.key().as_ref(), b"crank"], 
+        seeds = [ env!("CARGO_PKG_VERSION").as_bytes(), owner.key().as_ref(), user.key().as_ref(), game.key().as_ref(), b"crank"], 
         bump, 
         payer = owner,
         space = std::mem::size_of::<Crank>() + 8

@@ -176,7 +176,7 @@ pub struct InitUser<'info> {
 
     #[account(
         init,
-        seeds = [ owner.key().as_ref(), b"user"], 
+        seeds = [ env!("CARGO_PKG_VERSION").as_bytes(), owner.key().as_ref(), b"user"], 
         bump, 
         payer = owner,
         space = std::mem::size_of::<User>() + 8
@@ -214,6 +214,7 @@ pub struct InitUserPrediction<'info> {
     #[account(
         init,
         seeds = [
+            env!("CARGO_PKG_VERSION").as_bytes(), 
             signer.key().as_ref(), 
             game.key().as_ref(), 
             current_round.key().as_ref(), 
