@@ -220,7 +220,7 @@ const updateLoop = (workspace, vault, game, crank) => {
             console.error(error);
             updateLoop(workspace, vault, game, crank);
         });
-    }, game.currentRound.account.finished ? 3 * 1000 : 10 * 1000);
+    }, game.currentRound.account.finished ? 5 * 1000 : 10 * 1000);
 };
 const crankLoop = async (workspace, vault, game) => {
     try {
@@ -252,10 +252,12 @@ async function run() {
     let games = (await workspace.program.account.game.all()).map((gameProgramAccount) => {
         return new game_1.default(gameProgramAccount.account);
     });
-    games.forEach(game => {
+    games.forEach((game, index) => {
         let vault = vaults.find(v => v.account.address.toBase58() === game.account.vault.toBase58());
         if (vault) {
-            crankLoop(workspace, vault, game);
+            setTimeout(() => {
+                crankLoop(workspace, vault, game);
+            }, 1000);
         }
     });
 }

@@ -226,7 +226,7 @@ const updateLoop = (workspace: Workspace, vault: Vault, game: Game, crank: Crank
             updateLoop(workspace, vault, game, crank)
         })
         
-    }, game.currentRound.account.finished ? 3 * 1000 : 10 * 1000)
+    }, game.currentRound.account.finished ? 5 * 1000 : 10 * 1000)
 }
 
 
@@ -267,10 +267,13 @@ async function run() {
         return new Game(gameProgramAccount.account as unknown as GameAccount)
     })
 
-    games.forEach(game => {
+    games.forEach((game, index) => {
         let vault = vaults.find(v => v.account.address.toBase58() === game.account.vault.toBase58())
         if (vault) {
-            crankLoop(workspace, vault, game);
+            setTimeout(() => {
+                crankLoop(workspace, vault, game);
+            }, 1000)
+            
         }
     })
     

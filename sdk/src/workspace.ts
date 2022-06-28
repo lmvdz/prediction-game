@@ -1,5 +1,5 @@
 import * as anchor from "@project-serum/anchor"
-import { AnchorProvider, Program, } from "@project-serum/anchor";
+import { AnchorProvider, Program } from "@project-serum/anchor";
 import { PredictionGame, IDL } from "./types/prediction_game";
 import { Cluster, ConfirmOptions, Connection, PublicKey, Signer, Transaction } from "@solana/web3.js";
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
