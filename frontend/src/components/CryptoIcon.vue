@@ -1,15 +1,10 @@
 <script setup lang="ts">
-    const getCryptoIcon = (currency: string) => {
-        return new URL('../../node_modules/cryptocurrency-icons/svg/color/'+currency+'.svg', import.meta.url).href
-    }
+    const props = defineProps({
+        icon: String
+    })
+    let url = new URL(`../assets/crypto-icons/${props.icon}.svg`, import.meta.url).href;
 </script>
 
 <template>
-    <v-img :src="getCryptoIcon(icon)"></v-img>
+    <v-img :src="url"></v-img>
 </template>
-
-<script lang="ts">
-export default {
-    props: ['icon']
-}
-</script>

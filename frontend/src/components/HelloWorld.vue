@@ -305,11 +305,11 @@ async function makePrediction(game: (Game)) {
       txStatus.show = true;
     }
     // if the user doesn't exist try and load otherwise add it as a tx
-    let [userPubkey, _userPubkeyBump] = await (getWorkspace()).programAddresses.getUserPubkey((getWorkspace()).owner);
+    // let [userPubkey, _userPubkeyBump] = await (getWorkspace()).programAddresses.getUserPubkey((getWorkspace()).owner);
     let tx = new Transaction();
     let txTitle = '';
     if ((computedUser.value === null || computedUser.value === undefined)) {
-      let initUserIX = await User.initializeUserInstruction(getWorkspace(), userPubkey);
+      let initUserIX = await User.initializeUserInstruction(getWorkspace(), userAddress.value);
       // let initUserTX = new Transaction().add(initUserIX);
       // initUserTX.feePayer = (getWorkspace()).owner;
       // initUserTX.recentBlockhash = (await (getWorkspace()).program.provider.connection.getLatestBlockhash()).blockhash
@@ -328,7 +328,7 @@ async function makePrediction(game: (Game)) {
       vault,
       game, 
       game.currentRound, 
-      computedUser.value || userPubkey, 
+      computedUser.value || userAddress.value, 
       fromTokenAccount,
       (getWorkspace()).owner,
       userPredictionPubkey,
@@ -814,17 +814,20 @@ export default defineComponent({
             tonal
             :class="`ma-2 ${
               wallet.connected ? 
-                computedUserPredictions.some(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58()) ? 
-                    computedUserPredictions.find(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58()).account.upOrDown === 1 ?
-                      'game-card up' :
-                  'game-card down' :
-                'game-card' :
+
                 game.currentRound.account.roundPredictionsAllowed ? 
                   frontendGameData.get(game.account.address.toBase58()).prediction.direction === UpOrDown.Up ? 
                     'game-card up' : 
                       frontendGameData.get(game.account.address.toBase58()).prediction.direction === UpOrDown.Down ? 
                     'game-card down' : 
                   'game-card' : 
+
+                computedUserPredictions.some(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58()) ? 
+                    computedUserPredictions.find(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58()).account.upOrDown === 1 ?
+                      'game-card up' :
+                  'game-card down' :
+                'game-card' :
+                
                   
               'game-card' 
 

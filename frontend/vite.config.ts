@@ -11,7 +11,7 @@ export default defineConfig({
 	build: {
 		commonjsOptions: {
 			transformMixedEsModules: true
-		  }
+		}
 	},
 	define: {
 		'process.env': process.env
