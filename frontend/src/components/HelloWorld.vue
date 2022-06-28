@@ -75,6 +75,7 @@ watch(wallet, (newVal, oldVal) => {
     clearInterval(updateInterval.value)
     unloadUserPredictions()
     unloadUser()
+    unloadTokenAccounts()
   } else if (newVal !== null && !newVal.connected && newVal.connecting) {
     console.log('wallet connecting')
   } else if (newVal !== null && newVal.connected && !newVal.connecting && !newVal.disconnecting) {
@@ -220,7 +221,7 @@ function getGame(address: string): Game {
 
 function unloadUserPredictions() {
   computedUserPredictions.value.forEach((userPrediction: UserPrediction) => {
-    if (userPrediction !== undefined && paf.value.accounts.has(userPrediction.account.address.toBase58())) {
+    if (userPrediction !== undefined && userPrediction !== null && paf.value.accounts.has(userPrediction.account.address.toBase58())) {
       paf.value.accounts.delete(userPrediction.account.address.toBase58())
     }
   })
@@ -261,6 +262,13 @@ function getTokenAccount(address: string) : Account {
   let tokenAccount = paf.value.accounts.get(address)!.data || null;
   if (tokenAccount === null) return null;
   return tokenAccount as Account
+}
+
+function unloadTokenAccounts() {
+  [...tokenAccounts.value.values()].forEach(tokenAccount => {
+    paf.value.accounts.delete(tokenAccount)
+  })
+  associateTokenAccountAddresses.value.clear();
 }
 
 function getAssociatedTokenAccountAddress(mint: string) : string {
@@ -340,7 +348,7 @@ async function makePrediction(game: (Game)) {
     tx.add(initUserPredictionIX);
     txTitle += "Initialize User Prediction"
 
-    let closeUserPredictionInstructions = await Promise.all<TransactionInstruction>([...computedUserPredictions.value.values()].filter((prediction: UserPrediction) => prediction !== undefined && prediction.account.settled).map(async (prediction: UserPrediction) : Promise<TransactionInstruction> => {
+    let closeUserPredictionInstructions = await Promise.all<TransactionInstruction>([...computedUserPredictions.value.values()].filter((prediction: UserPrediction) => prediction !== undefined && prediction !== null && prediction.account.settled).map(async (prediction: UserPrediction) : Promise<TransactionInstruction> => {
       return await UserPrediction.closeUserPredictionInstruction(getWorkspace(), prediction)
     }));
     
@@ -358,8 +366,8 @@ async function makePrediction(game: (Game)) {
     txStatus.show = true;
     txStatus.loading = true;
     try {
-      // let simulation = await (getWorkspace()).program.provider.connection.simulateTransaction(tx);
-      // console.log(simulation.value.logs);
+      let simulation = await (getWorkspace()).program.provider.connection.simulateTransaction(tx);
+      console.log(simulation.value.logs);
       let signature = await (getWorkspace()).program.provider.connection.sendRawTransaction(tx.serialize());
     
       txStatus.signatures.push(signature);
@@ -733,7 +741,7 @@ async function userClaim(game: Game) {
 
     let tx = new Transaction().add(ix);
 
-    let closeUserPredictionInstructions = await Promise.all<TransactionInstruction>([...computedUserPredictions.value.values()].filter((prediction: UserPrediction) => prediction !== undefined && prediction.account.settled).map(async (prediction: UserPrediction) : Promise<TransactionInstruction> => {
+    let closeUserPredictionInstructions = await Promise.all<TransactionInstruction>([...computedUserPredictions.value.values()].filter((prediction: UserPrediction) => prediction !== undefined && prediction !== null && prediction.account.settled).map(async (prediction: UserPrediction) : Promise<TransactionInstruction> => {
       return await UserPrediction.closeUserPredictionInstruction(getWorkspace(), prediction)
     }));
     
@@ -822,8 +830,8 @@ export default defineComponent({
                     'game-card down' : 
                   'game-card' : 
 
-                computedUserPredictions.some(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58()) ? 
-                    computedUserPredictions.find(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58()).account.upOrDown === 1 ?
+                computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58()) ? 
+                    computedUserPredictions.find(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58()).account.upOrDown === 1 ?
                       'game-card up' :
                   'game-card down' :
                 'game-card' :
@@ -883,9 +891,9 @@ export default defineComponent({
               }">
               <v-icon 
                 v-if="game.currentRound !== undefined && game.currentRound !== null && !frontendGameData.get(game.account.address.toBase58()).information.show" 
-                :color="(!game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())) ? 'error' : 'success'"
+                :color="(!game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())) ? 'error' : 'success'"
                 :style="`transition: all .3s; background-color: rgba(0, 0, 0, 0); position: absolute; left: 0; right: 0; ${!frontendGameData.get(game.account.address.toBase58()).prediction.show ? 'top: 0; bottom: 1em; left: 0em; margin-top: auto; margin-bottom: auto;' : 'bottom: -0.5em; left: 0%;'} margin-left: auto; margin-right: auto;`">
-                {{ !game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58()) ? 'mdi-lock' : 'mdi-lock-open' }}
+                {{ !game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58()) ? 'mdi-lock' : 'mdi-lock-open' }}
               </v-icon>
               <v-row v-if="!frontendGameData.get(game.account.address.toBase58()).information.show" style="transition: all .3s; max-width: 300px; min-width: 300px;">
                 <v-col :style="`transition: all .3s; min-width: 150px; max-width: 150px; margin: 0; ${frontendGameData.get(game.account.address.toBase58()).prediction.show ? 'display: none;' : ''}`" v-if="game.currentRound">
@@ -894,7 +902,7 @@ export default defineComponent({
                         style="margin-right: 4px; margin-bottom: 0.25em; width: 146px;"
                         @click.stop="(e) => { 
                           e.preventDefault(); 
-                          if ( wallet.connected && game.currentRound.account.roundPredictionsAllowed && !computedUserPredictions.some(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())) {
+                          if ( wallet.connected && game.currentRound.account.roundPredictionsAllowed && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())) {
                             frontendGameData.get(game.account.address.toBase58()).prediction.direction = UpOrDown.Up;
                           }
                           frontendGameData.get(game.account.address.toBase58()).prediction.show = true; 
@@ -908,7 +916,7 @@ export default defineComponent({
                       <v-card-title>
                         <v-btn
                           variant="plain"
-                          :disabled="!wallet.connected || !game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"
+                          :disabled="!wallet.connected || !game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"
                           @click.stop="(e) => { 
                             e.preventDefault(); 
                             frontendGameData.get(game.account.address.toBase58()).prediction.show = true; 
@@ -933,7 +941,7 @@ export default defineComponent({
                       @click.stop="(e) => { 
                         e.preventDefault(); 
                         frontendGameData.get(game.account.address.toBase58()).prediction.show = true; 
-                        if ( wallet.connected && game.currentRound.account.roundPredictionsAllowed && !computedUserPredictions.some(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())) {
+                        if ( wallet.connected && game.currentRound.account.roundPredictionsAllowed && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())) {
                           frontendGameData.get(game.account.address.toBase58()).prediction.direction = UpOrDown.Down;
                         }
                       }">
@@ -951,7 +959,7 @@ export default defineComponent({
                       <v-card-title>
                         <v-btn 
                           variant="plain"
-                          :disabled="!wallet.connected || !game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined &&  prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"
+                          :disabled="!wallet.connected || !game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"
                           @click.stop="(e) => { 
                             e.preventDefault(); 
                             frontendGameData.get(game.account.address.toBase58()).prediction.show = true; 
@@ -1151,7 +1159,7 @@ export default defineComponent({
                   <v-row :style="`padding-bottom: .5em; padding-top: .5em; ${game.currentRound.account.roundPredictionsAllowed ? '' : ''}`">
                     <v-col 
                       :v-ripple="game.currentRound.account.roundPredictionsAllowed"
-                      v-if="!computedUserPredictions.some(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())" 
+                      v-if="!computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())" 
                       style="margin-right: 0.3em;"
                       :class="`up-area ${game.currentRound.account.roundPredictionsAllowed ? 'hover' : ''}`"
                       @click.stop="(e) => { 
@@ -1179,28 +1187,26 @@ export default defineComponent({
                       <v-card-subtitle >
                         <span style="margin: 0 auto;">
                         {{ game.currentRound.account.totalUpAmount.gt(new anchor.BN(0)) ? 
-                          ( 
-                            bnDivMod(game.currentRound.account.totalDownAmount.add(game.currentRound.account.totalUpAmount), game.currentRound.account.totalUpAmount, 0)
-                          ).toFixed(2) + 'x' : '1.00x' 
+                          game.currentRound.account.totalDownAmount.add(game.currentRound.account.totalUpAmount).div(game.currentRound.account.totalUpAmount).toNumber().toFixed(2) + 'x' : '1.00x' 
                         }}
                         </span>
                       </v-card-subtitle>
                     </v-col>
-                    <v-divider vertical v-if="!computedUserPredictions.some(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"></v-divider>
-                    <v-col v-if="computedUserPredictions.some(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())">
+                    <v-divider vertical v-if="!computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"></v-divider>
+                    <v-col v-if="computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())">
                       <v-row>
                         <v-spacer></v-spacer>
                           <v-card-title>
                             Prediction
                           </v-card-title>
                           <v-spacer></v-spacer>
-                          <v-icon style="margin: auto 0; top: 0; bottom: 0;" :color="`${computedUserPredictions.find(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58()).account.upOrDown === 1 ? 'success' : 'error'}`">
-                            {{ computedUserPredictions.find(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58()).account.upOrDown === 1 ? 'mdi-arrow-up-bold' : 'mdi-arrow-down-bold' }} 
+                          <v-icon style="margin: auto 0; top: 0; bottom: 0;" :color="`${computedUserPredictions.find(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58()).account.upOrDown === 1 ? 'success' : 'error'}`">
+                            {{ computedUserPredictions.find(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58()).account.upOrDown === 1 ? 'mdi-arrow-up-bold' : 'mdi-arrow-down-bold' }} 
                           </v-icon> 
                           <v-spacer></v-spacer>
                           <v-card-title>
                             
-                            {{ computedUserPredictions.find(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58()).account.amount.div(new anchor.BN(10).pow(new anchor.BN(getVaultFromGame(game).account.tokenDecimals))) }} {{ frontendGameData.get(game.account.address.toBase58()).mint.symbol }}
+                            {{ computedUserPredictions.find(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58()).account.amount.div(new anchor.BN(10).pow(new anchor.BN(getVaultFromGame(game).account.tokenDecimals))) }} {{ frontendGameData.get(game.account.address.toBase58()).mint.symbol }}
                           </v-card-title>
                         
                         <v-spacer></v-spacer>
@@ -1208,7 +1214,7 @@ export default defineComponent({
                     </v-col>
                     <v-col 
                       :v-ripple="game.currentRound.account.roundPredictionsAllowed"
-                      v-if="!computedUserPredictions.some(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())" 
+                      v-if="!computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())" 
                       style="margin-left: 0.3em;"
                       :class="`down-area ${game.currentRound.account.roundPredictionsAllowed ? 'hover' : ''}`"
                       @click.stop="(e) => { 
@@ -1238,7 +1244,7 @@ export default defineComponent({
                         <span style="margin: 0 auto;">
                           {{ 
                             game.currentRound.account.totalDownAmount.gt(new anchor.BN(0)) ? 
-                              bnDivMod(game.currentRound.account.totalDownAmount.add(game.currentRound.account.totalUpAmount), game.currentRound.account.totalDownAmount, 0)
+                              game.currentRound.account.totalDownAmount.add(game.currentRound.account.totalUpAmount).div(game.currentRound.account.totalDownAmount).toNumber().toFixed(2)
                             + 'x' : '1.00x'
                           }}
                         </span>
@@ -1246,8 +1252,8 @@ export default defineComponent({
                     </v-col>
                   </v-row>
                 </v-card-text>
-                <v-divider v-if="game.currentRound.account.roundPredictionsAllowed && getTokenAccountFromGame(game) !== null && new anchor.BN(getTokenAccountFromGame(game).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)).div((new anchor.BN(10)).pow(new anchor.BN(getVaultFromGame(game).account.tokenDecimals))).gte(new anchor.BN(1)) && !computedUserPredictions.some(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"></v-divider>
-                <v-card-text v-if="game.currentRound.account.roundPredictionsAllowed && getTokenAccountFromGame(game) !== null && new anchor.BN(getTokenAccountFromGame(game).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)).div((new anchor.BN(10)).pow(new anchor.BN(getVaultFromGame(game).account.tokenDecimals))).gte(new anchor.BN(1)) && !computedUserPredictions.some(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())" style="margin-top: 1em;">
+                <v-divider v-if="game.currentRound.account.roundPredictionsAllowed && getTokenAccountFromGame(game) !== null && new anchor.BN(getTokenAccountFromGame(game).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)).div((new anchor.BN(10)).pow(new anchor.BN(getVaultFromGame(game).account.tokenDecimals))).gte(new anchor.BN(1)) && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"></v-divider>
+                <v-card-text v-if="game.currentRound.account.roundPredictionsAllowed && getTokenAccountFromGame(game) !== null && new anchor.BN(getTokenAccountFromGame(game).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)).div((new anchor.BN(10)).pow(new anchor.BN(getVaultFromGame(game).account.tokenDecimals))).gte(new anchor.BN(1)) && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())" style="margin-top: 1em;">
                   <v-row >
                     <v-text-field 
                       hide-details
@@ -1306,8 +1312,8 @@ export default defineComponent({
                     <wallet-multi-button style="margin: 0 auto;" dark/>
                   </div>
                 </v-card-text>
-                <v-divider v-if="wallet.connected && (getTokenAccountFromGame(game)) !== null && bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) >= 1 && !computedUserPredictions.some(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"></v-divider>
-                <v-card-actions v-if="wallet.connected && (getTokenAccountFromGame(game)) !== null && bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) >= 1 && !computedUserPredictions.some(prediction => prediction !== undefined && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())">
+                <v-divider v-if="wallet.connected && (getTokenAccountFromGame(game)) !== null && bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) >= 1 && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"></v-divider>
+                <v-card-actions v-if="wallet.connected && (getTokenAccountFromGame(game)) !== null && bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) >= 1 && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())">
                   <v-spacer></v-spacer>
                   <v-btn 
                     v-if="game.currentRound.account.roundPredictionsAllowed"
