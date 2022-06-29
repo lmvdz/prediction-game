@@ -44,5 +44,5 @@ export default class Round implements DataUpdatable<RoundAccount> {
     static initializeFirst(workspace: Workspace, game: Game, crank: Crank): Promise<Game>;
     static initializeSecond(workspace: Workspace, game: Game, crank: Crank): Promise<Game>;
     static initializeNext(workspace: Workspace, game: Game, crank: Crank): Promise<Game>;
-    static adminCloseRound(workspace: Workspace, game: Game, round: Round): Promise<Game>;
+    static adminCloseRound(workspace: Workspace, round: Round): Promise<void>;
 }

@@ -39,12 +39,13 @@ const sdk_1 = require("sdk");
 const user_1 = __importDefault(require("sdk/lib/accounts/user"));
 const crank_1 = __importDefault(require("sdk/lib/accounts/crank"));
 const vault_1 = __importDefault(require("sdk/lib/accounts/vault"));
+const cluster_1 = __importDefault(require("cluster"));
 (0, dotenv_1.config)({ path: '.env.local' });
 const privateKeyEnvVariable = "PRIVATE_KEY";
 // ENVIRONMENT VARIABLE FOR THE BOT PRIVATE KEY
 const privateKey = process.env[privateKeyEnvVariable];
 const endpoint = process.env.ENDPOINT;
-const cluster = process.env.CLUSTER;
+const rpcCluster = process.env.CLUSTER;
 if (privateKey === undefined) {
     console.error('need a ' + privateKeyEnvVariable + ' env variable');
     process.exit();
@@ -245,7 +246,7 @@ const crankLoop = async (workspace, vault, game) => {
 };
 async function run() {
     const connection = new web3_js_2.Connection(endpoint);
-    const workspace = sdk_1.Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
+    const workspace = sdk_1.Workspace.load(connection, botWallet, rpcCluster, { commitment: 'confirmed' });
     let vaults = (await workspace.program.account.vault.all()).map(vaultProgramAccount => {
         return new vault_1.default(vaultProgramAccount.account);
     });
@@ -271,5 +272,14 @@ const runLoop = () => {
         }, 1000);
     }
 };
-runLoop();
+if (cluster_1.default.isPrimary) {
+    cluster_1.default.fork();
+    cluster_1.default.on('exit', function (worker) {
+        console.log('Worker ' + worker.id + ' died..');
+        cluster_1.default.fork();
+    });
+}
+else {
+    runLoop();
+}
 //# sourceMappingURL=index.js.map

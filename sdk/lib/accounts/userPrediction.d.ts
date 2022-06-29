@@ -29,4 +29,6 @@ export default class UserPrediction implements DataUpdatable<UserPredictionAccou
     static closeUserPrediction(workspace: Workspace, prediction: UserPrediction): Promise<boolean>;
     static adminCloseUserPredictionInstruction(workspace: Workspace, prediction: UserPrediction): Promise<TransactionInstruction>;
     static adminCloseUserPrediction(workspace: Workspace, prediction: UserPrediction): Promise<boolean>;
+    static adminCloseUserPredictionFromPubkeysInstruction(workspace: Workspace, game: PublicKey, userPrediction: PublicKey, receiver: PublicKey): Promise<TransactionInstruction>;
+    static adminCloseUserPredictionFromPubkeys(workspace: Workspace, game: PublicKey, userPrediction: PublicKey, receiver: PublicKey): Promise<boolean>;
 }

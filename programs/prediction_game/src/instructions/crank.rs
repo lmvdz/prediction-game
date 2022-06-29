@@ -42,6 +42,25 @@ pub struct CloseCrankAccount<'info> {
 }
 
 #[derive(Accounts)]
+pub struct AdminCloseCrankAccount<'info> {
+
+    #[account()]
+    pub signer: Signer<'info>,
+
+    #[account(constraint = game.owner == signer.key())]
+    pub game: Box<Account<'info, Game>>,
+
+    #[account(mut, 
+        close = receiver
+    )]
+    pub crank: Box<Account<'info, Crank>>,
+
+    #[account(mut, constraint = receiver.key() == crank.owner)]
+    pub receiver: SystemAccount<'info>,
+
+}
+
+#[derive(Accounts)]
 pub struct InitCrank<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
@@ -66,3 +85,4 @@ pub struct InitCrank<'info> {
     // required for Account
     pub system_program: Program<'info, System>,
 }
+

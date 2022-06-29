@@ -102,18 +102,18 @@ export default class Crank implements DataUpdatable<CrankAccount> {
         })
     }
 
-    public async adminCloseCrankAccountInstruction(workspace: Workspace, game: Game) : Promise<TransactionInstruction> {
+    public async adminCloseCrankAccountInstruction(workspace: Workspace) : Promise<TransactionInstruction> {
         return await workspace.program.methods.adminCloseCrankAccountInstruction().accounts({
             signer: workspace.owner,
             crank: this.account.address,
-            game: game.account.address,
+            game: this.account.game,
             receiver: workspace.owner
         }).instruction()
     }
 
-    public async adminCloseCrankAccount(workspace: Workspace, game: Game): Promise<boolean> {
+    public async adminCloseCrankAccount(workspace: Workspace): Promise<boolean> {
 
-        let ix = await this.adminCloseCrankAccountInstruction(workspace, game);
+        let ix = await this.adminCloseCrankAccountInstruction(workspace);
         let tx = new Transaction().add(ix);
 
         return new Promise((resolve, reject) => {

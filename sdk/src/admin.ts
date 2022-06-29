@@ -9,6 +9,9 @@ import { fetchAccountRetry } from "./util";
 import { Workspace } from "./workspace";
 import Vault, { VaultAccount } from "./accounts/vault";
 import { ProgramAccount } from "@project-serum/anchor";
+import UserPrediction, { UserPredictionAccount } from "./accounts/userPrediction";
+import Crank, { CrankAccount } from "./accounts/crank";
+import Round, { RoundAccount } from "./accounts/round";
 
 export const gameSeeds: Array<GameSeed> = [ 
     { 
@@ -119,20 +122,56 @@ async function initFromGameSeed(workspace: Workspace, gameSeed: GameSeed, mint: 
     
 }
 
+export async function closeAll(owner: Keypair, connection: Connection, cluster: Cluster) {
+    Promise.allSettled([
+        await closeAllUserPredictions(owner, connection, cluster),
+        await closeAllRounds(owner, connection, cluster),
+        await closeAllCranks(owner, connection, cluster),
+        await closeAllGames(owner, connection, cluster)
+    ])
+}
+
 export async function closeAllGames(owner: Keypair, connection: Connection, cluster: Cluster) {
     const botWallet: NodeWallet = new NodeWallet(owner);
     const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
 
-    // let vaults = (await workspace.program.account.vault.all()) as Array<ProgramAccount<VaultAccount>>
     await Promise.allSettled( (await workspace.program.account.game.all()).map(async gameAccount => {
         let game = new Game(gameAccount.account as unknown as GameAccount);
-        // console.log(game.account.address.toBase58(), game.account.unclaimedFees.toNumber());
-        // if (game.account.unclaimedFees.gt(new anchor.BN(0))) {
-        //     await game.claimFee(workspace, new Vault(vaults.find(v => v.account.address.toBase58() === game.account.vault.toBase58()).account))
-        // }
-        await (game).closeGame(workspace);
+        await (game).adminCloseGame(workspace);
     }));
 }
+
+export async function closeAllUserPredictions(owner: Keypair, connection: Connection, cluster: Cluster) {
+    const botWallet: NodeWallet = new NodeWallet(owner);
+    const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
+
+    await Promise.allSettled( (await workspace.program.account.userPrediction.all()).map(async userPredictionAccount => {
+        let userPrediction = new UserPrediction(userPredictionAccount.account as unknown as UserPredictionAccount);
+        await UserPrediction.adminCloseUserPrediction(workspace, userPrediction);
+    }));
+}
+
+export async function closeAllCranks(owner: Keypair, connection: Connection, cluster: Cluster) {
+    const botWallet: NodeWallet = new NodeWallet(owner);
+    const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
+
+    await Promise.allSettled( (await workspace.program.account.crank.all()).map(async crankAccount => {
+        let crank = new Crank(crankAccount.account as unknown as CrankAccount);
+        await crank.adminCloseCrankAccount(workspace)
+    }));
+}
+
+export async function closeAllRounds(owner: Keypair, connection: Connection, cluster: Cluster) {
+    const botWallet: NodeWallet = new NodeWallet(owner);
+    const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
+
+    await Promise.allSettled( (await workspace.program.account.round.all()).map(async roundAccount => {
+        let round = new Round(roundAccount.account as unknown as RoundAccount);
+        await Round.adminCloseRound(workspace, round)
+    }));
+}
+
+
 
 export async function init(owner: Keypair, connection: Connection, cluster: Cluster, mint: Mint) {
 

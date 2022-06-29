@@ -267,7 +267,6 @@ pub struct CloseUserAccount<'info> {
 }
 
 
-
 #[derive(Accounts)]
 pub struct UserClaimAll<'info> {
 
@@ -446,6 +445,27 @@ pub struct CloseUserPrediction<'info> {
         mut, 
         close = user_prediction_close_receiver,
         constraint = user_prediction.settled @ ErrorCode::UserPredictionNotSettled
+    )]
+    pub user_prediction: Box<Account<'info, UserPrediction>>,
+
+    #[account(
+        mut,
+        constraint = user_prediction.owner == user_prediction_close_receiver.key() @ ErrorCode::UserOwnerNotReceiver
+    )]
+    pub user_prediction_close_receiver: SystemAccount<'info>
+}
+
+#[derive(Accounts)]
+pub struct AdminCloseUserPrediction<'info> { 
+    #[account()]
+    pub signer: Signer<'info>,
+
+    #[account(constraint = game.owner == signer.key())]
+    pub game: Box<Account<'info, Game>>,
+
+    #[account(
+        mut, 
+        close = user_prediction_close_receiver
     )]
     pub user_prediction: Box<Account<'info, UserPrediction>>,
 

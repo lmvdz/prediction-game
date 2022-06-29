@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/precache-manifest.e1efea06d6ee10bfe1a811d2300361b0.js"
+  "/precache-manifest.8b2e91cf12f4aab88a1e430c97339957.js"
 );
 
 workbox.core.setCacheNameDetails({prefix: "aggr"});

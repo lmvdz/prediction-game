@@ -575,13 +575,12 @@ pub struct UpdateGame<'info> {
 }
 
 #[derive(Accounts)]
-pub struct CloseGame<'info> {
+pub struct AdminCloseGame<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
 
     #[account(
-        mut,
-        constraint = signer.key() == receiver.key()
+        mut
     )]
     pub receiver: SystemAccount<'info>,
 

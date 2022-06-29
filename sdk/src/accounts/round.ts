@@ -217,26 +217,18 @@ export default class Round implements DataUpdatable<RoundAccount> {
         })
     }
 
-    public static adminCloseRound(workspace: Workspace, game: Game, round: Round): Promise<Game> {
+    public static adminCloseRound(workspace: Workspace, round: Round): Promise<void> {
         
         return new Promise((resolve, reject) => {
             workspace.program.methods.adminCloseRoundInstruction().accounts({
                 signer: workspace.owner,
-                game: game.account.address,
+                game: round.account.game,
                 round: round.account.address,
                 receiver: workspace.owner
             }).transaction().then(tx => {
                 workspace.sendTransaction(tx).then(txSignature => {
                     confirmTxRetry(workspace, txSignature).then(() => {
-                        game.updateGameData(workspace).then((game: Game) => {
-                            game.updateRoundData(workspace).then((game: Game) => {
-                                resolve(game);
-                            }).catch(error => {
-                                reject(error);
-                            })
-                        }).catch(error => {
-                            reject(error);
-                        })
+                        resolve();
                     }).catch(error => {
                         reject(error);
                     })

@@ -1,18 +1,7 @@
 export type PredictionGame = {
-  "version": "1.0.3",
+  "version": "1.0.4",
   "name": "prediction_game",
   "instructions": [
-    {
-      "name": "testRoundRolloverInstruction",
-      "accounts": [
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
-        }
-      ],
-      "args": []
-    },
     {
       "name": "initGameInstruction",
       "accounts": [
@@ -724,7 +713,7 @@ export type PredictionGame = {
       "args": []
     },
     {
-      "name": "closeGameInstruction",
+      "name": "adminCloseGameInstruction",
       "accounts": [
         {
           "name": "signer",
@@ -756,6 +745,32 @@ export type PredictionGame = {
           "name": "signer",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "crank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseCrankAccountInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "game",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "crank",
@@ -818,6 +833,32 @@ export type PredictionGame = {
       "args": []
     },
     {
+      "name": "adminCloseRoundInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "game",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "round",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "closeVaultInstruction",
       "accounts": [
         {
@@ -850,6 +891,32 @@ export type PredictionGame = {
           "name": "signer",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "userPrediction",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userPredictionCloseReceiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseUserPredictionInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "game",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "userPrediction",
@@ -1833,20 +1900,9 @@ export type PredictionGame = {
 };
 
 export const IDL: PredictionGame = {
-  "version": "1.0.3",
+  "version": "1.0.4",
   "name": "prediction_game",
   "instructions": [
-    {
-      "name": "testRoundRolloverInstruction",
-      "accounts": [
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
-        }
-      ],
-      "args": []
-    },
     {
       "name": "initGameInstruction",
       "accounts": [
@@ -2558,7 +2614,7 @@ export const IDL: PredictionGame = {
       "args": []
     },
     {
-      "name": "closeGameInstruction",
+      "name": "adminCloseGameInstruction",
       "accounts": [
         {
           "name": "signer",
@@ -2590,6 +2646,32 @@ export const IDL: PredictionGame = {
           "name": "signer",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "crank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseCrankAccountInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "game",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "crank",
@@ -2652,6 +2734,32 @@ export const IDL: PredictionGame = {
       "args": []
     },
     {
+      "name": "adminCloseRoundInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "game",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "round",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "closeVaultInstruction",
       "accounts": [
         {
@@ -2684,6 +2792,32 @@ export const IDL: PredictionGame = {
           "name": "signer",
           "isMut": true,
           "isSigner": true
+        },
+        {
+          "name": "userPrediction",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userPredictionCloseReceiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseUserPredictionInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "game",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "userPrediction",

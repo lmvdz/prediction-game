@@ -396,7 +396,20 @@ pub struct InitNextRoundAndClosePrevious<'info> {
 }
 
 #[derive(Accounts)]
-pub struct RoundRollover<'info> {
+pub struct AdminCloseRound<'info> {
     #[account(mut)]
-    pub owner: Signer<'info>
+    pub signer: Signer<'info>,
+
+
+    #[account(constraint = game.owner == signer.key())]
+    pub game: Box<Account<'info, Game>>,
+
+
+    #[account(mut, close = receiver)]
+    pub round: Box<Account<'info, Round>>,
+    
+    #[account(
+        mut
+    )]
+    pub receiver: SystemAccount<'info>,
 }

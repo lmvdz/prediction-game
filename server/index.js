@@ -25,7 +25,8 @@ const mintDecimals = 6;
         
     }
     
-    // admin.closeAllGames(owner, connection, process.env.CLUSTER)
+    // await admin.closeAll(owner, connection, process.env.CLUSTER)
+    // await admin.closeAllUserPredictions(owner, connection, process.env.CLUSTER);
     const mint = await getMint(connection, mintKeypair.publicKey)
     admin.init(owner, connection, process.env.CLUSTER, mint)
 })();

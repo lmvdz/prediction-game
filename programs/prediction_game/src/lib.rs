@@ -17,17 +17,6 @@ pub mod prediction_game {
     use super::*;
     
 
-    pub fn test_round_rollover_instruction(_ctx: Context<RoundRollover>) -> Result<()> {
-        let current_round_number = u32::MAX;
-        let next_round_number = if current_round_number.eq(&u32::MAX) {
-            1
-        } else {
-            current_round_number.saturating_add(1)
-        };
-        require!(current_round_number.eq(&u32::MAX) && next_round_number.eq(&1_u32), errors::ErrorCode::TestRoundRolloverFailed);
-        Ok(())
-    }
-
     pub fn init_game_instruction(ctx: Context<InitializeGame>, oracle: u8, base_symbol: String, fee_bps: u16, crank_bps: u16, round_length: i64) -> Result<()> {
         instructions::game::init_game(ctx, oracle, base_symbol, fee_bps, crank_bps, round_length)
     }
@@ -81,14 +70,6 @@ pub mod prediction_game {
         instructions::crank::init_crank(ctx)
     }
 
-    // pub fn init_user_token_account_instruction(_ctx: Context<InitUserTokenAccount>) -> Result<()> {
-    //     Ok(())
-    // }
-
-    // pub fn transfer_user_token_account_instruction(ctx: Context<UserTransfer>, amount: u64) -> Result<()> {
-    //     instructions::user::transfer_user_token_account(ctx, amount)
-    // }
-
     pub fn init_user_prediction_instruction(ctx: Context<InitUserPrediction>, up_or_down: u8, amount: u64) -> Result<()> {
         instructions::user::init_user_prediction(ctx, up_or_down, amount)
     }
@@ -101,11 +82,15 @@ pub mod prediction_game {
         instructions::user::user_claim_all(ctx)
     }
 
-    pub fn close_game_instruction<'info>(_ctx: Context<'_, '_, '_, 'info, CloseGame<'info>>) -> Result<()> {
+    pub fn admin_close_game_instruction<'info>(_ctx: Context<'_, '_, '_, 'info, AdminCloseGame<'info>>) -> Result<()> {
         Ok(())
     }
 
     pub fn close_crank_account_instruction(_ctx: Context<CloseCrankAccount>) -> Result<()> {
+        Ok(())
+    }
+
+    pub fn admin_close_crank_account_instruction<'info>(_ctx: Context<'_, '_, '_, 'info, AdminCloseCrankAccount<'info>>) -> Result<()> {
         Ok(())
     }
 
@@ -117,29 +102,25 @@ pub mod prediction_game {
         Ok(())
     }
 
+    pub fn admin_close_round_instruction<'info>(_ctx: Context<'_, '_, '_, 'info, AdminCloseRound<'info>>) -> Result<()> {
+        Ok(())
+    }
+
     pub fn close_vault_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CloseVaultTokenAccount<'info>>) -> Result<()> {
         instructions::vault::close_vault_token_account(ctx)
     }
 
-    // pub fn close_vault_and_token_accounts_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CloseVaultAndTokenAccounts<'info>>) -> Result<()> {
-    //     instructions::vault::close_vault_and_token_accounts(ctx)
-    // }
-
-    // pub fn close_vault_token_accounts_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CloseVaultTokenAccounts<'info>>) -> Result<()> {
-    //     instructions::vault::close_vault_token_accounts(ctx)
-    // }
-
     pub fn close_user_prediction_instruction(_ctx: Context<CloseUserPrediction>) -> Result<()> {
+        Ok(())
+    }
+
+    pub fn admin_close_user_prediction_instruction(_ctx: Context<AdminCloseUserPrediction>) -> Result<()> {
         Ok(())
     }
 
     pub fn close_user_account_instruction(_ctx: Context<CloseUserAccount>) -> Result<()> {
         Ok(())
     }
-
-    // pub fn close_user_token_account_instruction(_ctx: Context<CloseUserTokenAccount>) -> Result<()> {
-    //     Ok(())
-    // }
     
     
 

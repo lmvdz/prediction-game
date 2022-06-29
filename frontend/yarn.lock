@@ -448,9 +448,9 @@
     stream-browserify "^3.0.0"
 
 "@solana/wallet-adapter-wallets@^0.16.1":
-  version "0.16.2"
-  resolved "https://registry.yarnpkg.com/@solana/wallet-adapter-wallets/-/wallet-adapter-wallets-0.16.2.tgz#6055dd7357ae95f4c6f432f28fe12a3bb895cfbc"
-  integrity sha512-XbuwE5U6MAaMiT8jXBkapf5WVqwIm8Xhq19TcDkvjm2cqF+w8dYZ+5eKVqUNpNRr0j4qAthTMqgf2yrc8068hQ==
+  version "0.16.3"
+  resolved "https://registry.yarnpkg.com/@solana/wallet-adapter-wallets/-/wallet-adapter-wallets-0.16.3.tgz#63ccb8aa4eeb4eb7b7a635ca7aaadfc75213964b"
+  integrity sha512-3XnWfWziXsBNXynD7y1ypgKOxms/7/ViMQiBk2A0b0JphFcKa9Q6yQ0tZ4/Oh1V+pAriYOFE35AOB57rKKGJfA==
   dependencies:
     "@solana/wallet-adapter-base" "^0.9.6"
     "@solana/wallet-adapter-bitkeep" "^0.3.4"

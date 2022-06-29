@@ -613,7 +613,7 @@ async function loadUserClaimable() : Promise<void> {
   if (wallet.value.connected) {
     try {
       if (!paf.value.accounts.has(userClaimableAddress.value.toBase58())) {
-        paf.value.addProgram<PredictionGame>('user', userClaimableAddress.value.toBase58(), getWorkspace().program, async (data: UserAccount) => {
+        paf.value.addProgram<PredictionGame>('userClaimable', userClaimableAddress.value.toBase58(), getWorkspace().program, async (data: UserAccount) => {
           // console.log("updated user " + data.address.toBase58())
         }, (error) => {
           console.error(error);

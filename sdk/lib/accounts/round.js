@@ -178,25 +178,17 @@ class Round {
             });
         });
     }
-    static adminCloseRound(workspace, game, round) {
+    static adminCloseRound(workspace, round) {
         return new Promise((resolve, reject) => {
             workspace.program.methods.adminCloseRoundInstruction().accounts({
                 signer: workspace.owner,
-                game: game.account.address,
+                game: round.account.game,
                 round: round.account.address,
                 receiver: workspace.owner
             }).transaction().then(tx => {
                 workspace.sendTransaction(tx).then(txSignature => {
                     (0, index_1.confirmTxRetry)(workspace, txSignature).then(() => {
-                        game.updateGameData(workspace).then((game) => {
-                            game.updateRoundData(workspace).then((game) => {
-                                resolve(game);
-                            }).catch(error => {
-                                reject(error);
-                            });
-                        }).catch(error => {
-                            reject(error);
-                        });
+                        resolve();
                     }).catch(error => {
                         reject(error);
                     });

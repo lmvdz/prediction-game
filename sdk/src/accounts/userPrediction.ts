@@ -171,4 +171,38 @@ export default class UserPrediction implements DataUpdatable<UserPredictionAccou
         })
 
     }
+
+
+    public static async adminCloseUserPredictionFromPubkeysInstruction(workspace: Workspace, game: PublicKey, userPrediction: PublicKey, receiver: PublicKey) : Promise<TransactionInstruction> {
+        return await workspace.program.methods.adminCloseUserPredictionInstruction().accounts({
+            signer: workspace.owner,
+            game,
+            userPrediction,
+            userPredictionCloseReceiver: receiver
+        }).instruction()
+    }
+
+    public static async adminCloseUserPredictionFromPubkeys(workspace: Workspace, game: PublicKey, userPrediction: PublicKey, receiver: PublicKey) : Promise<boolean> {
+        
+        let ix = await this.adminCloseUserPredictionFromPubkeysInstruction(workspace, game, userPrediction, receiver);
+        let tx = new Transaction().add(ix);
+  
+        return new Promise((resolve, reject) => {
+            setTimeout(async () => {
+                try {
+                    let txSignature = await workspace.sendTransaction(tx)
+                    await confirmTxRetry(workspace, txSignature);
+                } catch (error) {
+                    reject(error);
+                }
+                try {
+                    resolve(true);
+                } catch (error) {
+                    reject(error);
+                }
+                
+            }, 500)
+        })
+
+    }
 }

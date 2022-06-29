@@ -72,16 +72,16 @@ class Crank {
             }, 500);
         });
     }
-    async adminCloseCrankAccountInstruction(workspace, game) {
+    async adminCloseCrankAccountInstruction(workspace) {
         return await workspace.program.methods.adminCloseCrankAccountInstruction().accounts({
             signer: workspace.owner,
             crank: this.account.address,
-            game: game.account.address,
+            game: this.account.game,
             receiver: workspace.owner
         }).instruction();
     }
-    async adminCloseCrankAccount(workspace, game) {
-        let ix = await this.adminCloseCrankAccountInstruction(workspace, game);
+    async adminCloseCrankAccount(workspace) {
+        let ix = await this.adminCloseCrankAccountInstruction(workspace);
         let tx = new web3_js_1.Transaction().add(ix);
         return new Promise((resolve, reject) => {
             setTimeout(async () => {
