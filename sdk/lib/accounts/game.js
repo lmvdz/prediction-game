@@ -319,36 +319,52 @@ class Game {
             throw Error("Round Fee Not Collected");
         if (!this.currentRound.account.settled) {
             let unSettledPredictions = (await workspace.program.account.userPrediction.all()).filter((prediction) => {
-                return prediction.account.round.toBase58() === this.currentRound.account.address.toBase58() && !prediction.account.settled;
+                return prediction !== undefined && prediction.account.round.toBase58() === this.currentRound.account.address.toBase58() && !prediction.account.settled;
             });
-            let unSettledPredictionChunks = (0, chunk_1.default)((await Promise.all(unSettledPredictions.map(async (prediction) => {
-                return [
-                    {
-                        pubkey: prediction.account.address,
-                        isSigner: false,
-                        isWritable: true
-                    },
-                    {
-                        pubkey: prediction.account.userClaimable,
-                        isSigner: false,
-                        isWritable: true
-                    }
-                ];
-            }))).flat(Infinity), 20);
-            if (unSettledPredictionChunks.length > 0) {
-                await Promise.allSettled(unSettledPredictionChunks.map(async (chunk) => {
+            if (unSettledPredictions.length > 0) {
+                let unSettledPredictionChunks = (0, chunk_1.default)((await Promise.all(unSettledPredictions.map(async (prediction) => {
+                    return [
+                        {
+                            pubkey: prediction.account.address,
+                            isSigner: false,
+                            isWritable: true
+                        },
+                        {
+                            pubkey: prediction.account.userClaimable,
+                            isSigner: false,
+                            isWritable: true
+                        }
+                    ];
+                }))).flat(Infinity), 20);
+                if (unSettledPredictionChunks.length > 0) {
+                    await Promise.allSettled(unSettledPredictionChunks.map(async (chunk) => {
+                        try {
+                            let ix = await this.settlePredictionsInstruction(workspace, crank, chunk);
+                            let tx = new web3_js_1.Transaction().add(ix);
+                            let txSignature = await workspace.sendTransaction(tx);
+                            await (0, index_1.confirmTxRetry)(workspace, txSignature);
+                        }
+                        catch (error) {
+                            return error;
+                        }
+                    }));
+                    await this.updateGameData(workspace);
+                    return await this.updateRoundData(workspace);
+                }
+                else {
                     try {
-                        let ix = await this.settlePredictionsInstruction(workspace, crank, chunk);
+                        let ix = await this.settlePredictionsInstruction(workspace, crank, []);
                         let tx = new web3_js_1.Transaction().add(ix);
                         let txSignature = await workspace.sendTransaction(tx);
                         await (0, index_1.confirmTxRetry)(workspace, txSignature);
+                        await this.updateGameData(workspace);
+                        return await this.updateRoundData(workspace);
                     }
                     catch (error) {
-                        return error;
+                        console.error(error);
+                        return this;
                     }
-                }));
-                await this.updateGameData(workspace);
-                return await this.updateRoundData(workspace);
+                }
             }
             else {
                 try {
