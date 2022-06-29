@@ -354,39 +354,52 @@ export default class Game implements DataUpdatable<GameAccount> {
         if (!this.currentRound.account.settled) {
 
             let unSettledPredictions = (await workspace.program.account.userPrediction.all()).filter((prediction: ProgramAccount<UserPredictionAccount>) => {
-                return prediction.account.round.toBase58() === this.currentRound.account.address.toBase58() && !prediction.account.settled
+                return prediction !== undefined && prediction.account.round.toBase58() === this.currentRound.account.address.toBase58() && !prediction.account.settled
             }) as Array<ProgramAccount<UserPredictionAccount>>
 
+            if (unSettledPredictions.length > 0) {
 
-    
-            let unSettledPredictionChunks = chunk((await Promise.all(unSettledPredictions.map(async (prediction) => {
-                return [
-                    {
-                        pubkey: prediction.account.address,
-                        isSigner: false,
-                        isWritable: true
-                    },
-                    {
-                        pubkey: prediction.account.userClaimable,
-                        isSigner: false,
-                        isWritable: true
-                    }
-                ]
-            }))).flat(Infinity) as AccountMeta[], 20);
+                let unSettledPredictionChunks = chunk((await Promise.all(unSettledPredictions.map(async (prediction) => {
+                    return [
+                        {
+                            pubkey: prediction.account.address,
+                            isSigner: false,
+                            isWritable: true
+                        },
+                        {
+                            pubkey: prediction.account.userClaimable,
+                            isSigner: false,
+                            isWritable: true
+                        }
+                    ]
+                }))).flat(Infinity) as AccountMeta[], 20);
 
-            if (unSettledPredictionChunks.length > 0) {
-                await Promise.allSettled(unSettledPredictionChunks.map(async (chunk: AccountMeta[]): Promise<String | any> => {
+                if (unSettledPredictionChunks.length > 0) {
+                    await Promise.allSettled(unSettledPredictionChunks.map(async (chunk: AccountMeta[]): Promise<String | any> => {
+                        try {
+                            let ix = await this.settlePredictionsInstruction(workspace, crank, chunk);
+                            let tx = new Transaction().add(ix);
+                            let txSignature = await workspace.sendTransaction(tx)
+                            await confirmTxRetry(workspace, txSignature);
+                        } catch (error) {
+                            return error;
+                        }
+                    }))
+                    await this.updateGameData(workspace);
+                    return await this.updateRoundData(workspace);
+                } else {
                     try {
-                        let ix = await this.settlePredictionsInstruction(workspace, crank, chunk);
+                        let ix = await this.settlePredictionsInstruction(workspace, crank, []);
                         let tx = new Transaction().add(ix);
                         let txSignature = await workspace.sendTransaction(tx)
                         await confirmTxRetry(workspace, txSignature);
+                        await this.updateGameData(workspace);
+                        return await this.updateRoundData(workspace);
                     } catch (error) {
-                        return error;
+                        console.error(error);
+                        return this;
                     }
-                }))
-                await this.updateGameData(workspace);
-                return await this.updateRoundData(workspace);
+                }
             } else {
                 try {
                     let ix = await this.settlePredictionsInstruction(workspace, crank, []);
@@ -400,6 +413,8 @@ export default class Game implements DataUpdatable<GameAccount> {
                     return this;
                 }
             }
+
+            
         } else {
             return this;
         }
