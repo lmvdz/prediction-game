@@ -2,20 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IDL = void 0;
 exports.IDL = {
-    "version": "1.0.3",
+    "version": "1.0.4",
     "name": "prediction_game",
     "instructions": [
-        {
-            "name": "testRoundRolloverInstruction",
-            "accounts": [
-                {
-                    "name": "owner",
-                    "isMut": true,
-                    "isSigner": true
-                }
-            ],
-            "args": []
-        },
         {
             "name": "initGameInstruction",
             "accounts": [
@@ -727,7 +716,7 @@ exports.IDL = {
             "args": []
         },
         {
-            "name": "closeGameInstruction",
+            "name": "adminCloseGameInstruction",
             "accounts": [
                 {
                     "name": "signer",
@@ -759,6 +748,32 @@ exports.IDL = {
                     "name": "signer",
                     "isMut": false,
                     "isSigner": true
+                },
+                {
+                    "name": "crank",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "receiver",
+                    "isMut": true,
+                    "isSigner": false
+                }
+            ],
+            "args": []
+        },
+        {
+            "name": "adminCloseCrankAccountInstruction",
+            "accounts": [
+                {
+                    "name": "signer",
+                    "isMut": false,
+                    "isSigner": true
+                },
+                {
+                    "name": "game",
+                    "isMut": false,
+                    "isSigner": false
                 },
                 {
                     "name": "crank",
@@ -821,6 +836,32 @@ exports.IDL = {
             "args": []
         },
         {
+            "name": "adminCloseRoundInstruction",
+            "accounts": [
+                {
+                    "name": "signer",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "game",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "round",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "receiver",
+                    "isMut": true,
+                    "isSigner": false
+                }
+            ],
+            "args": []
+        },
+        {
             "name": "closeVaultInstruction",
             "accounts": [
                 {
@@ -853,6 +894,32 @@ exports.IDL = {
                     "name": "signer",
                     "isMut": true,
                     "isSigner": true
+                },
+                {
+                    "name": "userPrediction",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "userPredictionCloseReceiver",
+                    "isMut": true,
+                    "isSigner": false
+                }
+            ],
+            "args": []
+        },
+        {
+            "name": "adminCloseUserPredictionInstruction",
+            "accounts": [
+                {
+                    "name": "signer",
+                    "isMut": false,
+                    "isSigner": true
+                },
+                {
+                    "name": "game",
+                    "isMut": false,
+                    "isSigner": false
                 },
                 {
                     "name": "userPrediction",

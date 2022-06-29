@@ -84,6 +84,36 @@ class UserPrediction {
             }, 500);
         });
     }
+    static async adminCloseUserPredictionInstruction(workspace, prediction) {
+        return await workspace.program.methods.adminCloseUserPredictionInstruction().accounts({
+            signer: workspace.owner,
+            game: prediction.account.game,
+            userPrediction: prediction.account.address,
+            userPredictionCloseReceiver: prediction.account.owner
+        }).instruction();
+    }
+    static async adminCloseUserPrediction(workspace, prediction) {
+        let ix = await this.adminCloseUserPredictionInstruction(workspace, prediction);
+        let tx = new web3_js_1.Transaction().add(ix);
+        return new Promise((resolve, reject) => {
+            setTimeout(async () => {
+                try {
+                    let txSignature = await workspace.sendTransaction(tx);
+                    await (0, index_1.confirmTxRetry)(workspace, txSignature);
+                }
+                catch (error) {
+                    reject(error);
+                }
+                try {
+                    prediction = null;
+                    resolve(true);
+                }
+                catch (error) {
+                    reject(error);
+                }
+            }, 500);
+        });
+    }
 }
 exports.default = UserPrediction;
 //# sourceMappingURL=userPrediction.js.map

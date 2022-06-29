@@ -21,4 +21,6 @@ export default class Crank implements DataUpdatable<CrankAccount> {
     static initializeCrank(workspace: Workspace, game: Game, user: User): Promise<Crank>;
     closeCrankAccountInstruction(workspace: Workspace): Promise<TransactionInstruction>;
     closeCrankAccount(workspace: Workspace): Promise<boolean>;
+    adminCloseCrankAccountInstruction(workspace: Workspace, game: Game): Promise<TransactionInstruction>;
+    adminCloseCrankAccount(workspace: Workspace, game: Game): Promise<boolean>;
 }

@@ -72,6 +72,36 @@ class Crank {
             }, 500);
         });
     }
+    async adminCloseCrankAccountInstruction(workspace, game) {
+        return await workspace.program.methods.adminCloseCrankAccountInstruction().accounts({
+            signer: workspace.owner,
+            crank: this.account.address,
+            game: game.account.address,
+            receiver: workspace.owner
+        }).instruction();
+    }
+    async adminCloseCrankAccount(workspace, game) {
+        let ix = await this.adminCloseCrankAccountInstruction(workspace, game);
+        let tx = new web3_js_1.Transaction().add(ix);
+        return new Promise((resolve, reject) => {
+            setTimeout(async () => {
+                try {
+                    let txSignature = await workspace.sendTransaction(tx);
+                    await (0, index_1.confirmTxRetry)(workspace, txSignature);
+                }
+                catch (error) {
+                    reject(error);
+                }
+                try {
+                    this.account = null;
+                    resolve(true);
+                }
+                catch (error) {
+                    reject(error);
+                }
+            }, 500);
+        });
+    }
 }
 exports.default = Crank;
 //# sourceMappingURL=crank.js.map

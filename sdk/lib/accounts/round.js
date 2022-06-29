@@ -178,6 +178,36 @@ class Round {
             });
         });
     }
+    static adminCloseRound(workspace, game, round) {
+        return new Promise((resolve, reject) => {
+            workspace.program.methods.adminCloseRoundInstruction().accounts({
+                signer: workspace.owner,
+                game: game.account.address,
+                round: round.account.address,
+                receiver: workspace.owner
+            }).transaction().then(tx => {
+                workspace.sendTransaction(tx).then(txSignature => {
+                    (0, index_1.confirmTxRetry)(workspace, txSignature).then(() => {
+                        game.updateGameData(workspace).then((game) => {
+                            game.updateRoundData(workspace).then((game) => {
+                                resolve(game);
+                            }).catch(error => {
+                                reject(error);
+                            });
+                        }).catch(error => {
+                            reject(error);
+                        });
+                    }).catch(error => {
+                        reject(error);
+                    });
+                }).catch(error => {
+                    reject(error);
+                });
+            }).catch(error => {
+                reject(error);
+            });
+        });
+    }
 }
 exports.default = Round;
 //# sourceMappingURL=round.js.map

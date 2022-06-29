@@ -235,9 +235,9 @@ export default class Game implements DataUpdatable<GameAccount> {
         
     }
 
-    public async closeGame(workspace: Workspace) {
+    public async adminCloseGame(workspace: Workspace) {
         return new Promise((resolve, reject) => {
-            workspace.program.methods.closeGameInstruction().accounts({
+            workspace.program.methods.adminCloseGameInstruction().accounts({
                 signer: workspace.owner,
                 receiver: workspace.owner,
                 game: this.account.address,
@@ -247,19 +247,14 @@ export default class Game implements DataUpdatable<GameAccount> {
                 workspace.program.provider.connection.getLatestBlockhash().then(blockhash => {
                     tx.recentBlockhash = blockhash.blockhash;
                     tx.sign(workspace.wallet.payer)
-                    let message = tx.compileMessage();
-                    console.log(message);
-                    workspace.program.provider.connection.simulateTransaction(message).then((simulation) => {
-                        console.log(simulation.value.logs);
-                        workspace.sendTransaction(tx).then(txSignature => {
-                            confirmTxRetry(workspace, txSignature).then(() => {
-                                resolve(true);
-                            }).catch(error => {
-                                reject(error);
-                            })
+                    workspace.sendTransaction(tx).then(txSignature => {
+                        confirmTxRetry(workspace, txSignature).then(() => {
+                            resolve(true);
                         }).catch(error => {
                             reject(error);
                         })
+                    }).catch(error => {
+                        reject(error);
                     })
                 })
                 

@@ -214,9 +214,9 @@ class Game {
             return this;
         }
     }
-    async closeGame(workspace) {
+    async adminCloseGame(workspace) {
         return new Promise((resolve, reject) => {
-            workspace.program.methods.closeGameInstruction().accounts({
+            workspace.program.methods.adminCloseGameInstruction().accounts({
                 signer: workspace.owner,
                 receiver: workspace.owner,
                 game: this.account.address,
@@ -226,19 +226,14 @@ class Game {
                 workspace.program.provider.connection.getLatestBlockhash().then(blockhash => {
                     tx.recentBlockhash = blockhash.blockhash;
                     tx.sign(workspace.wallet.payer);
-                    let message = tx.compileMessage();
-                    console.log(message);
-                    workspace.program.provider.connection.simulateTransaction(message).then((simulation) => {
-                        console.log(simulation.value.logs);
-                        workspace.sendTransaction(tx).then(txSignature => {
-                            (0, index_1.confirmTxRetry)(workspace, txSignature).then(() => {
-                                resolve(true);
-                            }).catch(error => {
-                                reject(error);
-                            });
+                    workspace.sendTransaction(tx).then(txSignature => {
+                        (0, index_1.confirmTxRetry)(workspace, txSignature).then(() => {
+                            resolve(true);
                         }).catch(error => {
                             reject(error);
                         });
+                    }).catch(error => {
+                        reject(error);
                     });
                 });
             }).catch(error => {
