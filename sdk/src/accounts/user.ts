@@ -67,13 +67,14 @@ export default class User implements DataUpdatable<UserAccount> {
         })
     }
 
-    public async userClaimInstruction(workspace: Workspace, vault: Vault, toTokenAccount: Account, amount: anchor.BN): Promise<TransactionInstruction> {
+    public async userClaimInstruction(workspace: Workspace, vault: Vault, game: Game, toTokenAccount: Account, amount: anchor.BN): Promise<TransactionInstruction> {
         
         if (workspace.owner.toBase58() !== this.account.owner.toBase58()) throw Error("Signer not Owner")
         if (toTokenAccount.owner.toBase58() !== this.account.owner.toBase58()) throw Error("To Token Account Owner not the same as User Owner");
 
         return await workspace.program.methods.userClaimInstruction(amount).accounts({
             signer: workspace.owner,
+            game: game.account.address,
             user: this.account.address,
             userClaimable: this.account.userClaimable,
             toTokenAccount: toTokenAccount.address,
@@ -85,8 +86,8 @@ export default class User implements DataUpdatable<UserAccount> {
         }).instruction();
     }
 
-    public async userClaim(workspace: Workspace, vault: Vault, toTokenAccount: Account, amount: anchor.BN) : Promise<User> {
-        let ix = await this.userClaimInstruction(workspace, vault, toTokenAccount, amount);
+    public async userClaim(workspace: Workspace, vault: Vault, game: Game, toTokenAccount: Account, amount: anchor.BN) : Promise<User> {
+        let ix = await this.userClaimInstruction(workspace, vault, game, toTokenAccount, amount);
         let tx = new Transaction().add(ix);
 
         return new Promise((resolve, reject) => {
