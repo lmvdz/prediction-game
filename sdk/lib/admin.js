@@ -26,7 +26,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.init = exports.gameSeeds = void 0;
+exports.init = exports.closeAllGames = exports.gameSeeds = void 0;
 const web3_js_1 = require("@solana/web3.js");
 const web3_js_2 = require("@solana/web3.js");
 const nodewallet_1 = __importDefault(require("@project-serum/anchor/dist/cjs/nodewallet"));
@@ -117,18 +117,23 @@ async function initFromGameSeed(workspace, gameSeed, mint) {
         return [null, null];
     }
 }
-async function init(owner, connection, cluster, mint) {
+async function closeAllGames(owner, connection, cluster) {
     const botWallet = new nodewallet_1.default(owner);
     const workspace = workspace_1.Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
     // let vaults = (await workspace.program.account.vault.all()) as Array<ProgramAccount<VaultAccount>>
-    // await Promise.allSettled( (await workspace.program.account.game.all()).map(async gameAccount => {
-    //     let game = new Game(gameAccount.account as unknown as GameAccount);
-    //     // console.log(game.account.address.toBase58(), game.account.unclaimedFees.toNumber());
-    //     // if (game.account.unclaimedFees.gt(new anchor.BN(0))) {
-    //     //     await game.claimFee(workspace, new Vault(vaults.find(v => v.account.address.toBase58() === game.account.vault.toBase58()).account))
-    //     // }
-    //     await (game).closeGame(workspace);
-    // }));
+    await Promise.allSettled((await workspace.program.account.game.all()).map(async (gameAccount) => {
+        let game = new game_1.default(gameAccount.account);
+        // console.log(game.account.address.toBase58(), game.account.unclaimedFees.toNumber());
+        // if (game.account.unclaimedFees.gt(new anchor.BN(0))) {
+        //     await game.claimFee(workspace, new Vault(vaults.find(v => v.account.address.toBase58() === game.account.vault.toBase58()).account))
+        // }
+        await (game).closeGame(workspace);
+    }));
+}
+exports.closeAllGames = closeAllGames;
+async function init(owner, connection, cluster, mint) {
+    const botWallet = new nodewallet_1.default(owner);
+    const workspace = workspace_1.Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
     (await Promise.all(exports.gameSeeds.map(async (gameSeed) => {
         console.log(gameSeed);
         return await initFromGameSeed(workspace, gameSeed, mint.address);

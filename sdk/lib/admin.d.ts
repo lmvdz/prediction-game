@@ -11,4 +11,5 @@ export declare type GameSeed = {
     roundLength: anchor.BN;
     oracle: Oracle;
 };
+export declare function closeAllGames(owner: Keypair, connection: Connection, cluster: Cluster): Promise<void>;
 export declare function init(owner: Keypair, connection: Connection, cluster: Cluster, mint: Mint): Promise<void>;

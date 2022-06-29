@@ -30,7 +30,7 @@ const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
 const anchor = __importStar(require("@project-serum/anchor"));
 const index_1 = require("../util/index");
-const chunk_1 = __importDefault(require("src/util/chunk"));
+const chunk_1 = __importDefault(require("../util/chunk"));
 class User {
     constructor(account) {
         this.account = account;

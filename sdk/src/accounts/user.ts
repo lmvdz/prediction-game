@@ -7,7 +7,7 @@ import { fetchAccountRetry, confirmTxRetry } from "../util/index"
 import Game from './game';
 import Vault from './vault';
 import UserClaimable from './userClaimable';
-import chunk from 'src/util/chunk';
+import chunk from '../util/chunk';
 
 
 export type UserAccount = {

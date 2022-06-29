@@ -119,20 +119,25 @@ async function initFromGameSeed(workspace: Workspace, gameSeed: GameSeed, mint: 
     
 }
 
+export async function closeAllGames(owner: Keypair, connection: Connection, cluster: Cluster) {
+    const botWallet: NodeWallet = new NodeWallet(owner);
+    const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
+
+    // let vaults = (await workspace.program.account.vault.all()) as Array<ProgramAccount<VaultAccount>>
+    await Promise.allSettled( (await workspace.program.account.game.all()).map(async gameAccount => {
+        let game = new Game(gameAccount.account as unknown as GameAccount);
+        // console.log(game.account.address.toBase58(), game.account.unclaimedFees.toNumber());
+        // if (game.account.unclaimedFees.gt(new anchor.BN(0))) {
+        //     await game.claimFee(workspace, new Vault(vaults.find(v => v.account.address.toBase58() === game.account.vault.toBase58()).account))
+        // }
+        await (game).closeGame(workspace);
+    }));
+}
+
 export async function init(owner: Keypair, connection: Connection, cluster: Cluster, mint: Mint) {
 
     const botWallet: NodeWallet = new NodeWallet(owner);
     const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
-    
-    // let vaults = (await workspace.program.account.vault.all()) as Array<ProgramAccount<VaultAccount>>
-    // await Promise.allSettled( (await workspace.program.account.game.all()).map(async gameAccount => {
-    //     let game = new Game(gameAccount.account as unknown as GameAccount);
-    //     // console.log(game.account.address.toBase58(), game.account.unclaimedFees.toNumber());
-    //     // if (game.account.unclaimedFees.gt(new anchor.BN(0))) {
-    //     //     await game.claimFee(workspace, new Vault(vaults.find(v => v.account.address.toBase58() === game.account.vault.toBase58()).account))
-    //     // }
-    //     await (game).closeGame(workspace);
-    // }));
     
     (await Promise.all(gameSeeds.map(async (gameSeed : GameSeed) => {
         console.log(gameSeed);
