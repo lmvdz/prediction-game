@@ -1515,7 +1515,6 @@ export default defineComponent({
           </v-card>
         </v-col>
       </v-row>
-      {{ computedClaimable }}
       <v-row justify="start" v-if="wallet !== null && wallet.connected">
         <v-col>
           <v-card variant="plain">
