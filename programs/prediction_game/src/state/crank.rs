@@ -10,6 +10,7 @@ pub struct Crank {
     pub address: Pubkey,
     pub owner: Pubkey,
     pub user: Pubkey,
+    pub user_claimable: Pubkey,
     pub game: Pubkey,
     
     pub cranks: u16,

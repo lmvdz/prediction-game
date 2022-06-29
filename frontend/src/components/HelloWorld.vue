@@ -30,6 +30,7 @@ import UpArrowAnimation from '../lottie/65775-arrrow-moving-upward.json'
 import DownArrowAnimation from '../lottie/65777-graph-moving-downward.json'
 import CrabAnimation from '../lottie/101494-rebound-rock-water-creature-by-dave-chenell.json'
 import { PollingAccountsFetcher } from 'polling-account-fetcher';
+import UserClaimable, { Claim, UserClaimableAccount } from 'sdk/lib/accounts/userClaimable';
 
 type TxStatus = {
     index: number,
@@ -45,6 +46,8 @@ type TxStatus = {
 // let user = ref(null as User);
 let userAddress = ref(null as PublicKey);
 let computedUser = computed(() => getUser());
+let userClaimableAddress = ref(null as PublicKey);
+let computedClaimable = computed(() => getUserClaimable());
 let games = ref(new Set<string>());
 let computedGames = computed(() => [...games.value.values()].map(gamePubkey => getGame(gamePubkey)));
 let rounds = ref(new Set<string>());
@@ -95,7 +98,9 @@ onMounted(() => {
       aggrWorkspace.value = getProtocol() + "//" + getHost() + "/workspaces/btc.json";
     }
     loadPAF();
+    await loadWorkspace();
     loadWallet();
+    
     // if (workspace.value === null) {
     //   initWorkspace(getRpcUrl(), getCluster());
     //   workspace.value = useWorkspace();
@@ -144,7 +149,11 @@ type FrontendGameData = {
   },
   updating: boolean,
   updateError: boolean,
-  needsToLoad: boolean
+  noUpdateReceieved: boolean,
+  noUpdateReceievedTimeout: NodeJS.Timer,
+  needsToLoad: boolean,
+  roundTimeUpdateInterval: NodeJS.Timer,
+  timeRemaining: number
 }
 
 
@@ -241,16 +250,25 @@ function getRound(address: string) : Round {
   return new Round(roundAccount);
 }
 
-function unloadUser() : boolean {
-  return paf.value.accounts.delete(userAddress.value.toBase58())
+function unloadUser() {
+  paf.value.accounts.delete(userAddress.value.toBase58())
+  userAddress.value = null;
 }
 
 function getUser() : User {
   if (userAddress.value === null) return null;
   if (!paf.value.accounts.has(userAddress.value.toBase58())) return null;
-  let userAccount = paf.value.accounts.get(userAddress.value.toBase58())!.data || null;
-  if (userAccount === null) return null;
-  return new User(userAccount);
+  let userAccount = paf.value.accounts.get(userAddress.value.toBase58());
+  if (userAccount === undefined) return null;
+  return new User(userAccount.data);
+}
+
+function getUserClaimable() : UserClaimable {
+  if (userClaimableAddress.value === null) return null;
+  if (!paf.value.accounts.has(userClaimableAddress.value.toBase58())) return null;
+  let userClaimable = paf.value.accounts.get(userClaimableAddress.value.toBase58())
+  if (userClaimable === undefined) return null;
+  return new UserClaimable(userClaimable.data);
 }
 
 function getTokenAccountFromGame(game: Game): Account {
@@ -317,7 +335,7 @@ async function makePrediction(game: (Game)) {
     let tx = new Transaction();
     let txTitle = '';
     if ((computedUser.value === null || computedUser.value === undefined)) {
-      let initUserIX = await User.initializeUserInstruction(getWorkspace(), userAddress.value);
+      let initUserIX = await User.initializeUserInstruction(getWorkspace(), userAddress.value, userClaimableAddress.value);
       // let initUserTX = new Transaction().add(initUserIX);
       // initUserTX.feePayer = (getWorkspace()).owner;
       // initUserTX.recentBlockhash = (await (getWorkspace()).program.provider.connection.getLatestBlockhash()).blockhash
@@ -337,6 +355,7 @@ async function makePrediction(game: (Game)) {
       game, 
       game.currentRound, 
       computedUser.value || userAddress.value, 
+      userClaimableAddress.value,
       fromTokenAccount,
       (getWorkspace()).owner,
       userPredictionPubkey,
@@ -427,7 +446,7 @@ async function initTokenAccountForGame(game: Game) {
     txStatus.subtitle = "Sent and Confirming";
     await confirmTxRetry(getWorkspace(), txSignature)
     txStatus.color = "success"
-    txStatus.subtitle = "Sent and Confirmed";
+    txStatus.subtitle = "Sent and Confirmed. Airdropping funds might fail until account is confirmed.";
     txStatus.loading = false;
 
   } catch(error) {
@@ -447,7 +466,7 @@ async function airdrop(game: Game) {
     let txStatus = initNewTxStatus();
     try {
       txStatus.color = 'warning',
-      txStatus.title = 'Airdropping Funds'
+      txStatus.title = 'Airdropping Devnet Funds'
       txStatus.subtitle = ''
       txStatus.loading = true
       txStatus.show = true
@@ -456,18 +475,20 @@ async function airdrop(game: Game) {
         txStatus.loading = false;
         txStatus.signatures.push(data)
         txStatus.color = 'success'
-        txStatus.title = "Airdropped Funds"
+        txStatus.title = "Airdropped Devnet Funds"
       } else {
         txStatus.loading = false;
         txStatus.color = "error"
-        txStatus.title = "Airdrop Failed"
+        txStatus.title = "Airdrop Devnet Funds Failed"
+        txStatus.subtitle = 'Please try again in a few seconds.'
         console.error(data);
       }
     } catch (error) {
       console.error(error);
       txStatus.loading = false;
       txStatus.color = "error"
-      txStatus.title = "Airdrop Failed"
+      txStatus.title = "Airdrop Devnet Funds Failed"
+      txStatus.subtitle = 'Please try again in a few seconds.'
     }
           
     hideTxStatus(txStatus.index, 5000);
@@ -504,7 +525,11 @@ async function initFrontendGameData (game: Game) {
       },
       updating: false,
       updateError: false,
-      needsToLoad: true
+      needsToLoad: true,
+      noUpdateReceieved: false,
+      noUpdateReceievedTimeout: null,
+      timeRemaining: game.account.roundLength,
+      roundTimeUpdateInterval: null
     })
     try {
       let img = ((await import( /* @vite-ignore */ `../../node_modules/cryptocurrency-icons/32/color/${game.account.baseSymbol.toLowerCase()}.png`)));
@@ -568,19 +593,42 @@ async function loadUser() : Promise<void> {
   // console.log(wallet.value.publicKey.value.toBase58())
   if (wallet.value.connected) {
     try {
-      let userPubkey = (await (getWorkspace()).programAddresses.getUserPubkey(new PublicKey((wallet.value.publicKey as PublicKey).toBase58())))[0];
-      if (!paf.value.accounts.has(userPubkey.toBase58())) {
-        paf.value.addProgram<PredictionGame>('user', userPubkey.toBase58(), getWorkspace().program, async (data: UserAccount) => {
+      // let userPubkey = (await (getWorkspace()).programAddresses.getUserPubkey(new PublicKey((wallet.value.publicKey as PublicKey).toBase58())))[0];
+      if (!paf.value.accounts.has(userAddress.value.toBase58())) {
+        paf.value.addProgram<PredictionGame>('user', userAddress.value.toBase58(), getWorkspace().program, async (data: UserAccount) => {
           // console.log("updated user " + data.address.toBase58())
         }, (error) => {
           console.error(error);
-          paf.value.accounts.delete(userPubkey.toBase58())
+          paf.value.accounts.delete(userAddress.value.toBase58())
         });
       }
     } catch (error) {
       console.error(error);
     }
   }
+}
+
+async function loadUserClaimable() : Promise<void> {
+  // console.log(wallet.value.publicKey.value.toBase58())
+  if (wallet.value.connected) {
+    try {
+      if (!paf.value.accounts.has(userClaimableAddress.value.toBase58())) {
+        paf.value.addProgram<PredictionGame>('user', userClaimableAddress.value.toBase58(), getWorkspace().program, async (data: UserAccount) => {
+          // console.log("updated user " + data.address.toBase58())
+        }, (error) => {
+          console.error(error);
+          paf.value.accounts.delete(userClaimableAddress.value.toBase58())
+        });
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+}
+
+function unloadUserClaimable() {
+  paf.value.accounts.delete(userClaimableAddress.value.toBase58())
+  userClaimableAddress.value = null;
 }
 
 async function loadRounds() {
@@ -594,6 +642,27 @@ async function loadRounds() {
 
     if (!paf.value.accounts.has(round.account.address.toBase58())) {
       paf.value.addProgram<PredictionGame>('round', round.account.address.toBase58(), getWorkspace().program, async (data: RoundAccount) => {
+        if (frontendGameData.value.get(data.game.toBase58()) !== undefined) {
+          // round time difference updater
+
+          if (frontendGameData.value.get(data.game.toBase58()).roundTimeUpdateInterval) {
+            clearInterval(frontendGameData.value.get(data.game.toBase58()).roundTimeUpdateInterval)
+          }
+          frontendGameData.value.get(data.game.toBase58()).roundTimeUpdateInterval = setInterval(() => {
+            frontendGameData.value.get(data.game.toBase58()).timeRemaining = Math.round((new Date()).getTime() / 1000) - data.roundStartTime.toNumber()
+          }, 500)
+
+        
+          // round no update received timer
+
+          frontendGameData.value.get(data.game.toBase58()).noUpdateReceieved = false;
+          if (frontendGameData.value.get(data.game.toBase58()).noUpdateReceievedTimeout) {
+            clearTimeout(frontendGameData.value.get(data.game.toBase58()).noUpdateReceievedTimeout)
+          }
+          frontendGameData.value.get(data.game.toBase58()).noUpdateReceievedTimeout = setTimeout(() => {
+            frontendGameData.value.get(data.game.toBase58()).noUpdateReceieved = true;
+          }, 30 * 1000)
+        }      
         // console.log("updated round " + data.address.toBase58())
        }, (error) => {
         paf.value.accounts.delete(round.account.address.toBase58())
@@ -615,6 +684,7 @@ async function loadGames() {
     }
 
     if (!paf.value.accounts.has(newgame.account.address.toBase58())) {
+      console.log('adding game to PAF ')
       paf.value.addProgram<PredictionGame>('game', newgame.account.address.toBase58(), getWorkspace().program, async (data: GameAccount) => {
         await initFrontendGameData(getGame(data.address.toBase58()));
         // console.log("updated game " + data.address.toBase58())
@@ -675,29 +745,52 @@ async function loadPredictions() {
   }
 }
 
-async function loadAll() {
+async function loadGeneric() {
   await Promise.allSettled([
-    await loadUser(),
     await loadVaults(),
     await loadRounds(),
-    await loadGames(),
+    await loadGames()
+  ]);
+}
+
+async function loadUserSpecific() {
+  await Promise.allSettled([
+    await loadUser(),
+    await loadUserClaimable(),
     await loadTokenAccounts(),
     await loadPredictions()
   ]);
 }
 
+async function loadAll() {
+  await Promise.allSettled([
+    await loadUserSpecific(),
+    await loadGeneric()
+  ]);
+}
+
 async function loadWorkspace() {
 
-  if ((getWorkspace()) !== null && (getWorkspace()) !== undefined && (getWorkspace()).program instanceof Program<PredictionGame>) {
-    userAddress.value = (await getWorkspace().programAddresses.getUserPubkey(getWorkspace().owner))[0];
-    await loadAll();
+  initWorkspace(getRpcUrl(), getCluster());
+  workspace.value = useWorkspace();
+
+  if (paf.value.interval === undefined)
     paf.value.start();
-    if (updateInterval.value) clearInterval(updateInterval.value)
-    updateInterval.value = setInterval(async () => {
-      await loadAll();
-    }, 10 * 1000)
+
+  if (wallet.value !== null && wallet.value.connected) {
+    userAddress.value = (await getWorkspace().programAddresses.getUserPubkey(wallet.value.publicKey))[0];
+    userClaimableAddress.value = (await getWorkspace().programAddresses.getUserClaimablePubkey(userAddress.value))[0];
+    await loadUserSpecific();
   }
-  
+  await loadGeneric();
+
+  if (updateInterval.value) clearInterval(updateInterval.value)
+  updateInterval.value = setInterval(async () => {
+    if (wallet.value !== null && wallet.value.connected) {
+      await loadUserSpecific();
+    }
+    await loadGeneric();
+  }, 10 * 1000)
 }
 
 function loadWallet() {
@@ -707,8 +800,6 @@ function loadWallet() {
       if (!wallet.value.connected) {
         loadWallet();
       } else if (wallet.value.connected) {
-        initWorkspace(getRpcUrl(), getCluster());
-        workspace.value = useWorkspace();
         await loadWorkspace();
       }
   }, 1000)
@@ -724,7 +815,59 @@ function getHost() {
   return window.location.host;
 }
 
-async function userClaim(game: Game) {
+function getClaimableForGame(game: Game) : Claim {
+  return (paf.value.accounts.get(userClaimableAddress.value.toBase58()).data as UserClaimableAccount).claims.find(claim => claim.game.toBase58() === game.account.address.toBase58());
+}
+
+async function userClaimAll() {
+  let txStatus = initNewTxStatus()
+  txStatus.title = "User Claim All"
+  txStatus.subtitle = "Sending"
+  txStatus.color = "warning"
+  txStatus.show = true;
+  txStatus.loading = true;
+  try {
+    let ixs = await (computedUser.value as User).userClaimAllInstruction(getWorkspace(), computedClaimable.value, computedVaults.value, computedGames.value, computedTokenAccounts.value);
+
+    let tx = new Transaction().add(...ixs);
+
+    let closeUserPredictionInstructions = await Promise.all<TransactionInstruction>([...computedUserPredictions.value.values()].filter((prediction: UserPrediction) => prediction !== undefined && prediction !== null && prediction.account.settled).map(async (prediction: UserPrediction) : Promise<TransactionInstruction> => {
+      return await UserPrediction.closeUserPredictionInstruction(getWorkspace(), prediction)
+    }));
+
+    if (closeUserPredictionInstructions.length > 0)
+        tx.add(...closeUserPredictionInstructions)
+
+    tx.feePayer = (getWorkspace()).owner;
+    tx.recentBlockhash = (await (getWorkspace()).program.provider.connection.getLatestBlockhash()).blockhash;
+    tx = await (getWorkspace()).wallet.signTransaction(tx);
+
+    let signature = await (getWorkspace()).program.provider.connection.sendRawTransaction(tx.serialize());
+
+    txStatus.subtitle = "Sent"
+    try {
+      txStatus.subtitle = "Confirming"
+      await confirmTxRetry(getWorkspace(), signature);
+      txStatus.subtitle = "Confirmed"
+      txStatus.color = "success"
+      txStatus.loading = false;
+    } catch (error) {
+      console.error(error);
+      txStatus.subtitle = "Unconfirmed"
+      txStatus.color = "warning"
+      txStatus.loading = false;
+    }
+  } catch(error) {
+    console.error(error);
+    txStatus.subtitle = "Failed"
+    txStatus.color = "error"
+    txStatus.loading = false;
+  }
+  hideTxStatus(txStatus, 5000)
+
+}
+
+async function userClaim(game: Game, amount = null) {
 
   let txStatus = initNewTxStatus()
   txStatus.title = "User Claim"
@@ -734,8 +877,15 @@ async function userClaim(game: Game) {
   txStatus.loading = true;
   try {
     // console.log(game.account.feeV)
+    
+    let claim = getClaimableForGame(game);
+    if (claim === undefined) throw Error("No Claim Available");
+    let claimAmount: anchor.BN = new anchor.BN(claim.amount);
+    if (amount !== null && amount.lt(claimAmount)) {
+      claimAmount = amount;
+    }
 
-    let ix = await (computedUser.value as User).userClaimInstruction(getWorkspace(), getVaultFromGame(game), getTokenAccountFromGame(game), (computedUser.value as User).account.claimable);
+    let ix = await (computedUser.value as User).userClaimInstruction(getWorkspace(), getVaultFromGame(game), getTokenAccountFromGame(game), claimAmount);
 
     // ix.keys.forEach(key => console.log(key.pubkey.toBase58()));
 
@@ -772,7 +922,6 @@ async function userClaim(game: Game) {
     }
   } catch (error) {
     console.error(error);
-    txStatus.title = "User Claim"
     txStatus.subtitle = "Failed"
     txStatus.color = "error"
     txStatus.loading = false;
@@ -812,16 +961,16 @@ export default defineComponent({
 
     </div>
     
-    <v-row justify="center" class="text-center" style="width: 100%; min-height: 75vh; margin: 0 auto;">
-      <v-col-auto>
-        <div v-for="game in computedGames" :key="'game-'+game.account.address.toBase58()">
+    <v-row justify="start" class="text-center" style="width: auto; margin: 1em auto;">
+      <v-row>
+        <v-col v-for="game in computedGames" :key="'game-'+game.account.address.toBase58()">
           <v-card
             flat
             :min-width="300"
             :max-width="300"
             tonal
             :class="`ma-2 ${
-              wallet.connected ? 
+              wallet !== null && wallet.connected ? 
 
                 game.currentRound.account.roundPredictionsAllowed ? 
                   frontendGameData.get(game.account.address.toBase58()).prediction.direction === UpOrDown.Up ? 
@@ -851,6 +1000,14 @@ export default defineComponent({
               <v-icon class="information-icon">{{ !frontendGameData.get(game.account.address.toBase58()).information.show ? 'mdi-information-variant' : 'mdi-close' }}</v-icon>
             </v-btn>
 
+            <v-btn icon size="x-small" style="right: 0; bottom: 0; z-index: 1;" color="warning" v-if="frontendGameData.get(game.account.address.toBase58()).noUpdateReceieved" :variant="'plain'">
+              <v-tooltip
+                activator="parent"
+                location="top"
+              >No Round Updates Recieved</v-tooltip>
+              <v-icon color="white" class="information-icon">{{ 'mdi-alert' }}</v-icon>
+            </v-btn>
+
             <v-btn icon size="x-small" style="right: 0; bottom: 0; z-index: 1;" variant="text" @click.stop="() => { aggrWorkspace = getProtocol()+'//'+getHost()+'/workspaces/'+game.account.baseSymbol.toLowerCase()+'.json'  }">
               <v-tooltip
                 activator="parent"
@@ -858,13 +1015,12 @@ export default defineComponent({
               >Open in Aggr</v-tooltip>
               <v-icon class="information-icon">mdi-chart-line-variant</v-icon>
             </v-btn>
-            <!-- {{ frontendGameData.get(game.account.address.toBase58()) }} -->
             <v-progress-linear 
               v-if="game.account !== undefined && game.currentRound !== undefined && game.currentRound !== null"
               width="3" 
               :color="(() => {
                 if (!game.currentRound.account.finished) {
-                  return Math.floor(game.currentRound.account.roundTimeDifference.toNumber() / 6) >= 100 ? 'success' : Math.floor(game.currentRound.account.roundTimeDifference.toNumber() / 6) < 50 ? 'warning' : '#6864b7'
+                  return Math.floor(frontendGameData.get(game.account.address.toBase58()).timeRemaining / 6) >= 100 ? 'success' : Math.floor(frontendGameData.get(game.account.address.toBase58()).timeRemaining / 6) < 50 ? 'warning' : '#6864b7'
                 } else {
                   return 'blue'
                 }
@@ -873,8 +1029,8 @@ export default defineComponent({
               :stream="!game.currentRound.account.finished"
               :striped="game.currentRound.account.finished"
               rounded 
-              :model-value="Math.floor((game.currentRound.account.roundTimeDifference.toNumber() / game.currentRound.account.roundLength) * 100)" 
-              :buffer-value="Math.floor((game.currentRound.account.roundTimeDifference.toNumber() / game.currentRound.account.roundLength) * 100) < 50 ? 50 : 100"
+              :model-value="Math.floor((frontendGameData.get(game.account.address.toBase58()).timeRemaining / game.currentRound.account.roundLength) * 100)" 
+              :buffer-value="Math.floor((frontendGameData.get(game.account.address.toBase58()).timeRemaining / game.currentRound.account.roundLength) * 100) < 50 ? 50 : 100"
             ></v-progress-linear>
             <v-btn 
               v-if="game.account !== undefined && game.currentRound !== undefined && game.currentRound !== null"
@@ -902,7 +1058,7 @@ export default defineComponent({
                         style="margin-right: 4px; margin-bottom: 0.25em; width: 146px;"
                         @click.stop="(e) => { 
                           e.preventDefault(); 
-                          if ( wallet.connected && game.currentRound.account.roundPredictionsAllowed && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())) {
+                          if ( wallet !== null && wallet.connected && game.currentRound.account.roundPredictionsAllowed && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())) {
                             frontendGameData.get(game.account.address.toBase58()).prediction.direction = UpOrDown.Up;
                           }
                           frontendGameData.get(game.account.address.toBase58()).prediction.show = true; 
@@ -916,7 +1072,7 @@ export default defineComponent({
                       <v-card-title>
                         <v-btn
                           variant="plain"
-                          :disabled="!wallet.connected || !game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"
+                          :disabled="wallet === null || !wallet.connected || !game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"
                           @click.stop="(e) => { 
                             e.preventDefault(); 
                             frontendGameData.get(game.account.address.toBase58()).prediction.show = true; 
@@ -941,7 +1097,7 @@ export default defineComponent({
                       @click.stop="(e) => { 
                         e.preventDefault(); 
                         frontendGameData.get(game.account.address.toBase58()).prediction.show = true; 
-                        if ( wallet.connected && game.currentRound.account.roundPredictionsAllowed && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())) {
+                        if ( wallet !== null && wallet.connected && game.currentRound.account.roundPredictionsAllowed && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())) {
                           frontendGameData.get(game.account.address.toBase58()).prediction.direction = UpOrDown.Down;
                         }
                       }">
@@ -959,7 +1115,7 @@ export default defineComponent({
                       <v-card-title>
                         <v-btn 
                           variant="plain"
-                          :disabled="!wallet.connected || !game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"
+                          :disabled="wallet === null || !wallet.connected || !game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"
                           @click.stop="(e) => { 
                             e.preventDefault(); 
                             frontendGameData.get(game.account.address.toBase58()).prediction.show = true; 
@@ -1109,8 +1265,8 @@ export default defineComponent({
                   <v-card-text>
                     <span style="margin: 0 auto;">Time Remaining: 
                       {{ 
-                        Math.max(0, Math.floor((game.currentRound.account.roundLength - game.currentRound.account.roundTimeDifference.toNumber()) / 60)) + ':' 
-                        + ((game.currentRound.account.roundLength - game.currentRound.account.roundTimeDifference.toNumber()) % 60 >= 10 ? ((game.currentRound.account.roundLength - game.currentRound.account.roundTimeDifference.toNumber()) % 60) : '0' + Math.max(0, (game.currentRound.account.roundLength - game.currentRound.account.roundTimeDifference.toNumber()) % 60)) }}
+                        Math.max(0, Math.floor((game.currentRound.account.roundLength - frontendGameData.get(game.account.address.toBase58()).timeRemaining) / 60)) + ':' 
+                        + ((game.currentRound.account.roundLength - frontendGameData.get(game.account.address.toBase58()).timeRemaining) % 60 >= 10 ? ((game.currentRound.account.roundLength - frontendGameData.get(game.account.address.toBase58()).timeRemaining) % 60) : '0' + Math.max(0, (game.currentRound.account.roundLength - frontendGameData.get(game.account.address.toBase58()).timeRemaining) % 60)) }}
                     </span>
                     <br>
                     <span style="margin: 0 auto;">Game Volume: {{ 
@@ -1155,15 +1311,15 @@ export default defineComponent({
             <v-expand-transition>
               <div style="max-width: 300px; transition: all .3s;" v-if="game !== undefined && game.currentRound !== undefined && game.currentRound !== null && frontendGameData.get(game.account.address.toBase58()).prediction.show">
                 <v-divider></v-divider>
-                <v-card-text v-if="game.currentRound !== undefined && game.currentRound !== null && wallet.connected && (getTokenAccountFromGame(game)) !== null">
+                <v-card-text v-if="game.currentRound !== undefined && game.currentRound !== null">
                   <v-row :style="`padding-bottom: .5em; padding-top: .5em; ${game.currentRound.account.roundPredictionsAllowed ? '' : ''}`">
                     <v-col 
                       :v-ripple="game.currentRound.account.roundPredictionsAllowed"
-                      v-if="!computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())" 
+                      v-if="wallet !== null && wallet.connected && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())" 
                       style="margin-right: 0.3em;"
                       :class="`up-area ${game.currentRound.account.roundPredictionsAllowed ? 'hover' : ''}`"
                       @click.stop="(e) => { 
-                        if ( game.currentRound.account.roundPredictionsAllowed ) {
+                        if ( game.currentRound.account.roundPredictionsAllowed && wallet !== null && wallet.connected ) {
                           e.preventDefault(); 
                           frontendGameData.get(game.account.address.toBase58()).prediction.show = true; 
                           frontendGameData.get(game.account.address.toBase58()).prediction.direction = UpOrDown.Up; 
@@ -1174,8 +1330,8 @@ export default defineComponent({
                       <v-card-title>
                         <v-btn
                           variant="plain"
-                          :disabled="!game.currentRound.account.roundPredictionsAllowed"
-                           @click.stop="(e) => { 
+                          :disabled="!game.currentRound.account.roundPredictionsAllowed || wallet === null || !wallet.connected"
+                          @click.stop="(e) => { 
                             e.preventDefault(); 
                             frontendGameData.get(game.account.address.toBase58()).prediction.show = true; 
                             frontendGameData.get(game.account.address.toBase58()).prediction.direction = UpOrDown.Up; 
@@ -1192,8 +1348,8 @@ export default defineComponent({
                         </span>
                       </v-card-subtitle>
                     </v-col>
-                    <v-divider vertical v-if="!computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"></v-divider>
-                    <v-col v-if="computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())">
+                    <v-divider vertical v-if="wallet !== null && wallet.connected && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"></v-divider>
+                    <v-col v-if="wallet !== null && wallet.connected && computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())">
                       <v-row>
                         <v-spacer></v-spacer>
                           <v-card-title>
@@ -1214,7 +1370,7 @@ export default defineComponent({
                     </v-col>
                     <v-col 
                       :v-ripple="game.currentRound.account.roundPredictionsAllowed"
-                      v-if="!computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())" 
+                      v-if="wallet !== null && wallet.connected && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())" 
                       style="margin-left: 0.3em;"
                       :class="`down-area ${game.currentRound.account.roundPredictionsAllowed ? 'hover' : ''}`"
                       @click.stop="(e) => { 
@@ -1252,8 +1408,8 @@ export default defineComponent({
                     </v-col>
                   </v-row>
                 </v-card-text>
-                <v-divider v-if="game.currentRound.account.roundPredictionsAllowed && getTokenAccountFromGame(game) !== null && new anchor.BN(getTokenAccountFromGame(game).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)).div((new anchor.BN(10)).pow(new anchor.BN(getVaultFromGame(game).account.tokenDecimals))).gte(new anchor.BN(1)) && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"></v-divider>
-                <v-card-text v-if="game.currentRound.account.roundPredictionsAllowed && getTokenAccountFromGame(game) !== null && new anchor.BN(getTokenAccountFromGame(game).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)).div((new anchor.BN(10)).pow(new anchor.BN(getVaultFromGame(game).account.tokenDecimals))).gte(new anchor.BN(1)) && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())" style="margin-top: 1em;">
+                <v-divider v-if="wallet !== null && wallet.connected && game.currentRound.account.roundPredictionsAllowed && getTokenAccountFromGame(game) !== null && new anchor.BN(getTokenAccountFromGame(game).amount.toString()).add(getClaimableForGame(game)?.amount || new anchor.BN(0)).div((new anchor.BN(10)).pow(new anchor.BN(getVaultFromGame(game).account.tokenDecimals))).gte(new anchor.BN(1)) && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"></v-divider>
+                <v-card-text v-if="wallet !== null && wallet.connected && game.currentRound.account.roundPredictionsAllowed && getTokenAccountFromGame(game) !== null && new anchor.BN(getTokenAccountFromGame(game).amount.toString()).add(getClaimableForGame(game)?.amount || new anchor.BN(0)).div((new anchor.BN(10)).pow(new anchor.BN(getVaultFromGame(game).account.tokenDecimals))).gte(new anchor.BN(1)) && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())" style="margin-top: 1em;">
                   <v-row >
                     <v-text-field 
                       hide-details
@@ -1261,26 +1417,26 @@ export default defineComponent({
                       variant="outlined" 
                       type="number" 
                       :persistent-placeholder="true"
-                      :placeholder="'Balance: '+(((new anchor.BN((getTokenAccountFromGame(game)).amount.toString())).add(computedUser !== null && computedUser.account.claimable !== undefined ? computedUser.account.claimable : new anchor.BN(0))).div((new anchor.BN(10)).pow(new anchor.BN(getVaultFromGame(game).account.tokenDecimals)))).toNumber() + ' ' + frontendGameData.get(game.account.address.toBase58()).mint.symbol"
+                      :placeholder="'Balance: '+(((new anchor.BN((getTokenAccountFromGame(game)).amount.toString())).add(getClaimableForGame(game)?.amount || new anchor.BN(0))).div((new anchor.BN(10)).pow(new anchor.BN(getVaultFromGame(game).account.tokenDecimals)))).toNumber() + ' ' + frontendGameData.get(game.account.address.toBase58()).mint.symbol"
                       :step="0.01" 
                       :label="`Prediction Amount ${frontendGameData.get(game.account.address.toBase58()).mint !== null ? '(' + frontendGameData.get(game.account.address.toBase58()).mint.symbol + ')' : ''}`" 
                       v-model="frontendGameData.get(game.account.address.toBase58()).prediction.amount"
                       @update:model-value="(value) => {
                         if (
-                            bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) < parseFloat(value)
+                            bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(getClaimableForGame(game)?.amount || new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) < parseFloat(value)
                           ) {
-                          frontendGameData.get(game.account.address.toBase58()).prediction.amount = bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals)
+                          frontendGameData.get(game.account.address.toBase58()).prediction.amount = bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(getClaimableForGame(game)?.amount || new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals)
                         } else if (parseFloat(value) < 0) {
                           frontendGameData.get(game.account.address.toBase58()).prediction.amount = 0
                           frontendGameData.get(game.account.address.toBase58()).prediction.sliderAmount = 0
                           return;
                         }
-                        frontendGameData.get(game.account.address.toBase58()).prediction.sliderAmount = ( parseFloat(value) / bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) ) * 100
+                        frontendGameData.get(game.account.address.toBase58()).prediction.sliderAmount = ( parseFloat(value) / bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(getClaimableForGame(game)?.amount || new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) ) * 100
                       }"
                     >
                       <template v-slot:append>
                         <v-btn size="small" variant="outlined" @click="() => {
-                          frontendGameData.get(game.account.address.toBase58()).prediction.amount = bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals)
+                          frontendGameData.get(game.account.address.toBase58()).prediction.amount = bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(getClaimableForGame(game)?.amount || new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals)
                           frontendGameData.get(game.account.address.toBase58()).prediction.sliderAmount = 100;
                         }">Max</v-btn>
                       </template>
@@ -1292,7 +1448,7 @@ export default defineComponent({
                         frontendGameData.get(game.account.address.toBase58()).prediction.amount = new Number(
                           (
                             (
-                              bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals)
+                              bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(getClaimableForGame(game)?.amount || new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals)
                             )
                             * (value / 100)
                           ).toFixed(2)
@@ -1307,13 +1463,13 @@ export default defineComponent({
                     />
                   </v-row>
                 </v-card-text>
-                <v-card-text v-if="!wallet.connected">
+                <v-card-text v-if="wallet === null || !wallet.connected">
                   <div class="game-wallet-button">
                     <wallet-multi-button style="margin: 0 auto;" dark/>
                   </div>
                 </v-card-text>
-                <v-divider v-if="wallet.connected && (getTokenAccountFromGame(game)) !== null && bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) >= 1 && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"></v-divider>
-                <v-card-actions v-if="wallet.connected && (getTokenAccountFromGame(game)) !== null && bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) >= 1 && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())">
+                <v-divider v-if="wallet !== null && wallet.connected && (getTokenAccountFromGame(game)) !== null && bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(getClaimableForGame(game)?.amount || new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) >= 1 && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"></v-divider>
+                <v-card-actions v-if="wallet !== null && wallet.connected && (getTokenAccountFromGame(game)) !== null && bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(getClaimableForGame(game)?.amount || new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) >= 1 && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())">
                   <v-spacer></v-spacer>
                   <v-btn 
                     v-if="game.currentRound.account.roundPredictionsAllowed"
@@ -1329,40 +1485,70 @@ export default defineComponent({
                   <h3 v-else>Predictions Locked</h3>
                   <v-spacer></v-spacer>
                 </v-card-actions>
-                <v-divider v-if="wallet.connected && ( getTokenAccountFromGame(game) === null || bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) < 1 )"></v-divider>
-                <v-card-actions style="margin-top: .5em;" v-if="wallet.connected && ( getTokenAccountFromGame(game) === null || bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) < 1 )">
+                <v-divider v-if="wallet !== null && wallet.connected && ( getTokenAccountFromGame(game) === null || bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(getClaimableForGame(game)?.amount || new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) < 1 )"></v-divider>
+                <v-card-actions style="margin-top: .5em;" v-if="wallet.connected && ( getTokenAccountFromGame(game) === null || bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(getClaimableForGame(game)?.amount || new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) < 1 )">
                   <v-spacer></v-spacer>
                     <v-btn variant="outlined" v-if="getTokenAccountFromGame(game) === null" @click="async () => { initTokenAccountForGame(game); }">
                       Initialize Token Account
                     </v-btn>
-                    <v-btn variant="outlined" v-else-if="bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) < 1 && getWorkspace() !== null && (getWorkspace().cluster === 'devnet' || getWorkspace().cluster === 'testnet')" @click="async () => { await airdrop(game) }">Airdrop</v-btn>
-                    <v-btn variant="outlined" v-else-if="bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(computedUser !== null ? computedUser.account.claimable : new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) < 1 && getWorkspace() !== null && getWorkspace().cluster === 'mainnet-beta'" href="https://jup.ag/swap/SOL-USDC">SWAP</v-btn>
+                    <v-btn variant="outlined" v-else-if="bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(getClaimableForGame(game)?.amount || new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) < 1 && getWorkspace() !== null && (getWorkspace().cluster === 'devnet' || getWorkspace().cluster === 'testnet')" @click="async () => { await airdrop(game) }">Airdrop</v-btn>
+                    <v-btn variant="outlined" v-else-if="bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(getClaimableForGame(game)?.amount || new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) < 1 && getWorkspace() !== null && getWorkspace().cluster === 'mainnet-beta'" href="https://jup.ag/swap/SOL-USDC">SWAP</v-btn>
                   <v-spacer></v-spacer>
                 </v-card-actions>
-                <v-divider v-if="computedUser !== null && computedUser.account.claimable.gt(new anchor.BN(0))"></v-divider>
-                <v-card-actions v-if="computedUser !== null && computedUser.account.claimable.gt(new anchor.BN(0))">
+                <v-divider v-if="wallet !== null && wallet.connected && computedClaimable !== null && computedClaimable.account.claims.some(claim => claim.amount.gt(new anchor.BN(0)) && claim.game.toBase58() === game.account.address.toBase58()) && frontendGameData.get(game.account.address.toBase58()) !== undefined && frontendGameData.get(game.account.address.toBase58()).mint !== null"></v-divider>
+                <v-card-actions v-if="wallet !== null && wallet.connected && computedClaimable !== null && computedClaimable.account.claims.some(claim => claim.amount.gt(new anchor.BN(0)) && claim.game.toBase58() === game.account.address.toBase58()) && frontendGameData.get(game.account.address.toBase58()) !== undefined && frontendGameData.get(game.account.address.toBase58()).mint !== null">
                   <v-spacer></v-spacer>
                   <v-btn 
                     variant="outlined"
                     color="success"
                     @click="async () => {
-                      await userClaim(game)
+                      await userClaim(game, getClaimableForGame(game).amount)
                     }"
                   >
-                    Claim {{ 
-                      bnToNumber(computedUser.account.claimable, frontendGameData.get(game.account.address.toBase58()).mint.decimals).toFixed(2)
-                    }} {{ frontendGameData.get(game.account.address.toBase58()).mint.symbol }}
+                    Claim {{ bnToNumber(getClaimableForGame(game).amount, frontendGameData.get(game.account.address.toBase58()).mint.decimals) }} {{ frontendGameData.get(game.account.address.toBase58()).mint.symbol }}
                   </v-btn>
                   <v-spacer></v-spacer>
                 </v-card-actions>
               </div>
             </v-expand-transition>
           </v-card>
-        </div>
-        
-      </v-col-auto>
+        </v-col>
+      </v-row>
+      <v-row justify="start" v-if="wallet !== null && wallet.connected">
+        <v-col>
+          <v-card variant="plain">
+            <v-card-title>
+              account info
+            </v-card-title>
+            <v-divider v-if="wallet !== null && wallet.connected && computedClaimable !== null && computedClaimable.account.claims.some(claim => claim.amount.gt(new anchor.BN(0)) && claim.game.toBase58() !== PublicKey.default.toBase58())"></v-divider>
+            <v-card-actions v-if="wallet !== null && wallet.connected && computedClaimable !== null && computedClaimable.account.claims.some(claim => claim.amount.gt(new anchor.BN(0)) && claim.game.toBase58() !== PublicKey.default.toBase58())">
+              <v-spacer></v-spacer>
+              <v-btn 
+                variant="outlined"
+                color="success"
+                @click="async () => {
+                  await userClaimAll()
+                }"
+              >
+                Claim All
+              </v-btn>
+              <v-spacer></v-spacer>
+            </v-card-actions>
+          </v-card>
+          
+        </v-col>
+      </v-row>
+    </v-row>
+    <v-row>
       <v-col style="padding: 8px;" class="d-none d-lg-flex">
-        <iframe id="aggr" :src="`${getHost().startsWith('localhost') ? getProtocol()+'//'+'localhost:8080' : 'https://aggr.solpredict.io'}?workspace-url=${aggrWorkspace}`" frameborder="0" style="width: 100%; height: 100%; min-height: 75vh; max-height: 75vh;"></iframe>
+        <!-- <iframe id="aggr" 
+          :src="`${getHost().startsWith('localhost') ? getProtocol()+'//'+'localhost:8080' : 'https://aggr.solpredict.io'}?workspace-url=${aggrWorkspace}`" 
+          frameborder="0" style="width: 100%; height: 100%; min-height: 75vh; max-height: 75vh;"
+        ></iframe> -->
+        <iframe id="aggr" 
+          :src="`https://v3.aggr.trade`" 
+          frameborder="0" style="width: 100%; min-height: 50vh; max-height: 50vh; margin: .75em;"
+        ></iframe>
       </v-col>
     </v-row>
   </v-container>

@@ -1,0 +1,7 @@
+
+Pitch:
+
+I have built out an MVP of a Prediction Game, which allows users to speculate on where markets are headed, as well as create their own games which other users can participate in. Based on oracle data from Pyth/Switchboard/Chainlink the game's winning direction is decided. One round of the game is currently 5 minutes (configurable). During the first half of the round users can predict which direction the asset will be at end of the round. This minimum viable product is very minimal, with the necessary funding I would be able to hire a UX Designer, Marketing Director, and cover the costs associated with hosting the app on AWS and cranking the game. 
+
+
+This has started as a side project to get myself familiar with rust + solana development, with the necessary funding I will be able to hire some needed team members. Since there is no other prediction game on Solana, there is no competitor on this blockchain. I hope to build a project which is self-sustainable. This project draws inspiration from pancakeswap's prediction game. On pancakeswap the volume per round is about 30-50 BNB. With a 30 Bps fee applied the project can sustain itself on that kind of volume.

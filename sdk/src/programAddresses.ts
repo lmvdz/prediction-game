@@ -112,6 +112,17 @@ export class ProgramAddresses<T extends anchor.Idl> {
     )
   }
 
+  async getUserClaimablePubkey(userAccount: PublicKey) : Promise<[PublicKey, number]> {
+    return await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), 
+        userAccount.toBuffer(),
+        Buffer.from(anchor.utils.bytes.utf8.encode('user_claimable'))
+      ],
+      this.program.programId
+    )
+  }
+
   async getCrankPubkey(crankOwner: PublicKey, gamePubkey: PublicKey, userPubkey: PublicKey) : Promise<[PublicKey, number]> {
     return await PublicKey.findProgramAddress(
       [

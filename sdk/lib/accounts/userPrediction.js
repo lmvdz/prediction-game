@@ -12,13 +12,14 @@ class UserPrediction {
         this.account = data;
         return true;
     }
-    static async initializeUserPredictionInstruction(workspace, vault, game, round, user, fromTokenAccount, fromTokenAccountAuthority, userPredictionPubkey, upOrDown, amount) {
+    static async initializeUserPredictionInstruction(workspace, vault, game, round, user, userClaimable, fromTokenAccount, fromTokenAccountAuthority, userPredictionPubkey, upOrDown, amount) {
         if (amount.gt(constants_1.U64MAX) || amount.lt((0, constants_1.USER_PREDICTION_MIN_AMOUNT)(game.account.tokenDecimal)))
             throw Error("Amount does not fall in the required range for [1, u64::MAX]");
         return await workspace.program.methods.initUserPredictionInstruction(upOrDown.valueOf(), amount).accounts({
             signer: workspace.owner,
             game: game.account.address,
             user: user.account !== undefined ? user.account.address : user,
+            userClaimable: userClaimable,
             currentRound: round.account !== undefined ? round.account.address : round,
             userPrediction: userPredictionPubkey,
             // deposit
@@ -31,9 +32,9 @@ class UserPrediction {
             systemProgram: web3_js_1.SystemProgram.programId
         }).instruction();
     }
-    static async initializeUserPrediction(workspace, vault, game, round, user, userTokenAccount, userTokenAccountAuthority, upOrDown, amount) {
+    static async initializeUserPrediction(workspace, vault, game, round, user, userClaimable, userTokenAccount, userTokenAccountAuthority, upOrDown, amount) {
         let [userPredictionPubkey, _userPredictionPubkeyBump] = await workspace.programAddresses.getUserPredictionPubkey(game, round, user);
-        let ix = await this.initializeUserPredictionInstruction(workspace, vault, game, round, user, userTokenAccount, userTokenAccountAuthority, userPredictionPubkey, upOrDown, amount);
+        let ix = await this.initializeUserPredictionInstruction(workspace, vault, game, round, user, userClaimable, userTokenAccount, userTokenAccountAuthority, userPredictionPubkey, upOrDown, amount);
         let tx = new web3_js_1.Transaction().add(ix);
         return new Promise((resolve, reject) => {
             setTimeout(async () => {

@@ -1,8 +1,36 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
+const anchor = __importStar(require("@project-serum/anchor"));
 const index_1 = require("../util/index");
+const chunk_1 = __importDefault(require("src/util/chunk"));
 class User {
     constructor(account) {
         this.account = account;
@@ -11,16 +39,18 @@ class User {
         this.account = data;
         return true;
     }
-    static async initializeUserInstruction(workspace, userPubkey) {
+    static async initializeUserInstruction(workspace, userPubkey, userClaimablePubkey) {
         return await workspace.program.methods.initUserInstruction().accounts({
             owner: workspace.owner,
             user: userPubkey,
+            userClaimable: userClaimablePubkey,
             systemProgram: web3_js_1.SystemProgram.programId
         }).instruction();
     }
     static async initializeUser(workspace) {
         let [userPubkey, _userPubkeyBump] = await workspace.programAddresses.getUserPubkey(workspace.owner);
-        let ix = await this.initializeUserInstruction(workspace, userPubkey);
+        let [userClaimablePubkey, _userClaimablePubkeyBump] = await workspace.programAddresses.getUserClaimablePubkey(userPubkey);
+        let ix = await this.initializeUserInstruction(workspace, userPubkey, userClaimablePubkey);
         let tx = new web3_js_1.Transaction().add(ix);
         return new Promise((resolve, reject) => {
             setTimeout(async () => {
@@ -45,11 +75,12 @@ class User {
     async userClaimInstruction(workspace, vault, toTokenAccount, amount) {
         if (workspace.owner.toBase58() !== this.account.owner.toBase58())
             throw Error("Signer not Owner");
-        if (this.account.claimable.lt(amount))
-            throw Error("Insufficient Claimable Amount");
+        if (toTokenAccount.owner.toBase58() !== this.account.owner.toBase58())
+            throw Error("To Token Account Owner not the same as User Owner");
         return await workspace.program.methods.userClaimInstruction(amount).accounts({
             signer: workspace.owner,
             user: this.account.address,
+            userClaimable: this.account.userClaimable,
             toTokenAccount: toTokenAccount.address,
             vault: vault.account.address,
             vaultAta: vault.account.vaultAta,
@@ -80,6 +111,81 @@ class User {
                 }
             }, 500);
         });
+    }
+    async userClaimAllInstruction(workspace, userClaimable, vaults, games, tokenAccounts) {
+        let accountMetas = (0, chunk_1.default)(userClaimable.account.claims.filter(claim => claim.amount.gt(new anchor.BN(0)) && claim.game.toBase58() !== web3_js_1.PublicKey.default.toBase58()).map(claim => {
+            let game = games.find(g => g.account.address.toBase58() === claim.game.toBase58());
+            let vault = vaults.find(v => v.account.address.toBase58() === game.account.vault.toBase58());
+            let tokenAccount = tokenAccounts.find(t => t.mint.toBase58() === vault.account.tokenMint.toBase58());
+            return [
+                {
+                    pubkey: game.account.address,
+                    isSigner: false,
+                    isWritable: false
+                },
+                {
+                    pubkey: game.account.vault,
+                    isSigner: false,
+                    isWritable: false
+                },
+                {
+                    pubkey: vault.account.vaultAta,
+                    isSigner: false,
+                    isWritable: true
+                },
+                {
+                    pubkey: vault.account.vaultAtaAuthority,
+                    isSigner: false,
+                    isWritable: false
+                },
+                {
+                    pubkey: tokenAccount.address,
+                    isSigner: false,
+                    isWritable: true
+                }
+            ];
+        }).flat(Infinity), 20);
+        return await Promise.all(accountMetas.map(async (accountMeta) => {
+            return await workspace.program.methods.userClaimAllInstruction().accounts({
+                signer: workspace.owner,
+                user: this.account.address,
+                userClaimable: this.account.userClaimable,
+                tokenProgram: spl_token_1.TOKEN_PROGRAM_ID
+            }).remainingAccounts(accountMeta).instruction();
+        }));
+    }
+    async userClaimAll(workspace, userClaimable, vaults, games, tokenAccounts) {
+        if (workspace.owner.toBase58() !== this.account.owner.toBase58())
+            throw Error("Signer not Owner");
+        let instructions = await this.userClaimAllInstruction(workspace, userClaimable, vaults, games, tokenAccounts);
+        if (instructions.length > 0) {
+            await Promise.allSettled(instructions.map(async (instruction) => {
+                let tx = new web3_js_1.Transaction().add(instruction);
+                return new Promise((resolve, reject) => {
+                    setTimeout(async () => {
+                        try {
+                            let txSignature = await workspace.sendTransaction(tx);
+                            await (0, index_1.confirmTxRetry)(workspace, txSignature);
+                        }
+                        catch (error) {
+                            reject(error);
+                        }
+                        // let user = await workspace.program.account.user.fetch(userPubkey) as UserAccount;
+                        try {
+                            await this.updateData(await (0, index_1.fetchAccountRetry)(workspace, 'user', this.account.address));
+                            resolve(this);
+                        }
+                        catch (error) {
+                            reject(error);
+                        }
+                    }, 500);
+                });
+            }));
+            return this;
+        }
+        else {
+            throw Error("User has no valid claimables");
+        }
     }
     async closeUserAccountInstruction(workspace) {
         return await workspace.program.methods.closeUserAccountInstruction().accounts({

@@ -8,11 +8,12 @@ use crate::errors::ErrorCode;
 pub fn init_crank(ctx: Context<InitCrank>) -> Result<()> {
     
     let crank = &mut ctx.accounts.crank;
-    let user = &mut ctx.accounts.user;
+    let user = &ctx.accounts.user;
 
     crank.address = crank.key();
     crank.owner = ctx.accounts.owner.key();
     crank.user = user.key();
+    crank.user_claimable = user.user_claimable.key();
     crank.game = ctx.accounts.game.key();
 
     crank.cranks = 0;
@@ -49,7 +50,6 @@ pub struct InitCrank<'info> {
     pub game: Box<Account<'info, Game>>,
     
     #[account(
-        mut,
         constraint = user.owner == owner.key()  @ ErrorCode::SignerNotOwner
     )]
     pub user: Box<Account<'info, User>>,

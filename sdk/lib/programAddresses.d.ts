@@ -18,5 +18,6 @@ export declare class ProgramAddresses<T extends anchor.Idl> {
     getRoundPubkey(gamePubkey: PublicKey, roundNumber: anchor.BN): Promise<[PublicKey, number]>;
     getUserPredictionPubkey(game: Game, round: Round, user: User | PublicKey): Promise<[PublicKey, number]>;
     getUserPubkey(userOwner: PublicKey): Promise<[PublicKey, number]>;
+    getUserClaimablePubkey(userAccount: PublicKey): Promise<[PublicKey, number]>;
     getCrankPubkey(crankOwner: PublicKey, gamePubkey: PublicKey, userPubkey: PublicKey): Promise<[PublicKey, number]>;
 }

@@ -10,6 +10,7 @@ import { UpOrDown } from "../types"
 import User from "./user"
 import { fetchAccountRetry, confirmTxRetry } from "../util/index"
 import Vault from "./vault"
+import UserClaimable from "./userClaimable"
 
 
 export type UserPredictionAccount = {
@@ -18,6 +19,7 @@ export type UserPredictionAccount = {
     address: PublicKey
 
     user: PublicKey
+    userClaimable: PublicKey
     game: PublicKey
     round: PublicKey
 
@@ -46,6 +48,7 @@ export default class UserPrediction implements DataUpdatable<UserPredictionAccou
         game: Game, 
         round: Round | PublicKey, 
         user: User | PublicKey,
+        userClaimable: PublicKey,
         fromTokenAccount: Account | PublicKey, 
         fromTokenAccountAuthority: PublicKey,
         userPredictionPubkey: PublicKey, 
@@ -59,6 +62,7 @@ export default class UserPrediction implements DataUpdatable<UserPredictionAccou
             signer: workspace.owner,
             game: game.account.address,
             user: (user as User).account !== undefined ? (user as User).account.address : (user as PublicKey),
+            userClaimable: (userClaimable as PublicKey),
             currentRound: (round as Round).account !== undefined ? (round as Round).account.address : round as PublicKey,
             
             userPrediction: userPredictionPubkey,
@@ -75,10 +79,10 @@ export default class UserPrediction implements DataUpdatable<UserPredictionAccou
         }).instruction();
     }
     
-    public static async initializeUserPrediction(workspace: Workspace, vault: Vault, game: Game, round: Round, user: User | PublicKey, userTokenAccount: PublicKey, userTokenAccountAuthority: PublicKey, upOrDown: UpOrDown, amount: anchor.BN) : Promise<UserPrediction> {
+    public static async initializeUserPrediction(workspace: Workspace, vault: Vault, game: Game, round: Round, user: User | PublicKey, userClaimable: PublicKey, userTokenAccount: PublicKey, userTokenAccountAuthority: PublicKey, upOrDown: UpOrDown, amount: anchor.BN) : Promise<UserPrediction> {
         let [userPredictionPubkey, _userPredictionPubkeyBump] = await workspace.programAddresses.getUserPredictionPubkey(game, round, user);
         
-        let ix = await this.initializeUserPredictionInstruction(workspace, vault, game, round, user, userTokenAccount, userTokenAccountAuthority, userPredictionPubkey, upOrDown, amount);
+        let ix = await this.initializeUserPredictionInstruction(workspace, vault, game, round, user, userClaimable, userTokenAccount, userTokenAccountAuthority, userPredictionPubkey, upOrDown, amount);
         let tx = new Transaction().add(ix);
 
         return new Promise((resolve, reject) => {

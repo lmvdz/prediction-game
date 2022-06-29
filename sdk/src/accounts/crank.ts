@@ -11,6 +11,7 @@ export type CrankAccount = {
     address: PublicKey,
     owner: PublicKey,
     user: PublicKey,
+    userClaimable: PublicKey,
     game: PublicKey
 
     cranks: number,

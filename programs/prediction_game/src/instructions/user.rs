@@ -5,6 +5,7 @@ use crate::errors::ErrorCode;
 use crate::state::Game;
 use crate::state::Round;
 use crate::state::User;
+use crate::state::UserClaimable;
 use crate::state::UserPrediction;
 use crate::state::Vault;
 use crate::utils::transfer_token_account;
@@ -16,7 +17,13 @@ pub fn init_user(ctx: Context<InitUser>) -> Result<()> {
 
     user.address = user.key();
     user.owner = ctx.accounts.owner.key();
-    user.claimable = 0;
+
+    let user_claimable_loader = &ctx.accounts.user_claimable;
+    user.user_claimable = user_claimable_loader.to_account_info().key();
+
+    
+    let user_claimable = &mut user_claimable_loader.load_init()?;
+    user_claimable.user = user.key();
 
     Ok(())
 
@@ -26,6 +33,7 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
     let current_round = &mut ctx.accounts.current_round;
     let game = &mut ctx.accounts.game;
     let user = &mut ctx.accounts.user;
+    let mut user_claimable = ctx.accounts.user_claimable.load_mut()?;
 
     require!(amount.saturating_div(10_u64.pow(game.token_decimal.into())) > 1, ErrorCode::MinimumPredictionAmountNotMet);
 
@@ -40,6 +48,7 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
     user_prediction.owner = ctx.accounts.signer.key();
     user_prediction.address = user_prediction_pubkey;
     user_prediction.user = user.key();
+    user_prediction.user_claimable = user.user_claimable.key();
     user_prediction.game = game.key();
     user_prediction.round = current_round.key();
     user_prediction.up_or_down = up_or_down;
@@ -58,18 +67,36 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
         current_round.total_down_amount = current_round.total_down_amount.checked_add(user_prediction.amount).unwrap();
     }
 
+    // find first claim 
+    let mut some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.game.eq(&game.key()));
+
+    some_user_claim_position = match some_user_claim_position {
+        None => {
+            user_claimable.claims.iter().position(|claim| claim.game.eq(&Pubkey::default()))
+        }
+        Some(_) => {
+            some_user_claim_position
+        }
+    };
+
+    require!(some_user_claim_position.is_some(), ErrorCode::NoAvailableClaimFound);
+
+    let user_claim_position = some_user_claim_position.unwrap();
+
+    let user_claim = &mut user_claimable.claims[user_claim_position];
+
     current_round.total_predictions += 1;
 
     // deposit or use unclaimed
-    let deposit_amount = if user.claimable.gt(&user_prediction.amount) || user.claimable.eq(&user_prediction.amount) {
+    let deposit_amount = if user_claim.amount.gt(&user_prediction.amount) || user_claim.amount.eq(&user_prediction.amount) {
         
-        user.claimable = user.claimable.saturating_sub(user_prediction.amount);
+        user_claim.amount = user_claim.amount.saturating_sub(user_prediction.amount);
         0_u64
 
-    } else if user.claimable.gt(&0_u64) {
+    } else if user_claim.amount.gt(&0_u64) {
 
-        let user_prediction_remaining_amount = user_prediction.amount.saturating_sub(user.claimable);
-        user.claimable = user.claimable.saturating_sub(user_prediction.amount);
+        let user_prediction_remaining_amount = user_prediction.amount.saturating_sub(user_claim.amount);
+        user_claim.amount = user_claim.amount.saturating_sub(user_prediction.amount);
         user_prediction_remaining_amount
 
     } else {
@@ -78,6 +105,10 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
 
     };
 
+    if user_claim.amount.eq(&0) {
+        user_claim.game = Pubkey::default();
+    }
+
     if deposit_amount.gt(&0_u64) {
         require!(transfer_token_account(from_token_account, vault_ata, from_token_account_authority, token_program, deposit_amount).is_ok(), ErrorCode::UserPredictionFailedToDeposit);
     }
@@ -85,18 +116,120 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
     Ok(())
 }
 
+pub fn user_claim_all<'info>(ctx: Context<'_, '_, '_, 'info, UserClaimAll<'info>>) -> Result<()> {
+    let user = &ctx.accounts.user;
+    let mut user_claimable = ctx.accounts.user_claimable.load_mut()?;
+    let accounts = ctx.remaining_accounts;
+
+    let token_program = &ctx.accounts.token_program;
+
+    if accounts.len() % 5 == 0 && accounts.len() >= 5 {
+        let mut index: usize = 0;
+
+        for _i in 0..(accounts.len()/5) {
+
+            // load the game
+            let game_ata_account_info = accounts[index].to_account_info().clone();
+            let game = &Account::<'info, Game>::try_from(&game_ata_account_info).unwrap();
+
+            // load the user_claim
+
+            let mut some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.game.eq(&game.key()));
+
+            some_user_claim_position = match some_user_claim_position {
+                None => {
+                    user_claimable.claims.iter().position(|claim| claim.game.eq(&Pubkey::default()))
+                }
+                Some(_) => {
+                    some_user_claim_position
+                }
+            };
+
+            // require that the user claim exists
+        
+            require!(some_user_claim_position.is_some(), ErrorCode::NoAvailableClaimFound);
+        
+            let user_claim_position = some_user_claim_position.unwrap();
+        
+            let user_claim = &mut user_claimable.claims[user_claim_position];
+
+            // require that the user claim has an amount to claim
+        
+            require!(user_claim.amount.gt(&0) || user_claim.amount.eq(&0), ErrorCode::InsufficientClaimableAmount);
+
+
+            let vault_account_info = accounts[index+1].to_account_info().clone();
+            let vault = &Account::<'info, Vault>::try_from(&vault_account_info).unwrap();
+            let vault_ata_authority_nonce = vault.vault_ata_authority_nonce;
+
+            require_keys_eq!(game.vault, vault.key(), ErrorCode::GameVaultMismatch);
+
+            let vault_ata_account_info = accounts[index+2].to_account_info().clone();
+            let vault_ata = &mut Account::<'info, TokenAccount>::try_from(&vault_ata_account_info).unwrap();
+            let vault_ata_key = vault_ata.key();
+
+            require_keys_eq!(vault.vault_ata, vault_ata_key, ErrorCode::VaultAtaNotEqualToAtaOnVault);
+
+            let vault_ata_authority = &accounts[index+3];
+            
+            let to_token_account_info = accounts[index+4].to_account_info().clone();
+            let to_token_account = &mut Account::<'info, TokenAccount>::try_from(&to_token_account_info).unwrap();
+
+            require_keys_eq!(to_token_account.owner, user.owner, ErrorCode::ToTokenAccountNotOwnedByUserOwner);
+
+            let signature_seeds = [vault_ata_key.as_ref(), &[vault_ata_authority_nonce]];
+            let signers = &[&signature_seeds[..]];
+
+            require!(transfer_token_account_signed(
+                vault_ata, //  from 
+                to_token_account, // to 
+                vault_ata_authority, // from auth
+                signers, // signers
+                token_program, // TOKEN_PROGRAM
+                user_claim.amount
+            ).is_ok(), ErrorCode::FailedToClaim);
+
+            user_claim.amount = 0;
+            user_claim.game = Pubkey::default();
+
+            index+=5;
+        }
+    }  
+
+    Ok(())
+}
+
 pub fn user_claim(ctx: Context<UserClaim>, amount: u64) -> Result<()> {
-    let user = &mut ctx.accounts.user;
+    let game = &ctx.accounts.game;
+    let mut user_claimable = ctx.accounts.user_claimable.load_mut()?;
+
+
+    let mut some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.game.eq(&game.key()));
+
+    some_user_claim_position = match some_user_claim_position {
+        None => {
+            user_claimable.claims.iter().position(|claim| claim.game.eq(&Pubkey::default()))
+        }
+        Some(_) => {
+            some_user_claim_position
+        }
+    };
+
+    require!(some_user_claim_position.is_some(), ErrorCode::NoAvailableClaimFound);
+
+    let user_claim_position = some_user_claim_position.unwrap();
+
+    let user_claim = &mut user_claimable.claims[user_claim_position];
+
+    require!(user_claim.amount.gt(&amount) || user_claim.amount.eq(&amount), ErrorCode::InsufficientClaimableAmount);
+
     let vault = &ctx.accounts.vault;
     let vault_ata = &mut ctx.accounts.vault_ata;
     let vault_ata_key = &vault_ata.key();
     let vault_ata_authority_nonce = vault.vault_ata_authority_nonce;
     let vault_ata_authority = &ctx.accounts.vault_ata_authority;
     let to_token_account = &mut ctx.accounts.to_token_account;
-
     let token_program = &ctx.accounts.token_program;
-
-    require!(user.claimable.gt(&amount) || user.claimable.eq(&amount), ErrorCode::InsufficientClaimableAmount);
 
     let signature_seeds = [vault_ata_key.as_ref(), &[vault_ata_authority_nonce]];
     let signers = &[&signature_seeds[..]];
@@ -110,7 +243,8 @@ pub fn user_claim(ctx: Context<UserClaim>, amount: u64) -> Result<()> {
         amount
     ).is_ok(), ErrorCode::FailedToClaim);
 
-    user.claimable = user.claimable.saturating_sub(amount);
+    user_claim.amount = user_claim.amount.saturating_sub(amount);
+    user_claim.game = Pubkey::default();
 
     Ok(())
 }
@@ -123,13 +257,33 @@ pub struct CloseUserAccount<'info> {
 
     #[account(mut, 
         close = receiver,
-        constraint = signer.key() == user.owner @ ErrorCode::SignerNotOwner,
-        constraint = user.claimable.eq(&0_u64)
+        constraint = signer.key() == user.owner @ ErrorCode::SignerNotOwner
     )]
     pub user: Box<Account<'info, User>>,
 
     #[account(mut)]
     pub receiver: SystemAccount<'info>,
+
+}
+
+
+
+#[derive(Accounts)]
+pub struct UserClaimAll<'info> {
+
+    #[account(mut)]
+    pub signer: Signer<'info>,
+
+    #[account(constraint = signer.key() == user.owner )]
+    pub user: Box<Account<'info, User>>,
+
+    #[account(
+        mut,
+        has_one = user
+    )]
+    pub user_claimable: AccountLoader<'info, UserClaimable>,
+
+    pub token_program: Program<'info, Token>
 
 }
 
@@ -139,8 +293,17 @@ pub struct UserClaim<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
 
-    #[account(mut)]
+    #[account(constraint = signer.key() == user.owner )]
     pub user: Box<Account<'info, User>>,
+
+    #[account()]
+    pub game: Box<Account<'info, Game>>,
+
+    #[account(
+        mut,
+        has_one = user
+    )]
+    pub user_claimable: AccountLoader<'info, UserClaimable>,
 
     #[account(
         mut,
@@ -176,12 +339,21 @@ pub struct InitUser<'info> {
 
     #[account(
         init,
-        seeds = [ env!("CARGO_PKG_VERSION").as_bytes(), owner.key().as_ref(), b"user"], 
+        seeds = [ env!("CARGO_PKG_VERSION").as_bytes(), owner.key().as_ref(), b"user" ], 
         bump, 
         payer = owner,
         space = std::mem::size_of::<User>() + 8
     )]
     pub user: Box<Account<'info, User>>, 
+
+    #[account(
+        init,
+        seeds = [ env!("CARGO_PKG_VERSION").as_bytes(), user.key().as_ref(), b"user_claimable" ],
+        bump,
+        payer = owner,
+        space = std::mem::size_of::<UserClaimable>() + 8
+    )]
+    pub user_claimable: AccountLoader<'info, UserClaimable>,
 
     // required for Account
     pub system_program: Program<'info, System>,
@@ -201,6 +373,12 @@ pub struct InitUserPrediction<'info> {
         constraint = user.owner == signer.key() @ ErrorCode::SignerNotOwnerOfUser
     )]
     pub user: Box<Account<'info, User>>,
+
+    #[account(
+        mut,
+        has_one = user
+    )]
+    pub user_claimable: AccountLoader<'info, UserClaimable>,
 
     #[account(
         mut,
@@ -242,8 +420,7 @@ pub struct InitUserPrediction<'info> {
     pub vault_ata: Box<Account<'info, TokenAccount>>,
 
     #[account(
-        mut,
-        constraint = from_token_account.amount.saturating_add(user.claimable) > 0 @ ErrorCode::FromTokenAccountZeroBalance
+        mut
     )]
     pub from_token_account: Box<Account<'info, TokenAccount>>,
 

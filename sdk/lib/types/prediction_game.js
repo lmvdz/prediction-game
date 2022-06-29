@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IDL = void 0;
 exports.IDL = {
-    "version": "1.0.1",
+    "version": "1.0.2",
     "name": "prediction_game",
     "instructions": [
         {
@@ -516,6 +516,11 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
+                    "name": "userClaimable",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
                     "name": "systemProgram",
                     "isMut": false,
                     "isSigner": false
@@ -538,7 +543,7 @@ exports.IDL = {
                 },
                 {
                     "name": "user",
-                    "isMut": true,
+                    "isMut": false,
                     "isSigner": false
                 },
                 {
@@ -569,6 +574,11 @@ exports.IDL = {
                 },
                 {
                     "name": "user",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "userClaimable",
                     "isMut": true,
                     "isSigner": false
                 },
@@ -639,6 +649,16 @@ exports.IDL = {
                 },
                 {
                     "name": "user",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "game",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "userClaimable",
                     "isMut": true,
                     "isSigner": false
                 },
@@ -679,6 +699,32 @@ exports.IDL = {
                     "type": "u64"
                 }
             ]
+        },
+        {
+            "name": "userClaimAllInstruction",
+            "accounts": [
+                {
+                    "name": "signer",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "user",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "userClaimable",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "tokenProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": []
         },
         {
             "name": "closeGameInstruction",
@@ -859,6 +905,10 @@ exports.IDL = {
                     },
                     {
                         "name": "user",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "userClaimable",
                         "type": "publicKey"
                     },
                     {
@@ -1101,6 +1151,29 @@ exports.IDL = {
             }
         },
         {
+            "name": "userClaimable",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "user",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "claims",
+                        "type": {
+                            "array": [
+                                {
+                                    "defined": "Claim"
+                                },
+                                10
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
             "name": "user",
             "type": {
                 "kind": "struct",
@@ -1114,8 +1187,8 @@ exports.IDL = {
                         "type": "publicKey"
                     },
                     {
-                        "name": "claimable",
-                        "type": "u64"
+                        "name": "userClaimable",
+                        "type": "publicKey"
                     }
                 ]
             }
@@ -1135,6 +1208,10 @@ exports.IDL = {
                     },
                     {
                         "name": "user",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "userClaimable",
                         "type": "publicKey"
                     },
                     {
@@ -1210,6 +1287,22 @@ exports.IDL = {
         }
     ],
     "types": [
+        {
+            "name": "Claim",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "amount",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "game",
+                        "type": "publicKey"
+                    }
+                ]
+            }
+        },
         {
             "name": "Oracle",
             "type": {
@@ -1718,6 +1811,26 @@ exports.IDL = {
             "code": 6093,
             "name": "GameFeeVaultMismatch",
             "msg": "Game Fee Vault Mismatch"
+        },
+        {
+            "code": 6094,
+            "name": "NoAvailableClaimFound",
+            "msg": "No Available Claim Found"
+        },
+        {
+            "code": 6095,
+            "name": "ToTokenAccountNotOwnedByUserOwner",
+            "msg": "To Token Account Owner Not Owned by User Owner"
+        },
+        {
+            "code": 6096,
+            "name": "VaultAtaNotEqualToAtaOnVault",
+            "msg": "The ATA Provided is not associated with the Vault ATA"
+        },
+        {
+            "code": 6097,
+            "name": "UserClaimableCrankUserMismatch",
+            "msg": "The user associated with the Crank is not the same as the UserClaimable user"
         }
     ]
 };

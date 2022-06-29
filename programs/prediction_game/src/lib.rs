@@ -97,6 +97,10 @@ pub mod prediction_game {
         instructions::user::user_claim(ctx, amount)
     }
 
+    pub fn user_claim_all_instruction<'info>(ctx: Context<'_, '_, '_, 'info, UserClaimAll<'info>>) -> Result<()> {
+        instructions::user::user_claim_all(ctx)
+    }
+
     pub fn close_game_instruction<'info>(_ctx: Context<'_, '_, '_, 'info, CloseGame<'info>>) -> Result<()> {
         Ok(())
     }

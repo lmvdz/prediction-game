@@ -190,5 +190,13 @@ pub enum ErrorCode {
     #[msg("Game Vault Mismatch")]
     GameVaultMismatch,
     #[msg("Game Fee Vault Mismatch")]
-    GameFeeVaultMismatch
+    GameFeeVaultMismatch,
+    #[msg("No Available Claim Found")]
+    NoAvailableClaimFound,
+    #[msg("To Token Account Owner Not Owned by User Owner")]
+    ToTokenAccountNotOwnedByUserOwner,
+    #[msg("The ATA Provided is not associated with the Vault ATA")]
+    VaultAtaNotEqualToAtaOnVault,
+    #[msg("The user associated with the Crank is not the same as the UserClaimable user")]
+    UserClaimableCrankUserMismatch
 }

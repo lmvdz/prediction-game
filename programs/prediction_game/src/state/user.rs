@@ -2,9 +2,23 @@
 
 use anchor_lang::prelude::*;
 
+#[zero_copy]
+#[derive(Default)]
+pub struct Claim {
+    pub amount: u64,
+    pub game: Pubkey
+}
+
+
+#[account(zero_copy)]
+#[derive(Default)]
+pub struct UserClaimable {
+    pub user: Pubkey,
+    pub claims: [Claim; 10]
+}
+
 #[account]
 #[derive(Default)]
-
 pub struct User {
 
     // accounts
@@ -13,7 +27,7 @@ pub struct User {
 
     pub owner: Pubkey,
 
-    pub claimable: u64
+    pub user_claimable: Pubkey
 
 }
 
@@ -33,6 +47,7 @@ pub struct UserPrediction {
     pub address: Pubkey,
 
     pub user: Pubkey,
+    pub user_claimable: Pubkey,
     pub game: Pubkey,
     pub round: Pubkey,
 

@@ -8,6 +8,8 @@ import Round, { RoundAccount } from "../accounts/round"
 import { fetchAccountRetry, confirmTxRetry } from "../util/index"
 import Crank from "./crank"
 import Vault from "./vault"
+import { ProgramAccount } from "@project-serum/anchor"
+import UserPrediction, { UserPredictionAccount } from "./userPrediction"
 
 export type GameAccount = {
 
@@ -189,13 +191,13 @@ export default class Game implements DataUpdatable<GameAccount> {
                 crank.account.lastPaidCrankRound.toBase58() !== this.currentRound.account.address.toBase58()
             });
     
-            let unpaidCrankChunks = chunk((await Promise.all(unpaidCranks.map(async (crank) => {
+            let unpaidCrankChunks: AccountMeta[][] = chunk((await Promise.all(unpaidCranks.map(async (crank) => {
                 return [{
                     pubkey: crank.account.address,
                     isSigner: false,
                     isWritable: true
                 }, {
-                    pubkey: crank.account.user,
+                    pubkey: crank.account.userClaimable,
                     isSigner: false,
                     isWritable: true
                 }]
@@ -355,9 +357,12 @@ export default class Game implements DataUpdatable<GameAccount> {
         if (!this.currentRound.account.feeCollected) throw Error("Round Fee Not Collected");
 
         if (!this.currentRound.account.settled) {
-            let unSettledPredictions = (await workspace.program.account.userPrediction.all()).filter(prediction => {
+
+            let unSettledPredictions = (await workspace.program.account.userPrediction.all()).filter((prediction: ProgramAccount<UserPredictionAccount>) => {
                 return prediction.account.round.toBase58() === this.currentRound.account.address.toBase58() && !prediction.account.settled
-            });
+            }) as Array<ProgramAccount<UserPredictionAccount>>
+
+
     
             let unSettledPredictionChunks = chunk((await Promise.all(unSettledPredictions.map(async (prediction) => {
                 return [
@@ -367,7 +372,7 @@ export default class Game implements DataUpdatable<GameAccount> {
                         isWritable: true
                     },
                     {
-                        pubkey: prediction.account.user,
+                        pubkey: prediction.account.userClaimable,
                         isSigner: false,
                         isWritable: true
                     }

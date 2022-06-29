@@ -89,6 +89,13 @@ class ProgramAddresses {
             Buffer.from(anchor.utils.bytes.utf8.encode('user'))
         ], this.program.programId);
     }
+    async getUserClaimablePubkey(userAccount) {
+        return await web3_js_1.PublicKey.findProgramAddress([
+            Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)),
+            userAccount.toBuffer(),
+            Buffer.from(anchor.utils.bytes.utf8.encode('user_claimable'))
+        ], this.program.programId);
+    }
     async getCrankPubkey(crankOwner, gamePubkey, userPubkey) {
         return await web3_js_1.PublicKey.findProgramAddress([
             Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)),

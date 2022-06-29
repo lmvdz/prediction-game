@@ -176,7 +176,7 @@ class Game {
                         isSigner: false,
                         isWritable: true
                     }, {
-                        pubkey: crank.account.user,
+                        pubkey: crank.account.userClaimable,
                         isSigner: false,
                         isWritable: true
                     }];
@@ -318,7 +318,7 @@ class Game {
         if (!this.currentRound.account.feeCollected)
             throw Error("Round Fee Not Collected");
         if (!this.currentRound.account.settled) {
-            let unSettledPredictions = (await workspace.program.account.userPrediction.all()).filter(prediction => {
+            let unSettledPredictions = (await workspace.program.account.userPrediction.all()).filter((prediction) => {
                 return prediction.account.round.toBase58() === this.currentRound.account.address.toBase58() && !prediction.account.settled;
             });
             let unSettledPredictionChunks = (0, chunk_1.default)((await Promise.all(unSettledPredictions.map(async (prediction) => {
@@ -329,7 +329,7 @@ class Game {
                         isWritable: true
                     },
                     {
-                        pubkey: prediction.account.user,
+                        pubkey: prediction.account.userClaimable,
                         isSigner: false,
                         isWritable: true
                     }
