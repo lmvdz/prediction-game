@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const { exec } = require('child_process');
+const { execSync } = require('child_process');
 const { config } = require('dotenv')
 
 config({path: '.env.local'})
@@ -25,30 +25,29 @@ const mintDecimals = 6;
         
     }
     
+    
+    // admin.closeAllGames(owner, connection, process.env.CLUSTER)
     const mint = await getMint(connection, mintKeypair.publicKey)
     admin.init(owner, connection, process.env.CLUSTER, mint)
 })();
 
 
-exec('rm -rf ./frontend')
-exec('rm -rf ./aggr')
+execSync('rm -rf ./frontend/*')
+execSync('rm -rf ./aggr/*')
 
-exec('mkdir frontend')
-exec('mkdir aggr')
+execSync('cp -r ../frontend/dist/* frontend')
+execSync('cp -r ../aggr/dist/* aggr')
 
-exec('cp -r ../frontend/dist/* frontend')
-exec('cp -r ../aggr/dist/* aggr')
+const devnet = express();
+devnet.use(cors());
+devnet.use(bodyParser.json());
 
-// const devnet = express();
-// devnet.use(cors());
-// devnet.use(bodyParser.json());
+devnet.use(express.static('frontend'));
+devnet.get('/*', (req, res) => {
+	res.sendFile(__dirname + '/frontend/index.html');
+})
 
-// devnet.use(express.static('frontend'));
-// devnet.get('/*', (req, res) => {
-// 	res.sendFile(__dirname + '/frontend/index.html');
-// })
-
-// devnet.listen(3000, () => {console.log('devnet started on port 3000')});
+devnet.listen(3000, () => {console.log('devnet started on port 3000')});
 
 const mainnet = express();
 mainnet.use(cors());
