@@ -1,6 +1,6 @@
 [package]
 name = "prediction_game_v1"
-version = "1.0.2"
+version = "1.0.3"
 description = "Created with Anchor"
 edition = "2021"
 
