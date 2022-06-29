@@ -12,6 +12,7 @@ import User, { UserAccount } from "sdk/lib/accounts/user";
 import Crank, { CrankAccount } from "sdk/lib/accounts/crank";
 import Vault, { VaultAccount } from "sdk/lib/accounts/vault";
 import { ProgramAccount } from "@project-serum/anchor";
+import cluster from 'cluster';
 
 config({path: '.env.local'})
 
@@ -19,7 +20,7 @@ const privateKeyEnvVariable = "PRIVATE_KEY"
 // ENVIRONMENT VARIABLE FOR THE BOT PRIVATE KEY
 const privateKey = process.env[privateKeyEnvVariable]
 const endpoint = process.env.ENDPOINT;
-const cluster = process.env.CLUSTER as Cluster;
+const rpcCluster = process.env.CLUSTER as Cluster;
 
 if (privateKey === undefined) {
     console.error('need a ' + privateKeyEnvVariable +' env variable');
@@ -258,7 +259,7 @@ const crankLoop = async (workspace: Workspace, vault: Vault, game: Game) => {
 async function run() {
 
     const connection: Connection = new Connection(endpoint)
-    const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' })
+    const workspace: Workspace = Workspace.load(connection, botWallet, rpcCluster, { commitment: 'confirmed' })
 
     let vaults = (await workspace.program.account.vault.all()).map(vaultProgramAccount => {
         return new Vault(vaultProgramAccount.account)
@@ -279,6 +280,7 @@ async function run() {
     
 }
 
+
 const runLoop = () => {
     try {
         run();
@@ -289,5 +291,14 @@ const runLoop = () => {
     }
 }
 
-runLoop();
+if (cluster.isPrimary) {
+    cluster.fork();
+    cluster.on('exit', function(worker){
+        console.log('Worker ' + worker.id + ' died..');
+        cluster.fork();
+    });
+} else {
+    runLoop();
+}
+
 
