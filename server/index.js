@@ -25,6 +25,7 @@ const mintDecimals = 6;
         
     }
     
+    // await admin.closeAllUserClaimable(owner, connection, process.env.CLUSTER);
     // await admin.closeAll(owner, connection, process.env.CLUSTER)
     // await admin.closeAllUserPredictions(owner, connection, process.env.CLUSTER);
     const mint = await getMint(connection, mintKeypair.publicKey)
@@ -38,16 +39,16 @@ execSync('rm -rf ./aggr/*')
 execSync('cp -r ../frontend/dist/* frontend')
 execSync('cp -r ../aggr/dist/* aggr')
 
-const devnet = express();
-devnet.use(cors());
-devnet.use(bodyParser.json());
+// const devnet = express();
+// devnet.use(cors());
+// devnet.use(bodyParser.json());
 
-devnet.use(express.static('frontend'));
-devnet.get('/*', (req, res) => {
-	res.sendFile(__dirname + '/frontend/index.html');
-})
+// devnet.use(express.static('frontend'));
+// devnet.get('/*', (req, res) => {
+// 	res.sendFile(__dirname + '/frontend/index.html');
+// })
 
-devnet.listen(3000, () => {console.log('devnet started on port 3000')});
+// devnet.listen(3000, () => {console.log('devnet started on port 3000')});
 
 const mainnet = express();
 mainnet.use(cors());

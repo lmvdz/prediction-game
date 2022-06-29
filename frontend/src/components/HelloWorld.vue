@@ -613,7 +613,8 @@ async function loadUserClaimable() : Promise<void> {
   if (wallet.value.connected) {
     try {
       if (!paf.value.accounts.has(userClaimableAddress.value.toBase58())) {
-        paf.value.addProgram<PredictionGame>('userClaimable', userClaimableAddress.value.toBase58(), getWorkspace().program, async (data: UserAccount) => {
+        paf.value.addProgram<PredictionGame>('userClaimable', userClaimableAddress.value.toBase58(), getWorkspace().program, async (data: UserClaimableAccount) => {
+          console.log(data)
           // console.log("updated user " + data.address.toBase58())
         }, (error) => {
           console.error(error);
@@ -1020,17 +1021,17 @@ export default defineComponent({
               width="3" 
               :color="(() => {
                 if (!game.currentRound.account.finished) {
-                  return Math.floor(frontendGameData.get(game.account.address.toBase58()).timeRemaining / 6) >= 100 ? 'success' : Math.floor(frontendGameData.get(game.account.address.toBase58()).timeRemaining / 6) < 50 ? 'warning' : '#6864b7'
+                  return frontendGameData.get(game.account.address.toBase58()).timeRemaining >= 300 ? 'success' : frontendGameData.get(game.account.address.toBase58()).timeRemaining < 150 ? 'warning' : '#6864b7'
                 } else {
                   return 'blue'
                 }
               })()" 
-                
+              :max="game.account.roundLength"
               :stream="!game.currentRound.account.finished"
               :striped="game.currentRound.account.finished"
               rounded 
-              :model-value="Math.floor((frontendGameData.get(game.account.address.toBase58()).timeRemaining / game.currentRound.account.roundLength) * 100)" 
-              :buffer-value="Math.floor((frontendGameData.get(game.account.address.toBase58()).timeRemaining / game.currentRound.account.roundLength) * 100) < 50 ? 50 : 100"
+              :model-value="frontendGameData.get(game.account.address.toBase58()).timeRemaining" 
+              :buffer-value="Math.floor((frontendGameData.get(game.account.address.toBase58()).timeRemaining / game.currentRound.account.roundLength) * 100) < game.currentRound.account.roundLength/2 ? game.currentRound.account.roundLength/2 : game.currentRound.account.roundLength"
             ></v-progress-linear>
             <v-btn 
               v-if="game.account !== undefined && game.currentRound !== undefined && game.currentRound !== null"
@@ -1514,6 +1515,7 @@ export default defineComponent({
           </v-card>
         </v-col>
       </v-row>
+      {{ computedClaimable }}
       <v-row justify="start" v-if="wallet !== null && wallet.connected">
         <v-col>
           <v-card variant="plain">

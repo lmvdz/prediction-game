@@ -23,4 +23,6 @@ export default class User implements DataUpdatable<UserAccount> {
     userClaimAll(workspace: Workspace, userClaimable: UserClaimable, vaults: Array<Vault>, games: Array<Game>, tokenAccounts: Array<Account>): Promise<User>;
     closeUserAccountInstruction(workspace: Workspace): Promise<TransactionInstruction>;
     closeUserAccount(workspace: Workspace): Promise<boolean>;
+    adminCloseUserAccountInstruction(workspace: Workspace): Promise<TransactionInstruction>;
+    adminCloseUserAccount(workspace: Workspace): Promise<boolean>;
 }

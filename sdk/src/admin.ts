@@ -12,6 +12,8 @@ import { ProgramAccount } from "@project-serum/anchor";
 import UserPrediction, { UserPredictionAccount } from "./accounts/userPrediction";
 import Crank, { CrankAccount } from "./accounts/crank";
 import Round, { RoundAccount } from "./accounts/round";
+import User, { UserAccount } from "./accounts/user";
+import UserClaimable from "./accounts/userClaimable";
 
 export const gameSeeds: Array<GameSeed> = [ 
     { 
@@ -124,9 +126,10 @@ async function initFromGameSeed(workspace: Workspace, gameSeed: GameSeed, mint: 
 
 export async function closeAll(owner: Keypair, connection: Connection, cluster: Cluster) {
     Promise.allSettled([
-        await closeAllUserPredictions(owner, connection, cluster),
         await closeAllRounds(owner, connection, cluster),
         await closeAllCranks(owner, connection, cluster),
+        await closeAllUserPredictions(owner, connection, cluster),
+        await closeAllUser(owner, connection, cluster),
         await closeAllGames(owner, connection, cluster)
     ])
 }
@@ -136,6 +139,7 @@ export async function closeAllGames(owner: Keypair, connection: Connection, clus
     const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
 
     await Promise.allSettled( (await workspace.program.account.game.all()).map(async gameAccount => {
+        console.log('game', gameAccount.publicKey.toBase58());
         let game = new Game(gameAccount.account as unknown as GameAccount);
         await (game).adminCloseGame(workspace);
     }));
@@ -146,6 +150,7 @@ export async function closeAllUserPredictions(owner: Keypair, connection: Connec
     const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
 
     await Promise.allSettled( (await workspace.program.account.userPrediction.all()).map(async userPredictionAccount => {
+        console.log('userPrediction', userPredictionAccount.publicKey.toBase58());
         let userPrediction = new UserPrediction(userPredictionAccount.account as unknown as UserPredictionAccount);
         await UserPrediction.adminCloseUserPrediction(workspace, userPrediction);
     }));
@@ -156,6 +161,7 @@ export async function closeAllCranks(owner: Keypair, connection: Connection, clu
     const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
 
     await Promise.allSettled( (await workspace.program.account.crank.all()).map(async crankAccount => {
+        console.log('crank', crankAccount.publicKey.toBase58());
         let crank = new Crank(crankAccount.account as unknown as CrankAccount);
         await crank.adminCloseCrankAccount(workspace)
     }));
@@ -166,8 +172,30 @@ export async function closeAllRounds(owner: Keypair, connection: Connection, clu
     const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
 
     await Promise.allSettled( (await workspace.program.account.round.all()).map(async roundAccount => {
+        console.log('round', roundAccount.publicKey.toBase58());
         let round = new Round(roundAccount.account as unknown as RoundAccount);
         await Round.adminCloseRound(workspace, round)
+    }));
+}
+
+export async function closeAllUser(owner: Keypair, connection: Connection, cluster: Cluster) {
+    const botWallet: NodeWallet = new NodeWallet(owner);
+    const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
+
+    await Promise.allSettled( (await workspace.program.account.user.all()).map(async userAccount => {
+        console.log('user', userAccount.publicKey.toBase58());
+        let user = new User(userAccount.account as unknown as UserAccount);
+        await user.adminCloseUserAccount(workspace)
+    }));
+}
+
+export async function closeAllUserClaimable(owner: Keypair, connection: Connection, cluster: Cluster) {
+    const botWallet: NodeWallet = new NodeWallet(owner);
+    const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
+
+    await Promise.allSettled( (await workspace.program.account.userClaimable.all()).map(async userClaimableAccount => {
+        console.log('userClaimable', userClaimableAccount.publicKey.toBase58());
+        await UserClaimable.adminCloseUserClaimable(workspace, userClaimableAccount.publicKey)
     }));
 }
 

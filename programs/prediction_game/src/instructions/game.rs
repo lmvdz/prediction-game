@@ -120,6 +120,9 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
                                 current_round.total_amount_settled = current_round.total_amount_settled.saturating_add(initial_amount);
         
                                 user_claim.amount = user_claim.amount.saturating_add(winnings).saturating_add(initial_amount);
+                                if user_claim.game.eq(&Pubkey::default()) {
+                                    user_claim.game = game.key();
+                                }
                                 
                             }
                         } else {
@@ -129,12 +132,18 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
                             current_round.total_amount_settled = current_round.total_amount_settled.saturating_add(initial_amount);
     
                             user_claim.amount = user_claim.amount.saturating_add(initial_amount);
+                            if user_claim.game.eq(&Pubkey::default()) {
+                                user_claim.game = game.key();
+                            }
                         }
                     } else {
                         // return initial amount minus fees to all
                         current_round.total_amount_settled = current_round.total_amount_settled.saturating_add(prediction.amount);
 
                         user_claim.amount = user_claim.amount.saturating_add(prediction.amount);
+                        if user_claim.game.eq(&Pubkey::default()) {
+                            user_claim.game = game.key();
+                        }
                     }
 
                     // let dst: &mut [u8] = &mut user_claim_info.try_borrow_mut_data()?;
@@ -211,6 +220,9 @@ pub fn payout_cranks<'info>(mut ctx: Context<'_, '_, '_, 'info, PayoutCranks<'in
                 };
 
                 user_claim.amount = user_claim.amount.saturating_add(crank_pay);
+                if user_claim.game.eq(&Pubkey::default()) {
+                    user_claim.game = game.key();
+                }
 
                 // let dst: &mut [u8] = &mut user_claim_info.try_borrow_mut_data()?;
                 // let mut cursor = std::io::Cursor::new(dst);

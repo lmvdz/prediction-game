@@ -121,6 +121,14 @@ pub mod prediction_game {
     pub fn close_user_account_instruction(_ctx: Context<CloseUserAccount>) -> Result<()> {
         Ok(())
     }
+
+    pub fn admin_close_user_account_instruction(_ctx: Context<AdminCloseUserAccount>) -> Result<()> {
+        Ok(())
+    }
+
+    pub fn admin_close_user_claimable_instruction(_ctx: Context<AdminCloseUserClaimable>) -> Result<()> {
+        Ok(())
+    }
     
     
 

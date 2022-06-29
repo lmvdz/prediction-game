@@ -155,7 +155,7 @@ pub fn user_claim_all<'info>(ctx: Context<'_, '_, '_, 'info, UserClaimAll<'info>
 
             // require that the user claim has an amount to claim
         
-            require!(user_claim.amount.gt(&0) || user_claim.amount.eq(&0), ErrorCode::InsufficientClaimableAmount);
+            require!((user_claim.amount.gt(&0) || user_claim.amount.eq(&0)) && !user_claim.game.eq(&Pubkey::default()), ErrorCode::InsufficientClaimableAmount);
 
 
             let vault_account_info = accounts[index+1].to_account_info().clone();
@@ -221,7 +221,7 @@ pub fn user_claim(ctx: Context<UserClaim>, amount: u64) -> Result<()> {
 
     let user_claim = &mut user_claimable.claims[user_claim_position];
 
-    require!(user_claim.amount.gt(&amount) || user_claim.amount.eq(&amount), ErrorCode::InsufficientClaimableAmount);
+    require!((user_claim.amount.gt(&0) || user_claim.amount.eq(&0)) && !user_claim.game.eq(&Pubkey::default()), ErrorCode::InsufficientClaimableAmount);
 
     let vault = &ctx.accounts.vault;
     let vault_ata = &mut ctx.accounts.vault_ata;
@@ -260,6 +260,36 @@ pub struct CloseUserAccount<'info> {
         constraint = signer.key() == user.owner @ ErrorCode::SignerNotOwner
     )]
     pub user: Box<Account<'info, User>>,
+
+    #[account(
+        mut, 
+        close = receiver,
+        constraint = user_claimable.to_account_info().key() == user.key()
+    )]
+    pub user_claimable: AccountLoader<'info, UserClaimable>,
+
+    #[account(mut)]
+    pub receiver: SystemAccount<'info>,
+
+}
+
+#[derive(Accounts)]
+pub struct AdminCloseUserAccount<'info> {
+
+    pub signer: Signer<'info>,
+
+    #[account(mut, 
+        close = receiver,
+        // constraint = signer.key() == user.owner @ ErrorCode::SignerNotOwner
+    )]
+    pub user: Box<Account<'info, User>>,
+
+    #[account(
+        mut, 
+        close = receiver,
+        constraint = user_claimable.to_account_info().key() == user.key()
+    )]
+    pub user_claimable: AccountLoader<'info, UserClaimable>,
 
     #[account(mut)]
     pub receiver: SystemAccount<'info>,
@@ -474,4 +504,21 @@ pub struct AdminCloseUserPrediction<'info> {
         constraint = user_prediction.owner == user_prediction_close_receiver.key() @ ErrorCode::UserOwnerNotReceiver
     )]
     pub user_prediction_close_receiver: SystemAccount<'info>
+}
+
+#[derive(Accounts)]
+pub struct AdminCloseUserClaimable<'info> { 
+    #[account()]
+    pub signer: Signer<'info>,
+
+    #[account(
+        mut, 
+        close = user_claimable_close_receiver
+    )]
+    pub user_claimable: AccountLoader<'info, UserClaimable>,
+
+    #[account(
+        mut
+    )]
+    pub user_claimable_close_receiver: SystemAccount<'info>
 }

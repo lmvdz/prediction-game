@@ -16,4 +16,6 @@ export declare function closeAllGames(owner: Keypair, connection: Connection, cl
 export declare function closeAllUserPredictions(owner: Keypair, connection: Connection, cluster: Cluster): Promise<void>;
 export declare function closeAllCranks(owner: Keypair, connection: Connection, cluster: Cluster): Promise<void>;
 export declare function closeAllRounds(owner: Keypair, connection: Connection, cluster: Cluster): Promise<void>;
+export declare function closeAllUser(owner: Keypair, connection: Connection, cluster: Cluster): Promise<void>;
+export declare function closeAllUserClaimable(owner: Keypair, connection: Connection, cluster: Cluster): Promise<void>;
 export declare function init(owner: Keypair, connection: Connection, cluster: Cluster, mint: Mint): Promise<void>;

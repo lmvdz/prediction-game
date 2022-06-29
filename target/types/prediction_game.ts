@@ -945,7 +945,59 @@ export type PredictionGame = {
           "isSigner": false
         },
         {
+          "name": "userClaimable",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseUserAccountInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userClaimable",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseUserClaimableInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "userClaimable",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userClaimableCloseReceiver",
           "isMut": true,
           "isSigner": false
         }
@@ -2846,7 +2898,59 @@ export const IDL: PredictionGame = {
           "isSigner": false
         },
         {
+          "name": "userClaimable",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseUserAccountInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userClaimable",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseUserClaimableInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "userClaimable",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userClaimableCloseReceiver",
           "isMut": true,
           "isSigner": false
         }

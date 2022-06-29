@@ -194,11 +194,45 @@ export default class User implements DataUpdatable<UserAccount> {
         return await workspace.program.methods.closeUserAccountInstruction().accounts({
             signer: workspace.owner,
             user: this.account.address,
+            userClaimable: this.account.userClaimable,
             receiver: workspace.owner
         }).instruction()
     }
 
     public async closeUserAccount(workspace: Workspace): Promise<boolean> {
+
+        let ix = await this.closeUserAccountInstruction(workspace);
+        let tx = new Transaction().add(ix);
+
+        return new Promise((resolve, reject) => {
+            setTimeout(async () => {
+                try {
+                    let txSignature = await workspace.sendTransaction(tx)
+                    await confirmTxRetry(workspace, txSignature);
+                } catch (error) {
+                    reject(error);
+                }
+                try {
+                    this.account = null;
+                    resolve(true);
+                } catch (error) {
+                    reject(error);
+                }
+                
+            }, 500)
+        })
+    }
+
+    public async adminCloseUserAccountInstruction(workspace: Workspace) : Promise<TransactionInstruction> {
+        return await workspace.program.methods.closeUserAccountInstruction().accounts({
+            signer: workspace.owner,
+            user: this.account.address,
+            userClaimable: this.account.userClaimable,
+            receiver: this.account.owner
+        }).instruction()
+    }
+
+    public async adminCloseUserAccount(workspace: Workspace): Promise<boolean> {
 
         let ix = await this.closeUserAccountInstruction(workspace);
         let tx = new Transaction().add(ix);

@@ -945,7 +945,59 @@
           "isSigner": false
         },
         {
+          "name": "userClaimable",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseUserAccountInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userClaimable",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseUserClaimableInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "userClaimable",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userClaimableCloseReceiver",
           "isMut": true,
           "isSigner": false
         }
@@ -1896,5 +1948,8 @@
       "name": "UserClaimableCrankUserMismatch",
       "msg": "The user associated with the Crank is not the same as the UserClaimable user"
     }
-  ]
+  ],
+  "metadata": {
+    "address": "EPZXCy45VtSdGA7darn8LcVErMYecZS4d7XYG8pwLExb"
+  }
 }

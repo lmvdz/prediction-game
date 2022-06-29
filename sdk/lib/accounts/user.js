@@ -191,10 +191,41 @@ class User {
         return await workspace.program.methods.closeUserAccountInstruction().accounts({
             signer: workspace.owner,
             user: this.account.address,
+            userClaimable: this.account.userClaimable,
             receiver: workspace.owner
         }).instruction();
     }
     async closeUserAccount(workspace) {
+        let ix = await this.closeUserAccountInstruction(workspace);
+        let tx = new web3_js_1.Transaction().add(ix);
+        return new Promise((resolve, reject) => {
+            setTimeout(async () => {
+                try {
+                    let txSignature = await workspace.sendTransaction(tx);
+                    await (0, index_1.confirmTxRetry)(workspace, txSignature);
+                }
+                catch (error) {
+                    reject(error);
+                }
+                try {
+                    this.account = null;
+                    resolve(true);
+                }
+                catch (error) {
+                    reject(error);
+                }
+            }, 500);
+        });
+    }
+    async adminCloseUserAccountInstruction(workspace) {
+        return await workspace.program.methods.closeUserAccountInstruction().accounts({
+            signer: workspace.owner,
+            user: this.account.address,
+            userClaimable: this.account.userClaimable,
+            receiver: this.account.owner
+        }).instruction();
+    }
+    async adminCloseUserAccount(workspace) {
         let ix = await this.closeUserAccountInstruction(workspace);
         let tx = new web3_js_1.Transaction().add(ix);
         return new Promise((resolve, reject) => {

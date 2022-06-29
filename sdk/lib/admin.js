@@ -26,7 +26,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.init = exports.closeAllRounds = exports.closeAllCranks = exports.closeAllUserPredictions = exports.closeAllGames = exports.closeAll = exports.gameSeeds = void 0;
+exports.init = exports.closeAllUserClaimable = exports.closeAllUser = exports.closeAllRounds = exports.closeAllCranks = exports.closeAllUserPredictions = exports.closeAllGames = exports.closeAll = exports.gameSeeds = void 0;
 const web3_js_1 = require("@solana/web3.js");
 const web3_js_2 = require("@solana/web3.js");
 const nodewallet_1 = __importDefault(require("@project-serum/anchor/dist/cjs/nodewallet"));
@@ -39,6 +39,8 @@ const vault_1 = __importDefault(require("./accounts/vault"));
 const userPrediction_1 = __importDefault(require("./accounts/userPrediction"));
 const crank_1 = __importDefault(require("./accounts/crank"));
 const round_1 = __importDefault(require("./accounts/round"));
+const user_1 = __importDefault(require("./accounts/user"));
+const userClaimable_1 = __importDefault(require("./accounts/userClaimable"));
 exports.gameSeeds = [
     {
         baseSymbol: "SOL",
@@ -122,9 +124,10 @@ async function initFromGameSeed(workspace, gameSeed, mint) {
 }
 async function closeAll(owner, connection, cluster) {
     Promise.allSettled([
-        await closeAllUserPredictions(owner, connection, cluster),
         await closeAllRounds(owner, connection, cluster),
         await closeAllCranks(owner, connection, cluster),
+        await closeAllUserPredictions(owner, connection, cluster),
+        await closeAllUser(owner, connection, cluster),
         await closeAllGames(owner, connection, cluster)
     ]);
 }
@@ -133,6 +136,7 @@ async function closeAllGames(owner, connection, cluster) {
     const botWallet = new nodewallet_1.default(owner);
     const workspace = workspace_1.Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
     await Promise.allSettled((await workspace.program.account.game.all()).map(async (gameAccount) => {
+        console.log('game', gameAccount.publicKey.toBase58());
         let game = new game_1.default(gameAccount.account);
         await (game).adminCloseGame(workspace);
     }));
@@ -142,6 +146,7 @@ async function closeAllUserPredictions(owner, connection, cluster) {
     const botWallet = new nodewallet_1.default(owner);
     const workspace = workspace_1.Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
     await Promise.allSettled((await workspace.program.account.userPrediction.all()).map(async (userPredictionAccount) => {
+        console.log('userPrediction', userPredictionAccount.publicKey.toBase58());
         let userPrediction = new userPrediction_1.default(userPredictionAccount.account);
         await userPrediction_1.default.adminCloseUserPrediction(workspace, userPrediction);
     }));
@@ -151,6 +156,7 @@ async function closeAllCranks(owner, connection, cluster) {
     const botWallet = new nodewallet_1.default(owner);
     const workspace = workspace_1.Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
     await Promise.allSettled((await workspace.program.account.crank.all()).map(async (crankAccount) => {
+        console.log('crank', crankAccount.publicKey.toBase58());
         let crank = new crank_1.default(crankAccount.account);
         await crank.adminCloseCrankAccount(workspace);
     }));
@@ -160,11 +166,31 @@ async function closeAllRounds(owner, connection, cluster) {
     const botWallet = new nodewallet_1.default(owner);
     const workspace = workspace_1.Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
     await Promise.allSettled((await workspace.program.account.round.all()).map(async (roundAccount) => {
+        console.log('round', roundAccount.publicKey.toBase58());
         let round = new round_1.default(roundAccount.account);
         await round_1.default.adminCloseRound(workspace, round);
     }));
 }
 exports.closeAllRounds = closeAllRounds;
+async function closeAllUser(owner, connection, cluster) {
+    const botWallet = new nodewallet_1.default(owner);
+    const workspace = workspace_1.Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
+    await Promise.allSettled((await workspace.program.account.user.all()).map(async (userAccount) => {
+        console.log('user', userAccount.publicKey.toBase58());
+        let user = new user_1.default(userAccount.account);
+        await user.adminCloseUserAccount(workspace);
+    }));
+}
+exports.closeAllUser = closeAllUser;
+async function closeAllUserClaimable(owner, connection, cluster) {
+    const botWallet = new nodewallet_1.default(owner);
+    const workspace = workspace_1.Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
+    await Promise.allSettled((await workspace.program.account.userClaimable.all()).map(async (userClaimableAccount) => {
+        console.log('userClaimable', userClaimableAccount.publicKey.toBase58());
+        await userClaimable_1.default.adminCloseUserClaimable(workspace, userClaimableAccount.publicKey);
+    }));
+}
+exports.closeAllUserClaimable = closeAllUserClaimable;
 async function init(owner, connection, cluster, mint) {
     const botWallet = new nodewallet_1.default(owner);
     const workspace = workspace_1.Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
