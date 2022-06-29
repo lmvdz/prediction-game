@@ -886,7 +886,7 @@ async function userClaim(game: Game, amount = null) {
       claimAmount = amount;
     }
 
-    let ix = await (computedUser.value as User).userClaimInstruction(getWorkspace(), getVaultFromGame(game), getTokenAccountFromGame(game), claimAmount);
+    let ix = await (computedUser.value as User).userClaimInstruction(getWorkspace(), getVaultFromGame(game), game, getTokenAccountFromGame(game), claimAmount);
 
     // ix.keys.forEach(key => console.log(key.pubkey.toBase58()));
 
