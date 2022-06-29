@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IDL = void 0;
 exports.IDL = {
-    "version": "1.0.2",
+    "version": "1.0.3",
     "name": "prediction_game",
     "instructions": [
         {
