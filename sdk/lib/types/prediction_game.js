@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IDL = void 0;
 exports.IDL = {
-    "version": "1.0.5",
+    "version": "1.0.6",
     "name": "prediction_game",
     "instructions": [
         {
@@ -1422,6 +1422,10 @@ exports.IDL = {
                     },
                     {
                         "name": "mint",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "vault",
                         "type": "publicKey"
                     }
                 ]

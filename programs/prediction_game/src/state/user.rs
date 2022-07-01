@@ -6,7 +6,8 @@ use anchor_lang::prelude::*;
 #[derive(Default)]
 pub struct Claim {
     pub amount: u64,
-    pub mint: Pubkey
+    pub mint: Pubkey,
+    pub vault: Pubkey
 }
 
 

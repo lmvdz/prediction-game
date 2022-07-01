@@ -26,9 +26,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.U64MAX = exports.U32MAX = exports.USER_PREDICTION_MIN_AMOUNT = exports.UNSIGNED_MIN = exports.PROGRAM_ID = void 0;
 const anchor = __importStar(require("@project-serum/anchor"));
 const web3_js_1 = require("@solana/web3.js");
-const MAINNET_PROGRAM_ID = new web3_js_1.PublicKey("EPZXCy45VtSdGA7darn8LcVErMYecZS4d7XYG8pwLExb");
-const DEVNET_PROGRAM_ID = new web3_js_1.PublicKey("EPZXCy45VtSdGA7darn8LcVErMYecZS4d7XYG8pwLExb");
-const TESTNET_PROGRAM_ID = new web3_js_1.PublicKey("EPZXCy45VtSdGA7darn8LcVErMYecZS4d7XYG8pwLExb");
+const MAINNET_PROGRAM_ID = new web3_js_1.PublicKey("7ZFRSUUEgeJUMMyf7DYsYKurHctSAZed8ECMazomo7x");
+const DEVNET_PROGRAM_ID = new web3_js_1.PublicKey("7ZFRSUUEgeJUMMyf7DYsYKurHctSAZed8ECMazomo7x");
+const TESTNET_PROGRAM_ID = new web3_js_1.PublicKey("7ZFRSUUEgeJUMMyf7DYsYKurHctSAZed8ECMazomo7x");
 const PROGRAM_ID = (cluster) => {
     if (cluster === 'devnet') {
         return DEVNET_PROGRAM_ID;

@@ -1,12 +1,12 @@
 [package]
-name = "prediction_game_v1"
-version = "1.0.5"
+name = "sol_predict"
+version = "1.0.6"
 description = "Created with Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "prediction_game_v1"
+name = "sol_predict"
 
 [features]
 no-entrypoint = []

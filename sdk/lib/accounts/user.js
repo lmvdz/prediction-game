@@ -72,7 +72,7 @@ class User {
             }, 500);
         });
     }
-    async userClaimInstruction(workspace, vault, game, toTokenAccount, amount) {
+    async userClaimInstruction(workspace, vault, toTokenAccount, amount) {
         if (workspace.owner.toBase58() !== this.account.owner.toBase58())
             throw Error("Signer not Owner");
         if (toTokenAccount.owner.toBase58() !== this.account.owner.toBase58())
@@ -89,8 +89,8 @@ class User {
             tokenProgram: spl_token_1.TOKEN_PROGRAM_ID
         }).instruction();
     }
-    async userClaim(workspace, vault, game, toTokenAccount, amount) {
-        let ix = await this.userClaimInstruction(workspace, vault, game, toTokenAccount, amount);
+    async userClaim(workspace, vault, toTokenAccount, amount) {
+        let ix = await this.userClaimInstruction(workspace, vault, toTokenAccount, amount);
         let tx = new web3_js_1.Transaction().add(ix);
         return new Promise((resolve, reject) => {
             setTimeout(async () => {
@@ -112,9 +112,9 @@ class User {
             }, 500);
         });
     }
-    async userClaimAllInstruction(workspace, userClaimable, vaults, games, tokenAccounts) {
-        let accountMetas = (0, chunk_1.default)(userClaimable.account.claims.filter(claim => claim.amount.gt(new anchor.BN(0)) && claim.mint.toBase58() !== web3_js_1.PublicKey.default.toBase58()).map(claim => {
-            let vault = vaults.find(v => v.account.tokenMint.toBase58() === claim.mint.toBase58());
+    async userClaimAllInstruction(workspace, userClaimable, vaults, tokenAccounts, filterMint) {
+        let accountMetas = (0, chunk_1.default)(userClaimable.account.claims.filter(claim => claim.amount.gt(new anchor.BN(0)) && claim.mint.toBase58() !== web3_js_1.PublicKey.default.toBase58() && (filterMint.toBase58() !== web3_js_1.PublicKey.default.toBase58() ? claim.mint.toBase58() === filterMint.toBase58() : true)).map(claim => {
+            let vault = vaults.find(v => v.account.address.toBase58() === claim.vault.toBase58());
             let tokenAccount = tokenAccounts.find(t => t.mint.toBase58() === vault.account.tokenMint.toBase58());
             return [
                 {
@@ -148,10 +148,10 @@ class User {
             }).remainingAccounts(accountMeta).instruction();
         }));
     }
-    async userClaimAll(workspace, userClaimable, vaults, games, tokenAccounts) {
+    async userClaimAll(workspace, userClaimable, vaults, tokenAccounts, filterMint) {
         if (workspace.owner.toBase58() !== this.account.owner.toBase58())
             throw Error("Signer not Owner");
-        let instructions = await this.userClaimAllInstruction(workspace, userClaimable, vaults, games, tokenAccounts);
+        let instructions = await this.userClaimAllInstruction(workspace, userClaimable, vaults, tokenAccounts, filterMint);
         if (instructions.length > 0) {
             await Promise.allSettled(instructions.map(async (instruction) => {
                 let tx = new web3_js_1.Transaction().add(instruction);

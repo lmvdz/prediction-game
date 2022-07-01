@@ -3,7 +3,7 @@
 import { computed, defineComponent, onMounted } from 'vue'
 
 import { Program, ProgramAccount } from "@project-serum/anchor";
-import { Cluster, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
+import { Cluster, LAMPORTS_PER_SOL, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 import { confirmTxRetry, fetchAccountRetry } from "sdk/lib/util";
 import { TokenInfo } from "@solana/spl-token-registry";
 import { IDL, PROGRAM_ID, UpOrDown } from 'sdk'
@@ -62,6 +62,8 @@ let computedTokenAccounts = computed(() => [...tokenAccounts.value.values()].map
 let frontendGameData = ref(new Map<string, FrontendGameData>());
 
 let wallet = ref(null as WalletStore); 
+let walletBalance = ref(null as number);
+let tps = ref(null as number);
 
 let workspace = ref(null as Workspace);
 let paf = ref(null as PollingAccountsFetcher);
@@ -505,7 +507,7 @@ async function airdrop(game: Game) {
 
 function getWorkspace() : Workspace {
   //@ts-ignore
-  return workspace.value
+  return workspace.value;
 }
 
 async function initFrontendGameData (game: Game) {
@@ -761,6 +763,7 @@ async function loadGeneric() {
 }
 
 async function loadUserSpecific() {
+  await loadSOLBalance(),
   await loadUser(),
   await loadTokenAccounts(),
   await loadUserClaimable(),
@@ -826,7 +829,7 @@ function getHost() {
 
 function hasSomeClaimable() : boolean {
   if (computedClaimable.value !== null && computedClaimable.value.account !== undefined && computedClaimable.value.account.claims.length > 0) {
-    let claim = computedClaimable.value.account.claims.find(claim => claim !== undefined && claim.amount.gt(new anchor.BN(0)) && claim.mint.toBase58() !== PublicKey.default.toBase58());
+    let claim = computedClaimable.value.account.claims.find(claim => claim !== undefined && claim.amount.gt(new anchor.BN(0)) && claim.mint.toBase58() !== PublicKey.default.toBase58() && computedVaults.value.some(v => v.account.address.toBase58() === claim.vault.toBase58()));
     if (claim !== undefined) {
       return true;
     }
@@ -838,10 +841,12 @@ function hasSomeClaimable() : boolean {
 
 function getClaimableForGame(game: Game) : Claim {
   if (computedClaimable.value !== null && computedClaimable.value.account !== undefined) {
+    // console.log(computedClaimable.value)
     if (computedVaults.value !== null && computedVaults.value !== undefined) {
-      let vault = computedVaults.value.find(v => v.account.address.toBase58() === game.account.address.toBase58());
+      // console.log(computedVaults.value)
+      let vault = computedVaults.value.find(v => v.account.address.toBase58() === game.account.vault.toBase58());
       if (vault !== undefined) {
-        return computedClaimable.value.account.claims.find(claim => claim !== undefined && claim.mint.toBase58() === vault.account.tokenMint.toBase58());
+        return computedClaimable.value.account.claims.find(claim => claim !== undefined && claim.mint.toBase58() === vault.account.tokenMint.toBase58() && claim.vault.toBase58() === vault.account.address.toBase58());
       }
     }
     
@@ -904,10 +909,36 @@ function getGameQuoteMintAddress(game: Game) : PublicKey {
 function getClaimableAmountForGame(game: Game) : anchor.BN {
   let amount = new anchor.BN(0);
   let claim = getClaimableForGame(game);
+  // console.log(claim);
   if (claim !== undefined && claim !== null) {
     amount = amount.add(claim.amount)
   }
   return amount;
+}
+
+async function getTPS() {
+  if (workspace.value !== null) {
+    let performance = (await workspace.value.program.provider.connection.getRecentPerformanceSamples(1));
+    return performance[0].numTransactions / performance[0].samplePeriodSecs
+  }
+  return 0;
+}
+
+async function loadTPS() {
+  tps.value = await getTPS();
+}
+
+async function loadSOLBalance() {
+  walletBalance.value = await getSOLWalletBalance();
+}
+
+async function getSOLWalletBalance() {
+  if (wallet.value !== null && wallet.value !== undefined && wallet.value.publicKey !== null && wallet.value.publicKey !== undefined) {
+    if (workspace.value !== null) {
+      return ((await workspace.value.program.provider.connection.getAccountInfo(wallet.value.publicKey)).lamports / LAMPORTS_PER_SOL)
+    }
+  }
+  return null;
 }
 
 function getClaimableAmountForGameAsNumber(game: Game) : number {
@@ -958,14 +989,17 @@ let getTotalAvailableBalancesByToken = computed(() : Map<string, { total: anchor
     
     map.set(token, { total: tokenAccountAmount, wallet: tokenAccountAmount, claimable: new anchor.BN(0) })
   })
-  computedGames.value.forEach(game => {
-    let tokenMint = getTokenMint(game)
-    let mapValue = map.get(tokenMint.toBase58());
-    let total = mapValue.total;
-    let claimable = getClaimableAmountForGame(game);
-    total = total.add(claimable)
-    map.set(tokenMint.toBase58(), { total, claimable: mapValue.claimable.add(claimable), wallet: mapValue.wallet } )
-  })
+  if (computedClaimable.value !== null && computedClaimable.value.account !== undefined) {
+    computedClaimable.value.account.claims.forEach(claim => {
+      if (claim.mint.toBase58() !== PublicKey.default.toBase58() && computedVaults.value.some(v => v.account.address.toBase58() === claim.vault.toBase58())) {
+        let mapValue = map.get(claim.mint.toBase58());
+        let total = mapValue.total;
+        total = total.add(claim.amount)
+        map.set(claim.mint.toBase58(), { total, claimable: mapValue.claimable.add(claim.amount), wallet: mapValue.wallet } )
+      }
+    })
+  }
+  
   return map;
 })
 
@@ -978,13 +1012,14 @@ function getTokenSymbolFromMintAddress(address: string) : string {
   return tokenInfo.symbol
 }
 
-let getTotalAvailableBalancesByTokenAsNumbers = computed(() : Map<string, { total: number, claimable: number, wallet: number }>  => {
-  let map = new Map<string, { total: number, claimable: number, wallet: number }>();
+let getTotalAvailableBalancesByTokenAsNumbers = computed(() : Map<string, { mint: string, total: number, claimable: number, wallet: number }>  => {
+  let map = new Map<string, { mint: string, total: number, claimable: number, wallet: number }>();
   if (computedVaults.value === null) return map;
   [...getTotalAvailableBalancesByToken.value.entries()].forEach(([key, value]) => {
     let vault = computedVaults.value.find(v => v.account.tokenMint.toBase58() === key)
     map.set(getTokenSymbolFromMintAddress(key), 
       { 
+        mint: key,
         total: bnQuoteAssetToNumberFromVault(value.total, vault), 
         claimable: bnQuoteAssetToNumberFromVault(value.claimable, vault), 
         wallet: bnQuoteAssetToNumberFromVault(value.wallet, vault) 
@@ -994,7 +1029,31 @@ let getTotalAvailableBalancesByTokenAsNumbers = computed(() : Map<string, { tota
   return map;
 })
 
-async function userClaimAll() {
+async function airdropDevnetSOL() {
+  if (workspace.value !== null && wallet.value !== null && wallet.value.publicKey !== undefined) {
+    let txStatus = initNewTxStatus();
+    txStatus.title = "Requesting Devnet SOL Airdrop"
+    txStatus.subtitle = "Sending"
+    txStatus.color = "warning"
+    txStatus.show = true;
+    txStatus.loading = true;
+    let signature = await getWorkspace().program.provider.connection.requestAirdrop(wallet.value.publicKey, 1 * LAMPORTS_PER_SOL);
+    try {
+      txStatus.subtitle = "Sent"
+      await confirmTxRetry(getWorkspace(), signature)
+      txStatus.subtitle = "Sent and Confirmed"
+      txStatus.color = "success"
+      txStatus.loading = false;
+    } catch (error) {
+      txStatus.subtitle = "Failed to Confirm"
+      txStatus.color = "error"
+      txStatus.loading = false;
+    }
+    hideTxStatus(txStatus.index, 5000)
+  }
+}
+
+async function userClaimAll(mint = PublicKey.default) {
   let txStatus = initNewTxStatus()
   txStatus.title = "User Claim All"
   txStatus.subtitle = "Sending"
@@ -1002,8 +1061,17 @@ async function userClaimAll() {
   txStatus.show = true;
   txStatus.loading = true;
   try {
-    let ixs = await (computedUser.value as User).userClaimAllInstruction(getWorkspace(), computedClaimable.value, computedVaults.value, computedGames.value, computedTokenAccounts.value);
+    // if (mint.toBase58() !== PublicKey.default.toBase58()) {
+    //   let totalClaimableForMint = computedClaimable.value.account.claims.reduce((a, b) => {
+    //     if (b.mint.toBase58() === mint.toBase58()) {
+    //       return a.add(b.amount)
+    //     }
+    //     return a;
+    //   }, new anchor.BN(0))
+    //   console.log(totalClaimableForMint.toNumber())
+    // }    
 
+    let ixs = await (computedUser.value as User).userClaimAllInstruction(getWorkspace(), computedClaimable.value, computedVaults.value.filter(v => computedGames.value.some(g => g.account.vault.toBase58() === v.account.address.toBase58())), computedTokenAccounts.value, mint);
     let tx = new Transaction().add(...ixs);
 
     let closeUserPredictionInstructions = await Promise.all<TransactionInstruction>([...computedUserPredictions.value.values()].filter((prediction: UserPrediction) => prediction !== undefined && prediction !== null && prediction.account.settled).map(async (prediction: UserPrediction) : Promise<TransactionInstruction> => {
@@ -1016,6 +1084,8 @@ async function userClaimAll() {
     tx.feePayer = (getWorkspace()).owner;
     tx.recentBlockhash = (await (getWorkspace()).program.provider.connection.getLatestBlockhash()).blockhash;
     tx = await (getWorkspace()).wallet.signTransaction(tx);
+    let simulation = await (getWorkspace()).program.provider.connection.simulateTransaction(tx.compileMessage());
+    console.log(simulation.value.logs);
 
     let signature = await (getWorkspace()).program.provider.connection.sendRawTransaction(tx.serialize());
 
@@ -1720,18 +1790,80 @@ export default defineComponent({
             <v-card-title>
               Account Info
             </v-card-title>
-            <v-card-subtitle v-if="wallet !== null && wallet.connected">
-              {{ wallet.publicKey.toBase58().substring(0, 4) + '..' +  wallet.publicKey.toBase58().substring(wallet.publicKey.toBase58().length - 4 ) }}
+            <v-card-subtitle v-if="wallet !== null && wallet.connected && walletBalance !== null">
+              <span 
+                :style="`${walletBalance <= 0.1 ? 'color: rgb(76, 175, 80); border: 1px solid rgb(76, 175, 80); border-radius: 1em; font-weight: bold; cursor: pointer;' : ''}`"
+                @click.stop="async (e) => {
+                if (walletBalance <= 0.1) {
+                  e.preventDefault();
+                  await airdropDevnetSOL()
+                }
+              }"></span>{{ walletBalance.toFixed(2) }} SOL
             </v-card-subtitle>
+            <v-card variant="plain" v-if="computedUserPredictions.filter(prediction => !prediction.account.settled).length > 0">
+              <v-card-title>Predictions</v-card-title>
+              <v-card-text>
+                <table style="width: 300px;">
+                  <tr>
+                    <th>
+                      Asset
+                    </th>
+                    <th>
+                      Direction
+                    </th>
+                    <th>
+                      Amount
+                    </th>
+                    <th>Winning</th>
+                  </tr>
+                  <tr v-for="(prediction, predictionIndex) in computedUserPredictions.filter(prediction => !prediction.account.settled)" :key="'prediction-'+predictionIndex">
+                    <td>
+                      {{ computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58()).account.baseSymbol  }}
+                    </td>
+                    <td>
+                      {{ UpOrDown[prediction.account.upOrDown] }}
+                    </td>
+                    <td>
+                      {{ bnQuoteAssetToNumberFromGame(prediction.account.amount, computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58())) }}
+                    </td>
+                    <td> {{ computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58()).currentRound.convertOraclePriceToNumber(computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58()).currentRound.account.roundPriceDifference, computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58())) > 0 ? prediction.account.upOrDown === UpOrDown.Up : false }}</td>
+                  </tr>
+                </table>
+              </v-card-text>
+            </v-card>
             <v-card variant="plain">
               <v-card-title>Balances</v-card-title>
               <v-card-text>
-                <v-row justify="start" v-for="([key, value], tokenIndex) in getTotalAvailableBalancesByTokenAsNumbers.entries()" :key="'tokenBalance'+tokenIndex">
-                  <v-col>{{key}}</v-col>
-                  <v-col>Total: {{ value.total }} </v-col> 
-                  <v-col>Wallet: {{ value.wallet }} </v-col> 
-                  <v-col :style="`${value.claimable > 0 ? 'color: rgb(76, 175, 80); border: 1px solid rgb(76, 175, 80); border-radius: 1em; font-weight: bold; cursor: pointer;': ''}`">Claimable: {{ value.claimable }}</v-col> 
-                </v-row>
+                <table style="width: 300px;">
+                  <tr>
+                    <th>
+                      Asset
+                    </th>
+                    <th>
+                      Total
+                    </th>
+                    <th>
+                      Wallet
+                    </th>
+                    <th>
+                      Claimable  
+                    </th>
+                  </tr>
+                  <tr justify="start" v-for="([key, value], tokenIndex) in getTotalAvailableBalancesByTokenAsNumbers.entries()" :key="'tokenBalance'+tokenIndex">
+                    <td>{{ key }}</td>
+                    <td>{{ value.total.toFixed(2) }} </td> 
+                    <td>{{ value.wallet.toFixed(2) }} </td>
+                    <td 
+                      :style="`${value.claimable > 0 ? 'color: rgb(76, 175, 80); border: 1px solid rgb(76, 175, 80); border-radius: 1em; font-weight: bold; cursor: pointer;': ''}`"
+                      @click.stop="async (e) => {
+                        if (value.claimable > 0) {
+                          e.preventDefault();
+                          await userClaimAll(new PublicKey(value.mint))
+                        }
+                      }"
+                    >{{ value.claimable.toFixed(2) }}</td> 
+                  </tr>
+                </table>
               </v-card-text>
             </v-card>
             
@@ -1754,15 +1886,16 @@ export default defineComponent({
       </v-col>
     </v-row>
     <v-row>
-      <v-col style="padding: 8px;" class="d-none d-lg-flex">
+      <v-col :cols="7" style="padding: 8px;" class="d-none d-lg-flex">
         <!-- <iframe id="aggr" 
           :src="`${getHost().startsWith('localhost') ? getProtocol()+'//'+'localhost:8080' : 'https://aggr.solpredict.io'}?workspace-url=${aggrWorkspace}`" 
           frameborder="0" style="width: 100%; height: 100%; min-height: 75vh; max-height: 75vh;"
         ></iframe> -->
         <iframe id="aggr" 
           :src="`https://v3.aggr.trade`" 
-          frameborder="0" style="width: 100%; min-height: 50vh; max-height: 50vh; margin: .75em;"
+          frameborder="0" style="border-radius: .25em; width: 100%; min-height: 50vh; max-height: 50vh; margin: .75em;"
         ></iframe>
+        
       </v-col>
     </v-row>
   </v-container>

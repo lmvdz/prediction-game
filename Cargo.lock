@@ -859,21 +859,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eb9f9e6e233e5c4a35559a617bf40a4ec447db2e84c20b55a6f83167b7e57872"
 
 [[package]]
-name = "prediction_game_v1"
-version = "1.0.5"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "bytemuck",
- "chainlink_solana",
- "num-derive",
- "num-traits",
- "num_enum",
- "pyth-sdk-solana",
- "switchboard-v2",
-]
-
-[[package]]
 name = "proc-macro-crate"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1169,6 +1154,21 @@ name = "smallvec"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2dd574626839106c320a323308629dcb1acfc96e32a8cba364ddc61ac23ee83"
+
+[[package]]
+name = "sol_predict"
+version = "1.0.6"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "bytemuck",
+ "chainlink_solana",
+ "num-derive",
+ "num-traits",
+ "num_enum",
+ "pyth-sdk-solana",
+ "switchboard-v2",
+]
 
 [[package]]
 name = "solana-frozen-abi"

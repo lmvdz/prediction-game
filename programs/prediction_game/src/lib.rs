@@ -8,7 +8,7 @@ pub mod errors;
 
 
 
-declare_id!("EPZXCy45VtSdGA7darn8LcVErMYecZS4d7XYG8pwLExb");
+declare_id!("7ZFRSUUEgeJUMMyf7DYsYKurHctSAZed8ECMazomo7x");
 
 
 #[program]

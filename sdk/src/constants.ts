@@ -1,9 +1,9 @@
 import * as anchor from '@project-serum/anchor';
 import { Cluster, PublicKey } from '@solana/web3.js';
 
-const MAINNET_PROGRAM_ID = new PublicKey("EPZXCy45VtSdGA7darn8LcVErMYecZS4d7XYG8pwLExb");
-const DEVNET_PROGRAM_ID = new PublicKey("EPZXCy45VtSdGA7darn8LcVErMYecZS4d7XYG8pwLExb");
-const TESTNET_PROGRAM_ID = new PublicKey("EPZXCy45VtSdGA7darn8LcVErMYecZS4d7XYG8pwLExb");
+const MAINNET_PROGRAM_ID = new PublicKey("7ZFRSUUEgeJUMMyf7DYsYKurHctSAZed8ECMazomo7x");
+const DEVNET_PROGRAM_ID = new PublicKey("7ZFRSUUEgeJUMMyf7DYsYKurHctSAZed8ECMazomo7x");
+const TESTNET_PROGRAM_ID = new PublicKey("7ZFRSUUEgeJUMMyf7DYsYKurHctSAZed8ECMazomo7x");
 
 export const PROGRAM_ID = (cluster: Cluster) : PublicKey => {
     if (cluster === 'devnet') {

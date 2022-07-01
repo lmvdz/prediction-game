@@ -2,7 +2,7 @@
 seeds = false
 
 [programs.localnet]
-prediction_game = "EPZXCy45VtSdGA7darn8LcVErMYecZS4d7XYG8pwLExb"
+sol_predict = "7ZFRSUUEgeJUMMyf7DYsYKurHctSAZed8ECMazomo7x"
 
 [registry]
 url = "https://anchor.projectserum.com"

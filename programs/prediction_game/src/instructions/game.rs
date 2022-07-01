@@ -97,7 +97,7 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
                 require_keys_eq!(prediction.user, user_claimable.user, ErrorCode::PredictionAndClaimUserMismatch);
 
                 // find first claim 
-                let mut some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.mint.eq(&vault.token_mint.key()));
+                let mut some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.mint.eq(&vault.token_mint.key()) && claim.vault.eq(&vault.address.key()));
 
                 some_user_claim_position = match some_user_claim_position {
                     None => {
@@ -131,8 +131,9 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
                                 current_round.total_amount_settled = current_round.total_amount_settled.saturating_add(initial_amount);
         
                                 user_claim.amount = user_claim.amount.saturating_add(winnings).saturating_add(initial_amount);
-                                if user_claim.mint.eq(&Pubkey::default()) {
+                                if user_claim.mint.eq(&Pubkey::default()) && user_claim.vault.eq(&Pubkey::default()) {
                                     user_claim.mint = vault.token_mint.key();
+                                    user_claim.vault = vault.address.key();
                                 }
                                 
                             }
@@ -143,8 +144,9 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
                             current_round.total_amount_settled = current_round.total_amount_settled.saturating_add(initial_amount);
     
                             user_claim.amount = user_claim.amount.saturating_add(initial_amount);
-                            if user_claim.mint.eq(&Pubkey::default()) {
+                            if user_claim.mint.eq(&Pubkey::default()) && user_claim.vault.eq(&Pubkey::default()) {
                                 user_claim.mint = vault.token_mint.key();
+                                user_claim.vault = vault.address.key();
                             }
                         }
                     } else {
@@ -152,8 +154,9 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
                         current_round.total_amount_settled = current_round.total_amount_settled.saturating_add(prediction.amount);
 
                         user_claim.amount = user_claim.amount.saturating_add(prediction.amount);
-                        if user_claim.mint.eq(&Pubkey::default()) {
+                        if user_claim.mint.eq(&Pubkey::default()) && user_claim.vault.eq(&Pubkey::default()) {
                             user_claim.mint = vault.token_mint.key();
+                            user_claim.vault = vault.key();
                         }
                     }
 
@@ -205,7 +208,7 @@ pub fn payout_cranks<'info>(mut ctx: Context<'_, '_, '_, 'info, PayoutCranks<'in
             require_keys_eq!(crank.user, user_claimable.user, ErrorCode::UserClaimableCrankUserMismatch);
 
             // find first claim 
-            let mut some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.mint.eq(&vault.token_mint.key()));
+            let mut some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.mint.eq(&vault.token_mint.key()) && claim.vault.eq(&vault.address.key()));
 
             some_user_claim_position = match some_user_claim_position {
                 None => {

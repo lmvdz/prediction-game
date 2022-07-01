@@ -123,16 +123,16 @@ pub fn user_claim_all<'info>(ctx: Context<'_, '_, '_, 'info, UserClaimAll<'info>
 
     let token_program = &ctx.accounts.token_program;
 
-    if accounts.len() % 5 == 0 && accounts.len() >= 5 {
+    if accounts.len() % 4 == 0 && accounts.len() >= 4 {
         let mut index: usize = 0;
 
-        for _i in 0..(accounts.len()/5) {
+        for _i in 0..(accounts.len()/4) {
 
             // load the game
             // let game_ata_account_info = accounts[index].to_account_info().clone();
             // let game = &Account::<'info, Game>::try_from(&game_ata_account_info).unwrap();
 
-            let vault_account_info = accounts[index+1].to_account_info().clone();
+            let vault_account_info = accounts[index].to_account_info().clone();
             let vault = &Account::<'info, Vault>::try_from(&vault_account_info).unwrap();
             let vault_ata_authority_nonce = vault.vault_ata_authority_nonce;
 
@@ -140,7 +140,7 @@ pub fn user_claim_all<'info>(ctx: Context<'_, '_, '_, 'info, UserClaimAll<'info>
 
             // load the user_claim
 
-            let some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.mint.eq(&vault.token_mint.key()));
+            let some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.mint.eq(&vault.token_mint.key()) && claim.vault.eq(&vault.address.key()));
 
             // require that the user claim exists
         
@@ -154,18 +154,16 @@ pub fn user_claim_all<'info>(ctx: Context<'_, '_, '_, 'info, UserClaimAll<'info>
         
             require!(user_claim.amount.gt(&0) && user_claim.mint.eq(&vault.token_mint.key()), ErrorCode::InsufficientClaimableAmount);
 
-
             
-
-            let vault_ata_account_info = accounts[index+2].to_account_info().clone();
+            let vault_ata_account_info = accounts[index+1].to_account_info().clone();
             let vault_ata = &mut Account::<'info, TokenAccount>::try_from(&vault_ata_account_info).unwrap();
             let vault_ata_key = vault_ata.key();
 
             require_keys_eq!(vault.vault_ata, vault_ata_key, ErrorCode::VaultAtaNotEqualToAtaOnVault);
 
-            let vault_ata_authority = &accounts[index+3];
+            let vault_ata_authority = &accounts[index+2];
             
-            let to_token_account_info = accounts[index+4].to_account_info().clone();
+            let to_token_account_info = accounts[index+3].to_account_info().clone();
             let to_token_account = &mut Account::<'info, TokenAccount>::try_from(&to_token_account_info).unwrap();
 
             require_keys_eq!(to_token_account.owner, user.owner, ErrorCode::ToTokenAccountNotOwnedByUserOwner);
@@ -184,8 +182,9 @@ pub fn user_claim_all<'info>(ctx: Context<'_, '_, '_, 'info, UserClaimAll<'info>
 
             user_claim.amount = 0;
             user_claim.mint = Pubkey::default();
+            user_claim.vault = Pubkey::default();
 
-            index+=5;
+            index+=4;
         }
     }  
 
@@ -198,7 +197,7 @@ pub fn user_claim(ctx: Context<UserClaim>, amount: u64) -> Result<()> {
     let mut user_claimable = ctx.accounts.user_claimable.load_mut()?;
 
 
-    let some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.mint.eq(&vault.token_mint.key()));
+    let some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.mint.eq(&vault.token_mint.key()) && claim.vault.eq(&vault.address.key()));
 
     require!(some_user_claim_position.is_some(), ErrorCode::NoAvailableClaimFound);
 
@@ -230,6 +229,7 @@ pub fn user_claim(ctx: Context<UserClaim>, amount: u64) -> Result<()> {
 
     user_claim.amount = user_claim.amount.saturating_sub(amount);
     user_claim.mint = Pubkey::default();
+    user_claim.vault = Pubkey::default();
 
     Ok(())
 }

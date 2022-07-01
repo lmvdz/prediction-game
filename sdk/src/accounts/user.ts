@@ -67,7 +67,7 @@ export default class User implements DataUpdatable<UserAccount> {
         })
     }
 
-    public async userClaimInstruction(workspace: Workspace, vault: Vault, game: Game, toTokenAccount: Account, amount: anchor.BN): Promise<TransactionInstruction> {
+    public async userClaimInstruction(workspace: Workspace, vault: Vault, toTokenAccount: Account, amount: anchor.BN): Promise<TransactionInstruction> {
         
         if (workspace.owner.toBase58() !== this.account.owner.toBase58()) throw Error("Signer not Owner")
         if (toTokenAccount.owner.toBase58() !== this.account.owner.toBase58()) throw Error("To Token Account Owner not the same as User Owner");
@@ -85,8 +85,8 @@ export default class User implements DataUpdatable<UserAccount> {
         }).instruction();
     }
 
-    public async userClaim(workspace: Workspace, vault: Vault, game: Game, toTokenAccount: Account, amount: anchor.BN) : Promise<User> {
-        let ix = await this.userClaimInstruction(workspace, vault, game, toTokenAccount, amount);
+    public async userClaim(workspace: Workspace, vault: Vault, toTokenAccount: Account, amount: anchor.BN) : Promise<User> {
+        let ix = await this.userClaimInstruction(workspace, vault, toTokenAccount, amount);
         let tx = new Transaction().add(ix);
 
         return new Promise((resolve, reject) => {
@@ -108,10 +108,12 @@ export default class User implements DataUpdatable<UserAccount> {
         }) 
     }
 
-    public async userClaimAllInstruction(workspace: Workspace, userClaimable: UserClaimable, vaults: Array<Vault>, games: Array<Game>, tokenAccounts: Array<Account>): Promise<Array<TransactionInstruction>> {
+    public async userClaimAllInstruction(workspace: Workspace, userClaimable: UserClaimable, vaults: Array<Vault>, tokenAccounts: Array<Account>, filterMint: PublicKey): Promise<Array<TransactionInstruction>> {
         
-        let accountMetas : Array<Array<AccountMeta>> = chunk(userClaimable.account.claims.filter(claim => claim.amount.gt(new anchor.BN(0)) && claim.mint.toBase58() !== PublicKey.default.toBase58()).map(claim => {
-            let vault = vaults.find(v => v.account.tokenMint.toBase58() === claim.mint.toBase58());
+        let accountMetas : Array<Array<AccountMeta>> = chunk(userClaimable.account.claims.filter(claim => 
+                claim.amount.gt(new anchor.BN(0)) && claim.mint.toBase58() !== PublicKey.default.toBase58() && ( filterMint.toBase58() !== PublicKey.default.toBase58() ? claim.mint.toBase58() === filterMint.toBase58() : true )
+        ).map(claim => {
+            let vault = vaults.find(v => v.account.address.toBase58() === claim.vault.toBase58());
             let tokenAccount = tokenAccounts.find(t => t.mint.toBase58() === vault.account.tokenMint.toBase58())
             return [
                 {
@@ -149,10 +151,10 @@ export default class User implements DataUpdatable<UserAccount> {
         
     }
 
-    public async userClaimAll(workspace: Workspace, userClaimable: UserClaimable, vaults: Array<Vault>, games: Array<Game>, tokenAccounts: Array<Account>) : Promise<User> {
+    public async userClaimAll(workspace: Workspace, userClaimable: UserClaimable, vaults: Array<Vault>, tokenAccounts: Array<Account>, filterMint: PublicKey) : Promise<User> {
         if (workspace.owner.toBase58() !== this.account.owner.toBase58()) throw Error("Signer not Owner")
        
-        let instructions = await this.userClaimAllInstruction(workspace, userClaimable, vaults, games, tokenAccounts)
+        let instructions = await this.userClaimAllInstruction(workspace, userClaimable, vaults, tokenAccounts, filterMint)
 
         if (instructions.length > 0) {
             

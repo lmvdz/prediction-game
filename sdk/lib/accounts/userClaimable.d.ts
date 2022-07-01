@@ -5,6 +5,7 @@ import { DataUpdatable } from "../dataUpdatable";
 export declare type Claim = {
     amount: anchor.BN;
     mint: PublicKey;
+    vault: PublicKey;
 };
 export declare type UserClaimableAccount = {
     address: PublicKey;

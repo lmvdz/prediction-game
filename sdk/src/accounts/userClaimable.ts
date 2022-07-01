@@ -8,6 +8,7 @@ import { DataUpdatable } from "../dataUpdatable"
 export type Claim = {
     amount: anchor.BN
     mint: PublicKey
+    vault: PublicKey
 }
 
 export type UserClaimableAccount = {

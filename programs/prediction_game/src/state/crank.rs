@@ -5,8 +5,6 @@ use anchor_lang::prelude::*;
 
 pub struct Crank {
 
-    // accounts
-
     pub address: Pubkey,
     pub owner: Pubkey,
     pub user: Pubkey,

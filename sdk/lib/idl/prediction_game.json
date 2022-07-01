@@ -1,5 +1,5 @@
 {
-    "version": "1.0.5",
+    "version": "1.0.6",
     "name": "prediction_game",
     "instructions": [
         {
@@ -1420,6 +1420,10 @@
                     {
                         "name": "mint",
                         "type": "publicKey"
+                    },
+                    {
+                        "name": "vault",
+                        "type": "publicKey"
                     }
                 ]
             }
@@ -1975,6 +1979,6 @@
         }
     ],
     "metadata": {
-        "address": "EPZXCy45VtSdGA7darn8LcVErMYecZS4d7XYG8pwLExb"
+        "address": "7ZFRSUUEgeJUMMyf7DYsYKurHctSAZed8ECMazomo7x"
     }
 }

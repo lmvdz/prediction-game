@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 #[account]
 #[derive(Default)]
 pub struct Game {
+    
     pub owner: Pubkey,
     pub address: Pubkey,
 
