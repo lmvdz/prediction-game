@@ -26,7 +26,6 @@ export default defineComponent({
     <div class="app-wallet-button">
       <wallet-multi-button dark/>
     </div>
-    
 
 
     <v-app-bar app>
@@ -51,12 +50,12 @@ export default defineComponent({
     <v-footer app>
       <v-row>
         <a class="hover-move-up-container" href="https://github.com/lmvdz" target="_blank">
-          <GithubLink :height="28" heightUnits="px" :width="28" widthUnits="px" class="hover-move-up github"/>
+          <GithubLink href="https://github.com/lmvdz" :height="28" heightUnits="px" :width="28" widthUnits="px" class="hover-move-up github"/>
         </a>
         
-        <!-- <a class="hover-move-up-container" href="https://discord.gg/sol-degenaire" target="_blank">
-          <DiscordLink :height="32" heightUnits="px" :width="32" widthUnits="px" class="hover-move-up discord"/>
-        </a> -->
+        <a class="hover-move-up-container" href="https://discord.gg/qfeVZQvCv3" target="_blank">
+          <DiscordLink href="https://discord.gg/qfeVZQvCv3" :height="32" heightUnits="px" :width="32" widthUnits="px" class="hover-move-up discord"/>
+        </a>
         
       </v-row>
     </v-footer>

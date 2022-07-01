@@ -2,6 +2,7 @@
     import { defineProps, reactive, toRefs } from "vue";
 
     const props = defineProps({
+        href: String,
         height: Number,
         heightUnits: String,
         width: Number,
@@ -13,7 +14,7 @@
 
 <template>
     <a
-        href="https://github.com/lmvdz"
+        :href="href"
         target="_blank"
         class="footer-icon-link"
         :style="`height: ${height+heightUnits}`"

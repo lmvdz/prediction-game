@@ -497,9 +497,9 @@
     "@solana/wallet-adapter-torus" "^0.11.12"
 
 "@solana/web3.js@^1.32.0", "@solana/web3.js@^1.32.1", "@solana/web3.js@^1.36.0":
-  version "1.47.0"
-  resolved "https://registry.yarnpkg.com/@solana/web3.js/-/web3.js-1.47.0.tgz#7332a5271bfa28fa985d6a162c8477f84771deb2"
-  integrity sha512-E+2UDtTT5Ab+IIX3RmenhrZW3O4tj9uGKvF92eTUerDYh/7eheuaGI7N60WQOlXUT+8twatqZLrili15kzwppw==
+  version "1.47.1"
+  resolved "https://registry.yarnpkg.com/@solana/web3.js/-/web3.js-1.47.1.tgz#21243d4a19836584bc3429d3cee602191646f845"
+  integrity sha512-snsEZDR4smySxY6ZBNJUPStTVKkbgBiel14VZDjRC79Pcol3nbxjlg6HGg4rvfCSkSbpDPJPPwoTImigflEBBg==
   dependencies:
     "@babel/runtime" "^7.12.5"
     "@ethersproject/sha2" "^5.5.0"
@@ -2311,9 +2311,9 @@ node-fetch@2.6.1:
   integrity sha512-V4aYg89jEoVRxRb2fJdAg8FHvI7cEyYdVAh94HH0UIK8oJxUfkjlDQN9RbMx+bEjP7+ggMiFRprSti032Oipxw==
 
 node-gyp-build@^4.2.0, node-gyp-build@^4.3.0:
-  version "4.4.0"
-  resolved "https://registry.yarnpkg.com/node-gyp-build/-/node-gyp-build-4.4.0.tgz#42e99687ce87ddeaf3a10b99dc06abc11021f3f4"
-  integrity sha512-amJnQCcgtRVw9SvoebO3BKGESClrfXGCUTX9hSn1OuGQTQBOZmVd0Z0OlecpuRksKvbsUqALE8jls/ErClAPuQ==
+  version "4.5.0"
+  resolved "https://registry.yarnpkg.com/node-gyp-build/-/node-gyp-build-4.5.0.tgz#7a64eefa0b21112f89f58379da128ac177f20e40"
+  integrity sha512-2iGbaQBV+ITgCz76ZEjmhUKAKVf7xfY1sRl4UiKQspfZMH2h06SyhNsnSVy50cwkFQDGLyif6m/6uFXHkOZ6rg==
 
 npm-run-path@^4.0.1:
   version "4.0.1"

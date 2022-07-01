@@ -652,13 +652,13 @@ async function loadRounds() {
   return await Promise.allSettled(((await Promise.all((await (getWorkspace()).program.account.round.all()).map(async (roundProgramAccount) => (new Round(
     roundProgramAccount.account as unknown as RoundAccount
   ))))) as Array<Round>).map(async round => {
-    // console.log(newgame.account.vault.toBase58());
-    if (!rounds.value.has(round.account.address.toBase58())) {
-      rounds.value.add(round.account.address.toBase58());
+    let roundAddress = round.account.address.toBase58()
+    if (!rounds.value.has(roundAddress)) {
+      rounds.value.add(roundAddress);
     }
 
-    if (!paf.value.accounts.has(round.account.address.toBase58())) {
-      paf.value.addProgram<PredictionGame>('round', round.account.address.toBase58(), getWorkspace().program, async (data: RoundAccount) => {
+    if (!paf.value.accounts.has(roundAddress)) {
+      paf.value.addProgram<PredictionGame>('round', roundAddress, getWorkspace().program, async (data: RoundAccount) => {
         if (frontendGameData.value.get(data.game.toBase58()) !== undefined) {
           // round time difference updater
 
@@ -680,10 +680,9 @@ async function loadRounds() {
             frontendGameData.value.get(data.game.toBase58()).noUpdateReceieved = true;
           }, 30 * 1000)
         }      
-        // console.log("updated round " + data.address.toBase58())
        }, (error) => {
-        paf.value.accounts.delete(round.account.address.toBase58())
-        rounds.value.delete(round.account.address.toBase58())
+        paf.value.accounts.delete(roundAddress)
+        rounds.value.delete(roundAddress)
       }, round.account)
     }
 
@@ -695,20 +694,18 @@ async function loadGames() {
   return await Promise.allSettled(((await Promise.all((await (getWorkspace()).program.account.game.all()).map(async (gameProgramAccount) => (new Game(
     gameProgramAccount.account as unknown as GameAccount
   ))))) as Array<Game>).map(async newgame => {
-    // console.log(newgame.account.vault.toBase58());
-    if (!games.value.has(newgame.account.address.toBase58())) {
-      games.value.add(newgame.account.address.toBase58());
+    let newGameAddress = newgame.account.address.toBase58();
+    if (!games.value.has(newGameAddress)) {
+      games.value.add(newGameAddress);
     }
 
-    if (!paf.value.accounts.has(newgame.account.address.toBase58())) {
-      // console.log('adding game to PAF ')
-      paf.value.addProgram<PredictionGame>('game', newgame.account.address.toBase58(), getWorkspace().program, async (data: GameAccount) => {
+    if (!paf.value.accounts.has(newGameAddress)) {
+
+      paf.value.addProgram<PredictionGame>('game', newGameAddress, getWorkspace().program, async (data: GameAccount) => {
         await initFrontendGameData(getGame(data.address.toBase58()));
-        // console.log("updated game " + data.address.toBase58())
        }, (error) => {
-        // console.error(error);
-        paf.value.accounts.delete(newgame.account.address.toBase58())
-        games.value.delete(newgame.account.address.toBase58())
+        paf.value.accounts.delete(newGameAddress)
+        games.value.delete(newGameAddress)
       }, newgame.account)
     }
     return;
@@ -719,18 +716,16 @@ async function loadVaults() {
     return await Promise.allSettled(((await Promise.all((await (getWorkspace()).program.account.vault.all()).map(async (vaultProgramAccount: ProgramAccount<VaultAccount>) => (new Vault(
       vaultProgramAccount.account
     ))))) as Array<Vault>).map(async (vault: Vault) => {
-      // console.log(vault.account.address.toBase58());
-      if (!vaults.value.has(vault.account.address.toBase58())) {
-        vaults.value.add(vault.account.address.toBase58());
+      let vaultAddress = vault.account.address.toBase58();
+      if (!vaults.value.has(vaultAddress)) {
+        vaults.value.add(vaultAddress);
       }
         
-      if (!paf.value.accounts.has(vault.account.address.toBase58())) {
-        paf.value.addProgram<PredictionGame>('vault', vault.account.address.toBase58(), getWorkspace().program, async (data: VaultAccount) => {
-          // console.log("updated vault " + data.address.toBase58())
+      if (!paf.value.accounts.has(vaultAddress)) {
+        paf.value.addProgram<PredictionGame>('vault', vaultAddress, getWorkspace().program, async (data: VaultAccount) => {
         }, (error) => {
-          // console.error(error);
-          paf.value.accounts.delete(vault.account.address.toBase58())
-          vaults.value.delete(vault.account.address.toBase58())
+          paf.value.accounts.delete(vaultAddress)
+          vaults.value.delete(vaultAddress)
         }, vault.account)
       }
       return;
@@ -741,15 +736,15 @@ async function loadPredictions() {
   if (wallet.value !== null && wallet.value.connected && wallet.value.publicKey !== undefined && wallet.value.publicKey !== null) {
     try {
       Promise.allSettled((await (getWorkspace()).program.account.userPrediction.all([ { memcmp: { offset: 8, bytes: bs58.encode((wallet.value.publicKey as PublicKey)?.toBuffer() as Buffer) }}])).map((programAccount: ProgramAccount<UserPredictionAccount>) => {
-        if (!userPredictions.value.has(programAccount.account.address.toBase58())) {
-          userPredictions.value.add(programAccount.account.address.toBase58())
+        let userPredictionProgramAccountAddress = programAccount.account.address.toBase58();
+        if (!userPredictions.value.has(userPredictionProgramAccountAddress)) {
+          userPredictions.value.add(userPredictionProgramAccountAddress)
         }
-        if (!paf.value.accounts.has(programAccount.account.address.toBase58())) {
-          paf.value.addProgram<PredictionGame>('userPrediction', programAccount.account.address.toBase58(), getWorkspace().program, async (data: UserPredictionAccount) => {
-            // console.log("updated user prediction " + data.address.toBase58())
+        if (!paf.value.accounts.has(userPredictionProgramAccountAddress)) {
+          paf.value.addProgram<PredictionGame>('userPrediction', userPredictionProgramAccountAddress, getWorkspace().program, async (data: UserPredictionAccount) => {
           }, (error) => {
-            paf.value.accounts.delete(programAccount.account.address.toBase58())
-            userPredictions.value.delete(programAccount.account.address.toBase58())
+            paf.value.accounts.delete(userPredictionProgramAccountAddress)
+            userPredictions.value.delete(userPredictionProgramAccountAddress)
           }, programAccount.account)
         }
       }))
@@ -832,8 +827,10 @@ function getHost() {
 function hasSomeClaimable() : boolean {
   if (computedClaimable.value !== null && computedClaimable.value.account !== undefined && computedClaimable.value.account.claims.length > 0) {
     let claim = computedClaimable.value.account.claims.find(claim => claim !== undefined && claim.amount.gt(new anchor.BN(0)) && claim.mint.toBase58() !== PublicKey.default.toBase58());
-    // console.log(claim.amount.toNumber(), claim.mint.toBase58());
-    return claim !== undefined
+    if (claim !== undefined) {
+      return true;
+    }
+    return false
   }
   return false;
   
@@ -844,7 +841,7 @@ function getClaimableForGame(game: Game) : Claim {
     if (computedVaults.value !== null && computedVaults.value !== undefined) {
       let vault = computedVaults.value.find(v => v.account.address.toBase58() === game.account.address.toBase58());
       if (vault !== undefined) {
-        return computedClaimable.value.account.claims.find(claim => claim.mint.toBase58() === vault.account.tokenMint.toBase58());
+        return computedClaimable.value.account.claims.find(claim => claim !== undefined && claim.mint.toBase58() === vault.account.tokenMint.toBase58());
       }
     }
     

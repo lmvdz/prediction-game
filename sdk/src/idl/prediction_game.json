@@ -1973,5 +1973,8 @@
       "name": "InvalidVaultAuthorityNonce",
       "msg": "The Vault ATA Authority Nonce did not match the one generated"
     }
-  ]
+  ],
+  "metadata": {
+    "address": "EPZXCy45VtSdGA7darn8LcVErMYecZS4d7XYG8pwLExb"
+  }
 }
