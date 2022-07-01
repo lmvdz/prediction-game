@@ -6,8 +6,8 @@ import { DataUpdatable } from "../dataUpdatable"
 
 
 export type Claim = {
-    game: PublicKey
     amount: anchor.BN
+    mint: PublicKey
 }
 
 export type UserClaimableAccount = {

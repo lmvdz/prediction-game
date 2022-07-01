@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IDL = void 0;
 exports.IDL = {
-    "version": "1.0.4",
+    "version": "1.0.5",
     "name": "prediction_game",
     "instructions": [
         {
@@ -448,6 +448,11 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
+                    "name": "vault",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
                     "name": "currentRound",
                     "isMut": true,
                     "isSigner": false
@@ -471,6 +476,11 @@ exports.IDL = {
                 {
                     "name": "game",
                     "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "vault",
+                    "isMut": false,
                     "isSigner": false
                 },
                 {
@@ -558,7 +568,7 @@ exports.IDL = {
                 },
                 {
                     "name": "game",
-                    "isMut": true,
+                    "isMut": false,
                     "isSigner": false
                 },
                 {
@@ -638,11 +648,6 @@ exports.IDL = {
                 },
                 {
                     "name": "user",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "game",
                     "isMut": false,
                     "isSigner": false
                 },
@@ -1416,7 +1421,7 @@ exports.IDL = {
                         "type": "u64"
                     },
                     {
-                        "name": "game",
+                        "name": "mint",
                         "type": "publicKey"
                     }
                 ]
@@ -1888,8 +1893,8 @@ exports.IDL = {
         },
         {
             "code": 6085,
-            "name": "PredictionAndUserOwnerMismatch",
-            "msg": "Prediction and User Owner Mismatch"
+            "name": "PredictionAndClaimUserMismatch",
+            "msg": "Prediction and Claim User Mismatch"
         },
         {
             "code": 6086,
@@ -1950,6 +1955,26 @@ exports.IDL = {
             "code": 6097,
             "name": "UserClaimableCrankUserMismatch",
             "msg": "The user associated with the Crank is not the same as the UserClaimable user"
+        },
+        {
+            "code": 6098,
+            "name": "InvalidFeeVaultATAAuthority",
+            "msg": "The Fee Vault ATA Authority did not match the one generated"
+        },
+        {
+            "code": 6099,
+            "name": "InvalidVaultATAAuthority",
+            "msg": "The Vault ATA Authority did not match the one generated"
+        },
+        {
+            "code": 6100,
+            "name": "InvalidFeeVaultAuthorityNonce",
+            "msg": "The Fee Vault ATA Authority Nonce did not match the one generated"
+        },
+        {
+            "code": 6101,
+            "name": "InvalidVaultAuthorityNonce",
+            "msg": "The Vault ATA Authority Nonce did not match the one generated"
         }
     ]
 };

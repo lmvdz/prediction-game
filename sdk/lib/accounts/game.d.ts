@@ -10,7 +10,6 @@ export declare type GameAccount = {
     owner: PublicKey;
     address: PublicKey;
     tokenDecimal: number;
-    tokenMint: PublicKey;
     baseSymbol: string | String;
     roundNumber: number;
     currentRound: PublicKey;

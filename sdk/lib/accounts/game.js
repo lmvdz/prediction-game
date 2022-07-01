@@ -154,6 +154,7 @@ class Game {
         return await workspace.program.methods.payoutCranksInstruction().accounts({
             signer: workspace.owner,
             game: this.account.address,
+            vault: this.account.vault,
             currentRound: this.currentRound.account.address,
             systemProgram: web3_js_1.SystemProgram.programId
         }).remainingAccounts(remainingAccounts).instruction();
@@ -302,6 +303,7 @@ class Game {
         return await workspace.program.methods.settlePredictionsInstruction().accounts({
             signer: workspace.owner,
             game: this.account.address,
+            vault: this.account.vault,
             crank: crank.account.address,
             currentRound: this.currentRound.account.address,
             systemProgram: web3_js_1.SystemProgram.programId

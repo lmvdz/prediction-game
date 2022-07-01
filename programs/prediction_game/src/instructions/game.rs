@@ -46,11 +46,22 @@ pub fn init_game(ctx: Context<InitializeGame>, oracle: u8, base_symbol: String, 
 pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredictions<'info>>) -> Result<()> {
 
     let ctx = &mut ctx;
-    let accounts = ctx.remaining_accounts;
-    let current_round = &mut ctx.accounts.current_round;
-    let game = &ctx.accounts.game;
     
 
+    // remaining accounts should be passed in groups of 2
+    // first is the user_prediction account
+    // second is the associated user_claimable account
+    // CHECK: the user field on both should be the same
+    let accounts = ctx.remaining_accounts;
+
+    // current_round of the game
+    // CHECK: current_round.game == game.key()
+    let current_round = &mut ctx.accounts.current_round;
+    // CHECK: game.current_round == current_round.key()
+    let game = &ctx.accounts.game;
+    let vault = &ctx.accounts.vault;
+
+    // The account which is calling 
     let crank = &mut ctx.accounts.crank;
 
     if !crank.last_crank_round.eq(&current_round.key()) {
@@ -83,14 +94,14 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
                 let user_claimable_loader = AccountLoader::<'info, UserClaimable>::try_from(&user_claim_info).unwrap();
                 let mut user_claimable = user_claimable_loader.load_mut()?;
 
-                require_keys_eq!(prediction.user, user_claimable.user, ErrorCode::PredictionAndUserOwnerMismatch);
+                require_keys_eq!(prediction.user, user_claimable.user, ErrorCode::PredictionAndClaimUserMismatch);
 
                 // find first claim 
-                let mut some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.game.eq(&game.key()));
+                let mut some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.mint.eq(&vault.token_mint.key()));
 
                 some_user_claim_position = match some_user_claim_position {
                     None => {
-                        user_claimable.claims.iter().position(|claim| claim.game.eq(&Pubkey::default()))
+                        user_claimable.claims.iter().position(|claim| claim.mint.eq(&Pubkey::default()))
                     }
                     Some(_) => {
                         some_user_claim_position
@@ -120,8 +131,8 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
                                 current_round.total_amount_settled = current_round.total_amount_settled.saturating_add(initial_amount);
         
                                 user_claim.amount = user_claim.amount.saturating_add(winnings).saturating_add(initial_amount);
-                                if user_claim.game.eq(&Pubkey::default()) {
-                                    user_claim.game = game.key();
+                                if user_claim.mint.eq(&Pubkey::default()) {
+                                    user_claim.mint = vault.token_mint.key();
                                 }
                                 
                             }
@@ -132,8 +143,8 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
                             current_round.total_amount_settled = current_round.total_amount_settled.saturating_add(initial_amount);
     
                             user_claim.amount = user_claim.amount.saturating_add(initial_amount);
-                            if user_claim.game.eq(&Pubkey::default()) {
-                                user_claim.game = game.key();
+                            if user_claim.mint.eq(&Pubkey::default()) {
+                                user_claim.mint = vault.token_mint.key();
                             }
                         }
                     } else {
@@ -141,11 +152,12 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
                         current_round.total_amount_settled = current_round.total_amount_settled.saturating_add(prediction.amount);
 
                         user_claim.amount = user_claim.amount.saturating_add(prediction.amount);
-                        if user_claim.game.eq(&Pubkey::default()) {
-                            user_claim.game = game.key();
+                        if user_claim.mint.eq(&Pubkey::default()) {
+                            user_claim.mint = vault.token_mint.key();
                         }
                     }
 
+                    // no need to write when using an AccountLoader
                     // let dst: &mut [u8] = &mut user_claim_info.try_borrow_mut_data()?;
                     // let mut cursor = std::io::Cursor::new(dst);
                     // let _write_user_claim = user_claimable.try_serialize(&mut cursor);
@@ -173,6 +185,7 @@ pub fn payout_cranks<'info>(mut ctx: Context<'_, '_, '_, 'info, PayoutCranks<'in
     let ctx = &mut ctx;
     let current_round = &mut ctx.accounts.current_round;
     let game = &ctx.accounts.game;
+    let vault = &ctx.accounts.vault;
 
     let round_key = current_round.key();
     let accounts = ctx.remaining_accounts;
@@ -192,11 +205,11 @@ pub fn payout_cranks<'info>(mut ctx: Context<'_, '_, '_, 'info, PayoutCranks<'in
             require_keys_eq!(crank.user, user_claimable.user, ErrorCode::UserClaimableCrankUserMismatch);
 
             // find first claim 
-            let mut some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.game.eq(&game.key()));
+            let mut some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.mint.eq(&vault.token_mint.key()));
 
             some_user_claim_position = match some_user_claim_position {
                 None => {
-                    user_claimable.claims.iter().position(|claim| claim.game.eq(&Pubkey::default()))
+                    user_claimable.claims.iter().position(|claim| claim.mint.eq(&Pubkey::default()))
                 }
                 Some(_) => {
                     some_user_claim_position
@@ -220,8 +233,8 @@ pub fn payout_cranks<'info>(mut ctx: Context<'_, '_, '_, 'info, PayoutCranks<'in
                 };
 
                 user_claim.amount = user_claim.amount.saturating_add(crank_pay);
-                if user_claim.game.eq(&Pubkey::default()) {
-                    user_claim.game = game.key();
+                if user_claim.mint.eq(&Pubkey::default()) {
+                    user_claim.mint = vault.token_mint.key();
                 }
 
                 // let dst: &mut [u8] = &mut user_claim_info.try_borrow_mut_data()?;
@@ -517,6 +530,9 @@ pub struct PayoutCranks<'info> {
     #[account(mut, constraint = game.current_round == current_round.key())]
     pub game: Box<Account<'info, Game>>,
 
+    #[account(constraint = vault.key() == game.vault.key())]
+    pub vault: Box<Account<'info, Vault>>,
+
     #[account(
         mut,
         constraint = current_round.finished @ ErrorCode::RoundNotFinished,
@@ -536,6 +552,9 @@ pub struct SettlePredictions<'info> {
 
     #[account(mut, constraint = game.current_round == current_round.key())]
     pub game: Box<Account<'info, Game>>,
+
+    #[account(constraint = vault.key() == game.vault)]
+    pub vault: Box<Account<'info, Vault>>,
 
     #[account(mut)]
     pub crank: Box<Account<'info, Crank>>,

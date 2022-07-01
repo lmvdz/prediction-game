@@ -1,5 +1,5 @@
 export declare type PredictionGame = {
-    "version": "1.0.4";
+    "version": "1.0.5";
     "name": "prediction_game";
     "instructions": [
         {
@@ -445,6 +445,11 @@ export declare type PredictionGame = {
                     "isSigner": false;
                 },
                 {
+                    "name": "vault";
+                    "isMut": false;
+                    "isSigner": false;
+                },
+                {
                     "name": "currentRound";
                     "isMut": true;
                     "isSigner": false;
@@ -468,6 +473,11 @@ export declare type PredictionGame = {
                 {
                     "name": "game";
                     "isMut": true;
+                    "isSigner": false;
+                },
+                {
+                    "name": "vault";
+                    "isMut": false;
                     "isSigner": false;
                 },
                 {
@@ -555,7 +565,7 @@ export declare type PredictionGame = {
                 },
                 {
                     "name": "game";
-                    "isMut": true;
+                    "isMut": false;
                     "isSigner": false;
                 },
                 {
@@ -635,11 +645,6 @@ export declare type PredictionGame = {
                 },
                 {
                     "name": "user";
-                    "isMut": false;
-                    "isSigner": false;
-                },
-                {
-                    "name": "game";
                     "isMut": false;
                     "isSigner": false;
                 },
@@ -1413,7 +1418,7 @@ export declare type PredictionGame = {
                         "type": "u64";
                     },
                     {
-                        "name": "game";
+                        "name": "mint";
                         "type": "publicKey";
                     }
                 ];
@@ -1885,8 +1890,8 @@ export declare type PredictionGame = {
         },
         {
             "code": 6085;
-            "name": "PredictionAndUserOwnerMismatch";
-            "msg": "Prediction and User Owner Mismatch";
+            "name": "PredictionAndClaimUserMismatch";
+            "msg": "Prediction and Claim User Mismatch";
         },
         {
             "code": 6086;
@@ -1947,6 +1952,26 @@ export declare type PredictionGame = {
             "code": 6097;
             "name": "UserClaimableCrankUserMismatch";
             "msg": "The user associated with the Crank is not the same as the UserClaimable user";
+        },
+        {
+            "code": 6098;
+            "name": "InvalidFeeVaultATAAuthority";
+            "msg": "The Fee Vault ATA Authority did not match the one generated";
+        },
+        {
+            "code": 6099;
+            "name": "InvalidVaultATAAuthority";
+            "msg": "The Vault ATA Authority did not match the one generated";
+        },
+        {
+            "code": 6100;
+            "name": "InvalidFeeVaultAuthorityNonce";
+            "msg": "The Fee Vault ATA Authority Nonce did not match the one generated";
+        },
+        {
+            "code": 6101;
+            "name": "InvalidVaultAuthorityNonce";
+            "msg": "The Vault ATA Authority Nonce did not match the one generated";
         }
     ];
 };

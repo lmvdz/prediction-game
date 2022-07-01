@@ -3,8 +3,8 @@ import { PublicKey, TransactionInstruction } from '@solana/web3.js';
 import { Workspace } from "../workspace";
 import { DataUpdatable } from "../dataUpdatable";
 export declare type Claim = {
-    game: PublicKey;
     amount: anchor.BN;
+    mint: PublicKey;
 };
 export declare type UserClaimableAccount = {
     address: PublicKey;

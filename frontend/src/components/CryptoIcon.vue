@@ -6,5 +6,5 @@
 </script>
 
 <template>
-    <v-img :src="url"></v-img>
+    <v-img style="margin: 0 auto;" :src="url"></v-img>
 </template>

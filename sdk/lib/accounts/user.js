@@ -79,7 +79,6 @@ class User {
             throw Error("To Token Account Owner not the same as User Owner");
         return await workspace.program.methods.userClaimInstruction(amount).accounts({
             signer: workspace.owner,
-            game: game.account.address,
             user: this.account.address,
             userClaimable: this.account.userClaimable,
             toTokenAccount: toTokenAccount.address,
@@ -114,18 +113,12 @@ class User {
         });
     }
     async userClaimAllInstruction(workspace, userClaimable, vaults, games, tokenAccounts) {
-        let accountMetas = (0, chunk_1.default)(userClaimable.account.claims.filter(claim => claim.amount.gt(new anchor.BN(0)) && claim.game.toBase58() !== web3_js_1.PublicKey.default.toBase58()).map(claim => {
-            let game = games.find(g => g.account.address.toBase58() === claim.game.toBase58());
-            let vault = vaults.find(v => v.account.address.toBase58() === game.account.vault.toBase58());
+        let accountMetas = (0, chunk_1.default)(userClaimable.account.claims.filter(claim => claim.amount.gt(new anchor.BN(0)) && claim.mint.toBase58() !== web3_js_1.PublicKey.default.toBase58()).map(claim => {
+            let vault = vaults.find(v => v.account.tokenMint.toBase58() === claim.mint.toBase58());
             let tokenAccount = tokenAccounts.find(t => t.mint.toBase58() === vault.account.tokenMint.toBase58());
             return [
                 {
-                    pubkey: game.account.address,
-                    isSigner: false,
-                    isWritable: false
-                },
-                {
-                    pubkey: game.account.vault,
+                    pubkey: vault.account.address,
                     isSigner: false,
                     isWritable: false
                 },

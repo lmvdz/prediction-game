@@ -23,11 +23,29 @@ pub fn init_vault(ctx: Context<InitializeVault>, vault_ata_nonce: u8, fee_vault_
 
     vault.fee_vault_ata = ctx.accounts.fee_vault_ata.key();
     vault.fee_vault_ata_authority = ctx.accounts.fee_vault_ata_authority.key();
+
+    let (fee_vault_ata_authority, fee_vault_ata_authority_nonce) =
+        Pubkey::find_program_address(&[vault.fee_vault_ata.as_ref()], ctx.program_id);
+
+    // fee vault ata authority needs to be equal to the calculated one
+    require_keys_eq!(vault.fee_vault_ata_authority, fee_vault_ata_authority, ErrorCode::InvalidFeeVaultATAAuthority);
+    
     vault.fee_vault_ata_authority_nonce = fee_vault_ata_nonce;
+
+    require_eq!(fee_vault_ata_authority_nonce, vault.fee_vault_ata_authority_nonce, ErrorCode::InvalidFeeVaultAuthorityNonce);
 
     vault.vault_ata = ctx.accounts.vault_ata.key();
     vault.vault_ata_authority = ctx.accounts.vault_ata_authority.key();
+
+    let (vault_ata_authority, vault_ata_authority_nonce) =
+        Pubkey::find_program_address(&[vault.vault_ata.as_ref()], ctx.program_id);
+
+    // vault ata authority needs to be equal to the calculated one
+    require_keys_eq!(vault.vault_ata_authority, vault_ata_authority, ErrorCode::InvalidVaultATAAuthority);
+
     vault.vault_ata_authority_nonce = vault_ata_nonce;
+
+    require_eq!(vault_ata_authority_nonce, vault.vault_ata_authority_nonce, ErrorCode::InvalidVaultAuthorityNonce);
 
     Ok(())
 }
@@ -71,7 +89,7 @@ pub struct InitializeVault<'info> {
     )]
     pub fee_vault_ata: Box<Account<'info, TokenAccount>>,
 
-    /// CHECK:
+    /// CHECK: make sure the authority is not malicously calculated
     pub fee_vault_ata_authority: AccountInfo<'info>,
 
     #[account(
@@ -84,7 +102,7 @@ pub struct InitializeVault<'info> {
     )]
     pub vault_ata: Box<Account<'info, TokenAccount>>,
 
-    /// CHECK:
+    /// CHECK: make sure the authority is not malicously calculated
     pub vault_ata_authority: AccountInfo<'info>,
 
     #[account(

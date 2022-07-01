@@ -173,8 +173,8 @@ pub enum ErrorCode {
     VaultDownTokenAccountDoesNotMatchProvidedDownTokenAccount,
     #[msg("Signer Not Owner Of Down Token Account")]
     SignerNotOwnerOfDownTokenAccount,
-    #[msg("Prediction and User Owner Mismatch")]
-    PredictionAndUserOwnerMismatch,
+    #[msg("Prediction and Claim User Mismatch")]
+    PredictionAndClaimUserMismatch,
     #[msg("Insufficient Claimable Amount")]
     InsufficientClaimableAmount,
     #[msg("Failed to Claim")]
@@ -198,5 +198,13 @@ pub enum ErrorCode {
     #[msg("The ATA Provided is not associated with the Vault ATA")]
     VaultAtaNotEqualToAtaOnVault,
     #[msg("The user associated with the Crank is not the same as the UserClaimable user")]
-    UserClaimableCrankUserMismatch
+    UserClaimableCrankUserMismatch,
+    #[msg("The Fee Vault ATA Authority did not match the one generated")]
+    InvalidFeeVaultATAAuthority,
+    #[msg("The Vault ATA Authority did not match the one generated")]
+    InvalidVaultATAAuthority,
+    #[msg("The Fee Vault ATA Authority Nonce did not match the one generated")]
+    InvalidFeeVaultAuthorityNonce,
+    #[msg("The Vault ATA Authority Nonce did not match the one generated")]
+    InvalidVaultAuthorityNonce
 }

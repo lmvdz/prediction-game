@@ -74,7 +74,6 @@ export default class User implements DataUpdatable<UserAccount> {
 
         return await workspace.program.methods.userClaimInstruction(amount).accounts({
             signer: workspace.owner,
-            game: game.account.address,
             user: this.account.address,
             userClaimable: this.account.userClaimable,
             toTokenAccount: toTokenAccount.address,
@@ -111,18 +110,12 @@ export default class User implements DataUpdatable<UserAccount> {
 
     public async userClaimAllInstruction(workspace: Workspace, userClaimable: UserClaimable, vaults: Array<Vault>, games: Array<Game>, tokenAccounts: Array<Account>): Promise<Array<TransactionInstruction>> {
         
-        let accountMetas : Array<Array<AccountMeta>> = chunk(userClaimable.account.claims.filter(claim => claim.amount.gt(new anchor.BN(0)) && claim.game.toBase58() !== PublicKey.default.toBase58()).map(claim => {
-            let game = games.find(g => g.account.address.toBase58() === claim.game.toBase58());
-            let vault = vaults.find(v => v.account.address.toBase58() === game.account.vault.toBase58());
+        let accountMetas : Array<Array<AccountMeta>> = chunk(userClaimable.account.claims.filter(claim => claim.amount.gt(new anchor.BN(0)) && claim.mint.toBase58() !== PublicKey.default.toBase58()).map(claim => {
+            let vault = vaults.find(v => v.account.tokenMint.toBase58() === claim.mint.toBase58());
             let tokenAccount = tokenAccounts.find(t => t.mint.toBase58() === vault.account.tokenMint.toBase58())
             return [
                 {
-                    pubkey: game.account.address,
-                    isSigner: false,
-                    isWritable: false
-                },
-                {
-                    pubkey: game.account.vault,
+                    pubkey: vault.account.address,
                     isSigner: false,
                     isWritable: false
                 },

@@ -124,6 +124,7 @@ async function initFromGameSeed(workspace, gameSeed, mint) {
 }
 async function closeAll(owner, connection, cluster) {
     Promise.allSettled([
+        await closeAllUserClaimable(owner, connection, cluster),
         await closeAllRounds(owner, connection, cluster),
         await closeAllCranks(owner, connection, cluster),
         await closeAllUserPredictions(owner, connection, cluster),

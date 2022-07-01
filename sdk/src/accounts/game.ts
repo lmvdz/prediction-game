@@ -17,7 +17,6 @@ export type GameAccount = {
     address: PublicKey
 
     tokenDecimal: number
-    tokenMint: PublicKey
 
     baseSymbol: string | String,
 
@@ -176,6 +175,7 @@ export default class Game implements DataUpdatable<GameAccount> {
         return await workspace.program.methods.payoutCranksInstruction().accounts({
             signer: workspace.owner,
             game: this.account.address,
+            vault: this.account.vault,
             currentRound: this.currentRound.account.address,
             systemProgram: SystemProgram.programId
         }).remainingAccounts(remainingAccounts).instruction();
@@ -276,7 +276,6 @@ export default class Game implements DataUpdatable<GameAccount> {
                 owner: workspace.owner,
                 game: gamePubkey,
                 vault: vault.account.address,
-
                 priceProgram,
                 priceFeed,
                 rent: SYSVAR_RENT_PUBKEY,
@@ -340,6 +339,7 @@ export default class Game implements DataUpdatable<GameAccount> {
         return await workspace.program.methods.settlePredictionsInstruction().accounts({
             signer: workspace.owner,
             game: this.account.address,
+            vault: this.account.vault,
             crank: crank.account.address,
             currentRound: this.currentRound.account.address,
             systemProgram: SystemProgram.programId
