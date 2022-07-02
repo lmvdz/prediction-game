@@ -8,12 +8,10 @@ import { WalletMultiButton } from 'solana-wallets-vue'
 </script>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
-
-
-export default defineComponent({
-  name: 'App'
-})
+  import { defineComponent } from 'vue'
+  export default defineComponent({
+    name: 'App'
+  })
 </script>
 
 <template>
@@ -63,7 +61,6 @@ export default defineComponent({
 </template>
 
 <style>
-
 
 .hover-move-right-container {
   position: relative;

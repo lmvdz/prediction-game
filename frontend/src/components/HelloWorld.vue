@@ -1214,7 +1214,7 @@ export default defineComponent({
     </div>
     
     <v-row justify="start" class="text-center">
-      <v-col :cols="7">
+      <v-col :cols="wallet !== null && wallet.connected ? 7 : 12">
         <v-row justify="center" class="text-center">
           <v-col align-self="center" class="text-center v-col-auto" v-for="game in computedGames" :key="'game-'+game.account.address.toBase58()">
             <v-card
@@ -1796,7 +1796,7 @@ export default defineComponent({
         </v-row>
       </v-col>
       
-      <v-col :cols="5" v-if="wallet !== null && wallet.connected" align-self="center" class="text-center" >
+      <v-col v-if="wallet !== null && wallet.connected" :cols="5" align-self="center" class="text-center" >
         <v-row justify="center" class="text-center">
           <v-card variant="outlined" >
             <v-card-title>
@@ -1899,17 +1899,18 @@ export default defineComponent({
           </v-card> 
         </v-row>
       </v-col>
+
     </v-row>
     <v-row>
-      <v-col :cols="7" style="padding: 8px;" class="d-none d-lg-flex">
-        <!-- <iframe id="aggr" 
-          :src="`${getHost().startsWith('localhost') ? getProtocol()+'//'+'localhost:8080' : 'https://aggr.solpredict.io'}?workspace-url=${aggrWorkspace}`" 
-          frameborder="0" style="width: 100%; height: 100%; min-height: 75vh; max-height: 75vh;"
-        ></iframe> -->
+      <v-col :cols="wallet !== null && wallet.connected ? 7 : 12" style="padding: 8px; transition: all .3s;" class="d-none d-lg-flex">
         <iframe id="aggr" 
+          :src="`${'https://aggr.solpredict.io'}?workspace-url=${aggrWorkspace}`" 
+          frameborder="0" style="border-radius: .25em; width: 100%; height: 100%; min-height: 75vh; max-height: 75vh;"
+        ></iframe>
+        <!-- <iframe id="aggr" 
           :src="`https://v3.aggr.trade`" 
           frameborder="0" style="border-radius: .25em; width: 100%; min-height: 50vh; max-height: 50vh; margin: .75em;"
-        ></iframe>
+        ></iframe> -->
         
       </v-col>
     </v-row>
