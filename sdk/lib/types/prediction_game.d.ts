@@ -967,7 +967,7 @@ export declare type PredictionGame = {
             "accounts": [
                 {
                     "name": "signer";
-                    "isMut": false;
+                    "isMut": true;
                     "isSigner": true;
                 },
                 {

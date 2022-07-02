@@ -970,7 +970,7 @@ exports.IDL = {
             "accounts": [
                 {
                     "name": "signer",
-                    "isMut": false,
+                    "isMut": true,
                     "isSigner": true
                 },
                 {
