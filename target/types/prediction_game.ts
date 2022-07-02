@@ -967,7 +967,7 @@ export type PredictionGame = {
       "accounts": [
         {
           "name": "signer",
-          "isMut": false,
+          "isMut": true,
           "isSigner": true
         },
         {
@@ -2944,7 +2944,7 @@ export const IDL: PredictionGame = {
       "accounts": [
         {
           "name": "signer",
-          "isMut": false,
+          "isMut": true,
           "isSigner": true
         },
         {

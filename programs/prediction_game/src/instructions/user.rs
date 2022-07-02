@@ -103,7 +103,7 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
 
     };
 
-    if user_claim.amount.eq(&0) {
+    if user_claim.amount.eq(&0) && !user_claim.mint.eq(&Pubkey::default()) && !user_claim.vault.eq(&Pubkey::default()) {
         user_claim.mint = Pubkey::default();
         user_claim.vault = Pubkey::default();
     }

@@ -632,7 +632,9 @@ async function loadUserClaimable() : Promise<void> {
       if (userClaimableAddress.value !== null) {
         if (!paf.value.accounts.has(userClaimableAddress.value.toBase58())) {
           paf.value.addProgram<PredictionGame>('userClaimable', userClaimableAddress.value.toBase58(), getWorkspace().program, async (data: UserClaimableAccount) => {
-            // console.log(data)
+            data.claims.forEach(claim => {
+              console.log(claim.mint.toBase58(), claim.vault.toBase58());
+            })
             // console.log("updated user " + data.address.toBase58())
           }, (error) => {
             console.error(error);
