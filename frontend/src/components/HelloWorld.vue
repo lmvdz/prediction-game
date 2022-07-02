@@ -1249,6 +1249,7 @@ export default defineComponent({
     
     <v-dialog v-model="showHelp" class="align-center justify-center" style="background-color: rgba(0,0, 0, 1)">
       <v-sheet color="rgb(18, 18, 18)" style="padding: 1em; margin: 0 auto;">
+        <v-btn variant="plain" style="position: absolute; top: 0; right: 0;" icon="mdi-close" @click="showHelp = false"></v-btn>
         <p>SolPredict is a collection of asset prediction games.</p>
         <p>Users can speculate which direction the price of the tracked asset will go.</p>
         <p>Support for Pyth/Switchboard/Chainlink oracles. (Devnet using Chainlink)</p>
