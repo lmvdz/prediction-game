@@ -232,12 +232,16 @@ pub fn payout_cranks<'info>(mut ctx: Context<'_, '_, '_, 'info, PayoutCranks<'in
                     0
                 };
 
-                user_claim.amount = user_claim.amount.saturating_add(crank_pay);
-               
-                if user_claim.mint.eq(&Pubkey::default()) && user_claim.vault.eq(&Pubkey::default()) {
-                    user_claim.mint = vault.token_mint.key();
-                    user_claim.vault = vault.address.key();
+                if crank_pay > 0 {
+                    user_claim.amount = user_claim.amount.saturating_add(crank_pay);
+                
+                    if user_claim.mint.eq(&Pubkey::default()) && user_claim.vault.eq(&Pubkey::default()) {
+                        user_claim.mint = vault.token_mint.key();
+                        user_claim.vault = vault.address.key();
+                    }
                 }
+
+                
 
                 // let dst: &mut [u8] = &mut user_claim_info.try_borrow_mut_data()?;
                 // let mut cursor = std::io::Cursor::new(dst);
