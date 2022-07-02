@@ -99,13 +99,10 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
                 // find first claim 
                 let mut some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.mint.eq(&vault.token_mint.key()) && claim.vault.eq(&vault.address.key()));
 
-                some_user_claim_position = match some_user_claim_position {
-                    None => {
-                        user_claimable.claims.iter().position(|claim| claim.mint.eq(&Pubkey::default()) && claim.vault.eq(&Pubkey::default()))
-                    }
-                    Some(_) => {
-                        some_user_claim_position
-                    }
+                some_user_claim_position = if some_user_claim_position.is_none() {
+                    user_claimable.claims.iter().position(|claim| claim.mint.eq(&Pubkey::default()) && claim.vault.eq(&Pubkey::default()))
+                } else {
+                    some_user_claim_position
                 };
 
                 require!(some_user_claim_position.is_some(), ErrorCode::NoAvailableClaimFound);
@@ -156,7 +153,7 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
                         current_round.total_amount_settled = current_round.total_amount_settled.saturating_add(prediction.amount);
 
                         user_claim.amount = user_claim.amount.saturating_add(prediction.amount);
-                        
+
                         if user_claim.mint.eq(&Pubkey::default()) && user_claim.vault.eq(&Pubkey::default()) {
                             user_claim.mint = vault.token_mint.key();
                             user_claim.vault = vault.key();
@@ -213,13 +210,10 @@ pub fn payout_cranks<'info>(mut ctx: Context<'_, '_, '_, 'info, PayoutCranks<'in
             // find first claim 
             let mut some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.mint.eq(&vault.token_mint.key()) && claim.vault.eq(&vault.address.key()));
 
-            some_user_claim_position = match some_user_claim_position {
-                None => {
-                    user_claimable.claims.iter().position(|claim| claim.mint.eq(&Pubkey::default()) && claim.vault.eq(&Pubkey::default()))
-                }
-                Some(_) => {
-                    some_user_claim_position
-                }
+            some_user_claim_position = if some_user_claim_position.is_none() {
+                user_claimable.claims.iter().position(|claim| claim.mint.eq(&Pubkey::default()) && claim.vault.eq(&Pubkey::default()))
+            } else {
+                some_user_claim_position
             };
 
             require!(some_user_claim_position.is_some(), ErrorCode::NoAvailableClaimFound);

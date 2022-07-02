@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, TokenAccount, Token};
 
 use crate::errors::ErrorCode;
+use crate::state::Claim;
 use crate::state::Game;
 use crate::state::Round;
 use crate::state::User;
@@ -24,7 +25,7 @@ pub fn init_user(ctx: Context<InitUser>) -> Result<()> {
     
     let user_claimable = &mut user_claimable_loader.load_init()?;
     user_claimable.user = user.key();
-
+    user_claimable.claims = [ Claim { amount: 0, mint: Pubkey::default(), vault: Pubkey::default() }; 10];
     Ok(())
 
 }
@@ -70,13 +71,10 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
     // find first claim 
     let mut some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.mint.eq(&vault.token_mint.key()) && claim.vault.eq(&vault.address.key()));
 
-    some_user_claim_position = match some_user_claim_position {
-        None => {
-            user_claimable.claims.iter().position(|claim| claim.mint.eq(&Pubkey::default()) && claim.vault.eq(&Pubkey::default()))
-        }
-        Some(_) => {
-            some_user_claim_position
-        }
+    some_user_claim_position = if some_user_claim_position.is_none() {
+        user_claimable.claims.iter().position(|claim| claim.mint.eq(&Pubkey::default()) && claim.vault.eq(&Pubkey::default()))
+    } else {
+        some_user_claim_position
     };
 
     require!(some_user_claim_position.is_some(), ErrorCode::NoAvailableClaimFound);
