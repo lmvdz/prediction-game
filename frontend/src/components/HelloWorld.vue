@@ -467,6 +467,7 @@ async function initTokenAccountForGame(game: Game) {
     console.error(error);
   }
   hideTxStatus(txStatus.index, 5000);
+  await loadTokenAccounts();
   
 }
 
@@ -667,8 +668,9 @@ async function loadRounds() {
           if (frontendGameData.value.get(data.game.toBase58()).roundTimeUpdateInterval) {
             clearInterval(frontendGameData.value.get(data.game.toBase58()).roundTimeUpdateInterval)
           }
+
           frontendGameData.value.get(data.game.toBase58()).roundTimeUpdateInterval = setInterval(() => {
-            frontendGameData.value.get(data.game.toBase58()).timeRemaining = Math.round((new Date()).getTime() / 1000) - data.roundStartTime.toNumber()
+            frontendGameData.value.get(data.game.toBase58()).timeRemaining = Math.max(0, data.roundLength - (Math.round((new Date()).getTime() / 1000) - data.roundStartTime.toNumber()))
           }, 500)
 
         
@@ -935,7 +937,12 @@ async function loadSOLBalance() {
 async function getSOLWalletBalance() {
   if (wallet.value !== null && wallet.value !== undefined && wallet.value.publicKey !== null && wallet.value.publicKey !== undefined) {
     if (workspace.value !== null) {
-      return ((await workspace.value.program.provider.connection.getAccountInfo(wallet.value.publicKey)).lamports / LAMPORTS_PER_SOL)
+      let accountInfo = (await workspace.value.program.provider.connection.getAccountInfo(wallet.value.publicKey));
+      if (accountInfo !== null) {
+        return ((await workspace.value.program.provider.connection.getAccountInfo(wallet.value.publicKey)).lamports / LAMPORTS_PER_SOL)
+      }
+      return 0
+      
     }
   }
   return null;
@@ -1288,7 +1295,7 @@ export default defineComponent({
                 width="3" 
                 :color="(() => {
                   if (!game.currentRound.account.finished) {
-                    return frontendGameData.get(game.account.address.toBase58()).timeRemaining >= 300 ? 'success' : frontendGameData.get(game.account.address.toBase58()).timeRemaining < 150 ? 'warning' : '#6864b7'
+                    return frontendGameData.get(game.account.address.toBase58()).timeRemaining <= 0 ? 'success' : frontendGameData.get(game.account.address.toBase58()).timeRemaining >= 150 ? 'warning' : '#6864b7'
                   } else {
                     return 'blue'
                   }
@@ -1297,7 +1304,7 @@ export default defineComponent({
                 :stream="!game.currentRound.account.finished"
                 :striped="game.currentRound.account.finished"
                 rounded 
-                :model-value="frontendGameData.get(game.account.address.toBase58()).timeRemaining" 
+                :model-value="game.account.roundLength - frontendGameData.get(game.account.address.toBase58()).timeRemaining" 
                 :buffer-value="Math.floor((frontendGameData.get(game.account.address.toBase58()).timeRemaining / game.currentRound.account.roundLength) * 100) < game.currentRound.account.roundLength/2 ? game.currentRound.account.roundLength/2 : game.currentRound.account.roundLength"
               ></v-progress-linear>
               <v-btn 
@@ -1547,8 +1554,8 @@ export default defineComponent({
                     <v-card-text>
                       <span style="margin: 0 auto;">Time Remaining: 
                         {{ 
-                          Math.max(0, Math.floor((game.currentRound.account.roundLength - frontendGameData.get(game.account.address.toBase58()).timeRemaining) / 60)) + ':' 
-                          + ((game.currentRound.account.roundLength - frontendGameData.get(game.account.address.toBase58()).timeRemaining) % 60 >= 10 ? ((game.currentRound.account.roundLength - frontendGameData.get(game.account.address.toBase58()).timeRemaining) % 60) : '0' + Math.max(0, (game.currentRound.account.roundLength - frontendGameData.get(game.account.address.toBase58()).timeRemaining) % 60)) }}
+                          Math.max(0, Math.floor((frontendGameData.get(game.account.address.toBase58()).timeRemaining) / 60)) + ':' 
+                          + ((frontendGameData.get(game.account.address.toBase58()).timeRemaining) % 60 >= 10 ? ((frontendGameData.get(game.account.address.toBase58()).timeRemaining) % 60) : '0' + Math.max(0, (frontendGameData.get(game.account.address.toBase58()).timeRemaining) % 60)) }}
                       </span>
                       <br>
                       <span style="margin: 0 auto;">Game Volume: {{ 
@@ -1764,7 +1771,12 @@ export default defineComponent({
                     >
                       Make Prediction
                     </v-btn>
-                    <h3 v-else>Predictions Locked</h3>
+                    <h3 v-else>
+                      <v-tooltip activator="parent" bottom>
+                        {{Math.max(0, frontendGameData.get(game.account.address.toBase58()).timeRemaining)  === 0 ? `Next Round Starting` : `Next Round Starts In ${Math.max(0, frontendGameData.get(game.account.address.toBase58()).timeRemaining)} Seconds`}} 
+                      </v-tooltip>
+                      Predictions Locked
+                    </h3>
                     <v-spacer></v-spacer>
                   </v-card-actions>
                   <v-divider v-if="wallet !== null && wallet.connected && ( getTokenAccountFromGame(game) === null || bnToNumber(new anchor.BN((getTokenAccountFromGame(game)).amount.toString()).add(getClaimableForGame(game)?.amount || new anchor.BN(0)), frontendGameData.get(game.account.address.toBase58()).mint.decimals) < 1 )"></v-divider>
@@ -1792,13 +1804,16 @@ export default defineComponent({
             </v-card-title>
             <v-card-subtitle v-if="wallet !== null && wallet.connected && walletBalance !== null">
               <span 
-                :style="`${walletBalance <= 0.1 ? 'color: rgb(76, 175, 80); border: 1px solid rgb(76, 175, 80); border-radius: 1em; font-weight: bold; cursor: pointer;' : ''}`"
+                :style="`${walletBalance <= 0.1 && getWorkspace().cluster !== 'mainnet-beta' ? 'color: rgb(76, 175, 80); border: 1px solid rgb(76, 175, 80); border-radius: 0em; padding: 0 1em; font-weight: bold; cursor: pointer;' : ''}`"
                 @click.stop="async (e) => {
-                if (walletBalance <= 0.1) {
+                if (walletBalance <= 0.1 && getWorkspace().cluster !== 'mainnet-beta') {
                   e.preventDefault();
                   await airdropDevnetSOL()
                 }
-              }"></span>{{ walletBalance.toFixed(2) }} SOL
+              }"><v-tooltip v-if="walletBalance <= 0.1 && getWorkspace().cluster !== 'mainnet-beta'" activator="parent" location="end">AirDrop SOL</v-tooltip>
+                {{ walletBalance.toFixed(2) }} SOL
+              </span>
+
             </v-card-subtitle>
             <v-card variant="plain" v-if="computedUserPredictions.filter(prediction => !prediction.account.settled).length > 0">
               <v-card-title>Predictions</v-card-title>

@@ -179,7 +179,12 @@ async function closeAllUser(owner, connection, cluster) {
     await Promise.allSettled((await workspace.program.account.user.all()).map(async (userAccount) => {
         console.log('user', userAccount.publicKey.toBase58());
         let user = new user_1.default(userAccount.account);
-        await user.adminCloseUserAccount(workspace);
+        try {
+            await user.adminCloseUserAccount(workspace);
+        }
+        catch (error) {
+            console.error(error);
+        }
     }));
 }
 exports.closeAllUser = closeAllUser;

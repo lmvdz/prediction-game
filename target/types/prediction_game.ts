@@ -976,11 +976,6 @@ export type PredictionGame = {
           "isSigner": false
         },
         {
-          "name": "userClaimable",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "receiver",
           "isMut": true,
           "isSigner": false
@@ -2954,11 +2949,6 @@ export const IDL: PredictionGame = {
         },
         {
           "name": "user",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "userClaimable",
           "isMut": true,
           "isSigner": false
         },

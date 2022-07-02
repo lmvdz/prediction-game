@@ -212,15 +212,16 @@ class User {
         });
     }
     async adminCloseUserAccountInstruction(workspace) {
-        return await workspace.program.methods.closeUserAccountInstruction().accounts({
+        return await workspace.program.methods.adminCloseUserAccountInstruction().accounts({
             signer: workspace.owner,
             user: this.account.address,
-            userClaimable: this.account.userClaimable,
             receiver: this.account.owner
         }).instruction();
     }
     async adminCloseUserAccount(workspace) {
-        let ix = await this.closeUserAccountInstruction(workspace);
+        let ix = await this.adminCloseUserAccountInstruction(workspace);
+        ix.keys.forEach(k => console.log(k.pubkey.toBase58()));
+        console.log('\n');
         let tx = new web3_js_1.Transaction().add(ix);
         return new Promise((resolve, reject) => {
             setTimeout(async () => {

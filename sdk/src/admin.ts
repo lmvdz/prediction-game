@@ -186,7 +186,12 @@ export async function closeAllUser(owner: Keypair, connection: Connection, clust
     await Promise.allSettled( (await workspace.program.account.user.all()).map(async userAccount => {
         console.log('user', userAccount.publicKey.toBase58());
         let user = new User(userAccount.account as unknown as UserAccount);
-        await user.adminCloseUserAccount(workspace)
+        try {
+            await user.adminCloseUserAccount(workspace)
+        } catch(error) {
+            console.error(error);
+        }
+        
     }));
 }
 

@@ -68,11 +68,11 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
     }
 
     // find first claim 
-    let mut some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.mint.eq(&vault.token_mint.key()));
+    let mut some_user_claim_position = user_claimable.claims.iter().position(|claim| claim.mint.eq(&vault.token_mint.key()) && claim.vault.eq(&vault.address.key()));
 
     some_user_claim_position = match some_user_claim_position {
         None => {
-            user_claimable.claims.iter().position(|claim| claim.mint.eq(&Pubkey::default()))
+            user_claimable.claims.iter().position(|claim| claim.mint.eq(&Pubkey::default()) && claim.vault.eq(&Pubkey::default()))
         }
         Some(_) => {
             some_user_claim_position
@@ -107,6 +107,7 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
 
     if user_claim.amount.eq(&0) {
         user_claim.mint = Pubkey::default();
+        user_claim.vault = Pubkey::default();
     }
 
     if deposit_amount.gt(&0_u64) {
@@ -262,6 +263,7 @@ pub struct CloseUserAccount<'info> {
 #[derive(Accounts)]
 pub struct AdminCloseUserAccount<'info> {
 
+    #[account(mut)]
     pub signer: Signer<'info>,
 
     #[account(mut, 
@@ -269,13 +271,6 @@ pub struct AdminCloseUserAccount<'info> {
         // constraint = signer.key() == user.owner @ ErrorCode::SignerNotOwner
     )]
     pub user: Box<Account<'info, User>>,
-
-    #[account(
-        mut, 
-        close = receiver,
-        constraint = user_claimable.to_account_info().key() == user.key()
-    )]
-    pub user_claimable: AccountLoader<'info, UserClaimable>,
 
     #[account(mut)]
     pub receiver: SystemAccount<'info>,

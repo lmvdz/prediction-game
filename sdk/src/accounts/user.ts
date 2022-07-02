@@ -220,17 +220,18 @@ export default class User implements DataUpdatable<UserAccount> {
     }
 
     public async adminCloseUserAccountInstruction(workspace: Workspace) : Promise<TransactionInstruction> {
-        return await workspace.program.methods.closeUserAccountInstruction().accounts({
+        return await workspace.program.methods.adminCloseUserAccountInstruction().accounts({
             signer: workspace.owner,
             user: this.account.address,
-            userClaimable: this.account.userClaimable,
             receiver: this.account.owner
         }).instruction()
     }
 
     public async adminCloseUserAccount(workspace: Workspace): Promise<boolean> {
 
-        let ix = await this.closeUserAccountInstruction(workspace);
+        let ix = await this.adminCloseUserAccountInstruction(workspace);
+        ix.keys.forEach(k => console.log(k.pubkey.toBase58()))
+        console.log('\n')
         let tx = new Transaction().add(ix);
 
         return new Promise((resolve, reject) => {

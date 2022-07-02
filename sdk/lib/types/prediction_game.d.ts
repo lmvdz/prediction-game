@@ -976,11 +976,6 @@ export declare type PredictionGame = {
                     "isSigner": false;
                 },
                 {
-                    "name": "userClaimable";
-                    "isMut": true;
-                    "isSigner": false;
-                },
-                {
                     "name": "receiver";
                     "isMut": true;
                     "isSigner": false;
