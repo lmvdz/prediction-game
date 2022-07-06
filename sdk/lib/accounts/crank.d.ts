@@ -12,6 +12,7 @@ export declare type CrankAccount = {
     cranks: number;
     lastCrankRound: PublicKey;
     lastPaidCrankRound: PublicKey;
+    padding01: PublicKey[];
 };
 export default class Crank implements DataUpdatable<CrankAccount> {
     account: CrankAccount;

@@ -16,7 +16,9 @@ export type CrankAccount = {
 
     cranks: number,
     lastCrankRound: PublicKey,
-    lastPaidCrankRound: PublicKey
+    lastPaidCrankRound: PublicKey,
+
+    padding01: PublicKey[]
 
 }
 

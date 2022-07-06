@@ -17,6 +17,8 @@ export type UserAccount = {
 
     userClaimable: PublicKey,
 
+    padding01: PublicKey[]
+
 }
 
 

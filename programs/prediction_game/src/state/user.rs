@@ -4,6 +4,7 @@ use anchor_lang::prelude::*;
 
 #[zero_copy]
 #[derive(Default)]
+#[repr(packed)]
 pub struct Claim {
     pub amount: u64,
     pub mint: Pubkey,
@@ -12,14 +13,15 @@ pub struct Claim {
 
 
 #[account(zero_copy)]
-#[derive(Default)]
+#[repr(packed)]
 pub struct UserClaimable {
     pub user: Pubkey,
-    pub claims: [Claim; 10]
+    pub claims: [Claim; 64]
 }
 
 #[account]
 #[derive(Default)]
+#[repr(packed)]
 pub struct User {
 
     // accounts
@@ -28,7 +30,9 @@ pub struct User {
 
     pub owner: Pubkey,
 
-    pub user_claimable: Pubkey
+    pub user_claimable: Pubkey,
+
+    pub padding01: [Pubkey; 8]
 
 }
 
@@ -41,6 +45,7 @@ pub enum UpOrDown {
 
 #[account]
 #[derive(Default, Copy)]
+#[repr(packed)]
 pub struct UserPrediction {
 
     // accounts
@@ -56,6 +61,9 @@ pub struct UserPrediction {
     pub amount: u64,
 
     // state
-    pub settled: bool
+    pub settled: bool,
+
+    pub padding01: [Pubkey; 8]
 
 }
+

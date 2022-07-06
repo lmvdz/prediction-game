@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IDL = void 0;
 exports.IDL = {
-    "version": "1.0.6",
+    "version": "1.0.7",
     "name": "prediction_game",
     "instructions": [
         {
@@ -34,16 +34,6 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
-                    "name": "rent",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "tokenProgram",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
                     "name": "systemProgram",
                     "isMut": false,
                     "isSigner": false
@@ -71,6 +61,37 @@ exports.IDL = {
                     "type": "i64"
                 }
             ]
+        },
+        {
+            "name": "initGameHistoryInstruction",
+            "accounts": [
+                {
+                    "name": "owner",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "game",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "roundHistory",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "userPredictionHistory",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "systemProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": []
         },
         {
             "name": "initVaultInstruction",
@@ -192,6 +213,11 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
+                    "name": "roundHistory",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
                     "name": "crank",
                     "isMut": true,
                     "isSigner": false
@@ -234,6 +260,11 @@ exports.IDL = {
                 },
                 {
                     "name": "game",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "roundHistory",
                     "isMut": true,
                     "isSigner": false
                 },
@@ -572,6 +603,11 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
+                    "name": "userPredictionHistory",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
                     "name": "user",
                     "isMut": true,
                     "isSigner": false
@@ -794,7 +830,89 @@ exports.IDL = {
             "args": []
         },
         {
-            "name": "closeFeeVaultInstruction",
+            "name": "closeFeeVaultAtaInstruction",
+            "accounts": [
+                {
+                    "name": "signer",
+                    "isMut": false,
+                    "isSigner": true
+                },
+                {
+                    "name": "vault",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "receiver",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "receiverAta",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "feeVault",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "feeVaultAtaAuthority",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "tokenProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": []
+        },
+        {
+            "name": "closeVaultAtaInstruction",
+            "accounts": [
+                {
+                    "name": "signer",
+                    "isMut": false,
+                    "isSigner": true
+                },
+                {
+                    "name": "vault",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "receiver",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "receiverAta",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "vaultAta",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "vaultAtaAuthority",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "tokenProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": []
+        },
+        {
+            "name": "adminCloseVaultInstruction",
             "accounts": [
                 {
                     "name": "signer",
@@ -807,13 +925,8 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
-                    "name": "feeVault",
+                    "name": "vault",
                     "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "tokenProgram",
-                    "isMut": false,
                     "isSigner": false
                 }
             ],
@@ -861,32 +974,6 @@ exports.IDL = {
                 {
                     "name": "receiver",
                     "isMut": true,
-                    "isSigner": false
-                }
-            ],
-            "args": []
-        },
-        {
-            "name": "closeVaultInstruction",
-            "accounts": [
-                {
-                    "name": "signer",
-                    "isMut": false,
-                    "isSigner": true
-                },
-                {
-                    "name": "receiver",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "vaultAta",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "tokenProgram",
-                    "isMut": false,
                     "isSigner": false
                 }
             ],
@@ -987,6 +1074,48 @@ exports.IDL = {
             "args": []
         },
         {
+            "name": "adminCloseRoundHistoryInstruction",
+            "accounts": [
+                {
+                    "name": "signer",
+                    "isMut": false,
+                    "isSigner": true
+                },
+                {
+                    "name": "roundHistory",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "roundHistoryCloseReceiver",
+                    "isMut": true,
+                    "isSigner": false
+                }
+            ],
+            "args": []
+        },
+        {
+            "name": "adminCloseUserPredictionHistoryInstruction",
+            "accounts": [
+                {
+                    "name": "signer",
+                    "isMut": false,
+                    "isSigner": true
+                },
+                {
+                    "name": "userPredictionHistory",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "userPredictionHistoryCloseReceiver",
+                    "isMut": true,
+                    "isSigner": false
+                }
+            ],
+            "args": []
+        },
+        {
             "name": "adminCloseUserClaimableInstruction",
             "accounts": [
                 {
@@ -1045,6 +1174,15 @@ exports.IDL = {
                     {
                         "name": "lastPaidCrankRound",
                         "type": "publicKey"
+                    },
+                    {
+                        "name": "padding01",
+                        "type": {
+                            "array": [
+                                "publicKey",
+                                8
+                            ]
+                        }
                     }
                 ]
             }
@@ -1121,6 +1259,69 @@ exports.IDL = {
                     {
                         "name": "priceFeed",
                         "type": "publicKey"
+                    },
+                    {
+                        "name": "userPredictionHistory",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "roundHistory",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "padding01",
+                        "type": {
+                            "array": [
+                                "publicKey",
+                                8
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "roundHistory",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "head",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "rounds",
+                        "type": {
+                            "array": [
+                                {
+                                    "defined": "RoundHistoryItem"
+                                },
+                                1024
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "userPredictionHistory",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "head",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "userPredictions",
+                        "type": {
+                            "array": [
+                                {
+                                    "defined": "UserPredictionHistoryItem"
+                                },
+                                1024
+                            ]
+                        }
                     }
                 ]
             }
@@ -1265,6 +1466,15 @@ exports.IDL = {
                     {
                         "name": "totalAmountPaidToCranks",
                         "type": "u64"
+                    },
+                    {
+                        "name": "padding01",
+                        "type": {
+                            "array": [
+                                "publicKey",
+                                8
+                            ]
+                        }
                     }
                 ]
             }
@@ -1285,7 +1495,7 @@ exports.IDL = {
                                 {
                                     "defined": "Claim"
                                 },
-                                10
+                                64
                             ]
                         }
                     }
@@ -1308,6 +1518,15 @@ exports.IDL = {
                     {
                         "name": "userClaimable",
                         "type": "publicKey"
+                    },
+                    {
+                        "name": "padding01",
+                        "type": {
+                            "array": [
+                                "publicKey",
+                                8
+                            ]
+                        }
                     }
                 ]
             }
@@ -1352,6 +1571,15 @@ exports.IDL = {
                     {
                         "name": "settled",
                         "type": "bool"
+                    },
+                    {
+                        "name": "padding01",
+                        "type": {
+                            "array": [
+                                "publicKey",
+                                8
+                            ]
+                        }
                     }
                 ]
             }
@@ -1400,12 +1628,145 @@ exports.IDL = {
                     {
                         "name": "feeVaultAtaAuthority",
                         "type": "publicKey"
+                    },
+                    {
+                        "name": "padding01",
+                        "type": {
+                            "array": [
+                                "publicKey",
+                                8
+                            ]
+                        }
                     }
                 ]
             }
         }
     ],
     "types": [
+        {
+            "name": "RoundHistoryItem",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "recordId",
+                        "type": "u128"
+                    },
+                    {
+                        "name": "roundNumber",
+                        "type": "u32"
+                    },
+                    {
+                        "name": "roundStartTime",
+                        "type": "i64"
+                    },
+                    {
+                        "name": "roundCurrentTime",
+                        "type": "i64"
+                    },
+                    {
+                        "name": "roundTimeDifference",
+                        "type": "i64"
+                    },
+                    {
+                        "name": "roundStartPrice",
+                        "type": "i128"
+                    },
+                    {
+                        "name": "roundCurrentPrice",
+                        "type": "i128"
+                    },
+                    {
+                        "name": "roundEndPrice",
+                        "type": "i128"
+                    },
+                    {
+                        "name": "roundPriceDifference",
+                        "type": "i128"
+                    },
+                    {
+                        "name": "roundPriceDecimals",
+                        "type": "u8"
+                    },
+                    {
+                        "name": "roundWinningDirection",
+                        "type": "u8"
+                    },
+                    {
+                        "name": "totalFeeCollected",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "totalUpAmount",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "totalDownAmount",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "totalAmountSettled",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "totalPredictionsSettled",
+                        "type": "u32"
+                    },
+                    {
+                        "name": "totalPredictions",
+                        "type": "u32"
+                    },
+                    {
+                        "name": "totalUniqueCrankers",
+                        "type": "u32"
+                    },
+                    {
+                        "name": "totalCranks",
+                        "type": "u32"
+                    },
+                    {
+                        "name": "totalCranksPaid",
+                        "type": "u32"
+                    },
+                    {
+                        "name": "totalAmountPaidToCranks",
+                        "type": "u64"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "UserPredictionHistoryItem",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "recordId",
+                        "type": "u128"
+                    },
+                    {
+                        "name": "address",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "game",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "round",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "upOrDown",
+                        "type": "u8"
+                    },
+                    {
+                        "name": "amount",
+                        "type": "u64"
+                    }
+                ]
+            }
+        },
         {
             "name": "Claim",
             "type": {
@@ -1772,206 +2133,201 @@ exports.IDL = {
         },
         {
             "code": 6061,
-            "name": "FailedToCloseUpTokenAccount",
-            "msg": "Failed to Close Up Vault Token Account"
+            "name": "FailedToCloseVaultTokenAccount",
+            "msg": "Failed to Close Vault Token Account"
         },
         {
             "code": 6062,
-            "name": "FailedToCloseDownTokenAccount",
-            "msg": "Failed to Close Down Vault Token Account"
-        },
-        {
-            "code": 6063,
             "name": "TokenAccountMintMismatch",
             "msg": "Token Account Mint mismatch"
         },
         {
-            "code": 6064,
+            "code": 6063,
             "name": "FromTokenAccountZeroBalance",
             "msg": "From token account zero balance"
         },
         {
-            "code": 6065,
+            "code": 6064,
             "name": "SignerNotOwnerOfUserPrediction",
             "msg": "Signer is not the owner of the user prediction"
         },
         {
-            "code": 6066,
+            "code": 6065,
             "name": "InvalidUserPredictionDirection",
             "msg": "Invalid User Prediction Directionl"
         },
         {
-            "code": 6067,
+            "code": 6066,
             "name": "UserPredictionNotSettled",
             "msg": "User Prediction Not Settled"
         },
         {
-            "code": 6068,
+            "code": 6067,
             "name": "UserOwnerNotReceiver",
             "msg": "User not owner of receiver"
         },
         {
-            "code": 6069,
+            "code": 6068,
             "name": "GameFeeVaultTokenAccountAuthorityMismatch",
             "msg": "Game fee vault authority mismatch"
         },
         {
-            "code": 6070,
+            "code": 6069,
             "name": "GameVaultTokenAccountAuthorityMismatch",
             "msg": "Game vault authority mismatch"
         },
         {
-            "code": 6071,
+            "code": 6070,
             "name": "FailedToTakeFee",
             "msg": "Failed to take fee"
         },
         {
-            "code": 6072,
+            "code": 6071,
             "name": "MinimumPredictionAmountNotMet",
             "msg": "Minimum Predicion amount not met"
         },
         {
-            "code": 6073,
+            "code": 6072,
             "name": "PredictionAndTokenAccountOwnerMismatch",
             "msg": "Prediction and Token Account Owner Mismatch"
         },
         {
-            "code": 6074,
+            "code": 6073,
             "name": "TestRoundRolloverFailed",
             "msg": "Test Round Rollover Failed"
         },
         {
-            "code": 6075,
+            "code": 6074,
             "name": "RoundPredictionsNotAllowed",
             "msg": "Round Predictions Not Allowed"
         },
         {
-            "code": 6076,
+            "code": 6075,
             "name": "OwnerNotUserOwner",
             "msg": "Owner not User Owner"
         },
         {
-            "code": 6077,
+            "code": 6076,
             "name": "OwnerNotRoundOwner",
             "msg": "Owner not Round Owner"
         },
         {
-            "code": 6078,
+            "code": 6077,
             "name": "RoundKeyNotGameCurrentKey",
             "msg": "Round Key Not Game Current Key"
         },
         {
-            "code": 6079,
+            "code": 6078,
             "name": "OwnerNotReceiver",
             "msg": "Owner Not Receiver"
         },
         {
-            "code": 6080,
+            "code": 6079,
             "name": "GameOwnerNotVaultOwner",
             "msg": "Game Owner Not Vault Owner"
         },
         {
-            "code": 6081,
+            "code": 6080,
             "name": "VaultUpTokenAccountDoesNotMatchProvidedUpTokenAccount",
             "msg": "Vault Up Token Account Does Not Match Provided Up Token Account"
         },
         {
-            "code": 6082,
+            "code": 6081,
             "name": "SignerNotOwnerOfUpTokenAccount",
             "msg": "Signer Not Owner Of Up Token Account"
         },
         {
-            "code": 6083,
+            "code": 6082,
             "name": "VaultDownTokenAccountDoesNotMatchProvidedDownTokenAccount",
             "msg": "Vault Down Token Account Does Not Match Provided Down Token Account"
         },
         {
-            "code": 6084,
+            "code": 6083,
             "name": "SignerNotOwnerOfDownTokenAccount",
             "msg": "Signer Not Owner Of Down Token Account"
         },
         {
-            "code": 6085,
+            "code": 6084,
             "name": "PredictionAndClaimUserMismatch",
             "msg": "Prediction and Claim User Mismatch"
         },
         {
-            "code": 6086,
+            "code": 6085,
             "name": "InsufficientClaimableAmount",
             "msg": "Insufficient Claimable Amount"
         },
         {
-            "code": 6087,
+            "code": 6086,
             "name": "FailedToClaim",
             "msg": "Failed to Claim"
         },
         {
-            "code": 6088,
+            "code": 6087,
             "name": "FeeAlreadyCollected",
             "msg": "Fee Already Collected"
         },
         {
-            "code": 6089,
+            "code": 6088,
             "name": "RoundFeeNotCollected",
             "msg": "Round Fee Not Collected"
         },
         {
-            "code": 6090,
+            "code": 6089,
             "name": "RoundCranksAlreadyPaid",
             "msg": "Round Cranks Already Paid"
         },
         {
-            "code": 6091,
+            "code": 6090,
             "name": "RoundCranksNotPaid",
             "msg": "Round Cranks Not Paid"
         },
         {
-            "code": 6092,
+            "code": 6091,
             "name": "GameVaultMismatch",
             "msg": "Game Vault Mismatch"
         },
         {
-            "code": 6093,
+            "code": 6092,
             "name": "GameFeeVaultMismatch",
             "msg": "Game Fee Vault Mismatch"
         },
         {
-            "code": 6094,
+            "code": 6093,
             "name": "NoAvailableClaimFound",
             "msg": "No Available Claim Found"
         },
         {
-            "code": 6095,
+            "code": 6094,
             "name": "ToTokenAccountNotOwnedByUserOwner",
             "msg": "To Token Account Owner Not Owned by User Owner"
         },
         {
-            "code": 6096,
+            "code": 6095,
             "name": "VaultAtaNotEqualToAtaOnVault",
             "msg": "The ATA Provided is not associated with the Vault ATA"
         },
         {
-            "code": 6097,
+            "code": 6096,
             "name": "UserClaimableCrankUserMismatch",
             "msg": "The user associated with the Crank is not the same as the UserClaimable user"
         },
         {
-            "code": 6098,
+            "code": 6097,
             "name": "InvalidFeeVaultATAAuthority",
             "msg": "The Fee Vault ATA Authority did not match the one generated"
         },
         {
-            "code": 6099,
+            "code": 6098,
             "name": "InvalidVaultATAAuthority",
             "msg": "The Vault ATA Authority did not match the one generated"
         },
         {
-            "code": 6100,
+            "code": 6099,
             "name": "InvalidFeeVaultAuthorityNonce",
             "msg": "The Fee Vault ATA Authority Nonce did not match the one generated"
         },
         {
-            "code": 6101,
+            "code": 6100,
             "name": "InvalidVaultAuthorityNonce",
             "msg": "The Vault ATA Authority Nonce did not match the one generated"
         }

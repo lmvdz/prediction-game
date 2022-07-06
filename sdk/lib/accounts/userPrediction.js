@@ -22,6 +22,7 @@ class UserPrediction {
             userClaimable: userClaimable,
             currentRound: round.account !== undefined ? round.account.address : round,
             userPrediction: userPredictionPubkey,
+            userPredictionHistory: game.account.userPredictionHistory,
             // deposit
             vault: vault.account.address,
             vaultAta: vault.account.vaultAta,

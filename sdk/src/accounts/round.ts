@@ -50,7 +50,9 @@ export type RoundAccount = {
     totalUniqueCrankers: number
     totalCranks: number
     totalCranksPaid: number
-    totalAmountPaidToCranks: anchor.BN
+    totalAmountPaidToCranks: anchor.BN,
+
+    padding01: PublicKey[]
 
 }
 
@@ -138,6 +140,7 @@ export default class Round implements DataUpdatable<RoundAccount> {
                     game: game.account.address,
                     crank: crank.account.address,
                     secondRound: roundPubkey,
+                    roundHistory: game.account.roundHistory,
                     firstRound: game.currentRound.account.address,
                     priceProgram: game.account.priceProgram,
                     priceFeed: game.account.priceFeed,
@@ -185,6 +188,7 @@ export default class Round implements DataUpdatable<RoundAccount> {
                     crank: crank.account.address,
                     receiver: workspace.owner,
                     nextRound: roundPubkey,
+                    roundHistory: game.account.roundHistory,
                     currentRound: game.currentRound.account.address,
                     previousRound: game.previousRound.account.address,
                     priceProgram: game.account.priceProgram,

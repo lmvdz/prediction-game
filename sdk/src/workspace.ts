@@ -27,9 +27,9 @@ export class Workspace {
         return new Workspace(new Program<PredictionGame>(IDL, PROGRAM_ID(cluster), new anchor.AnchorProvider(connection, wallet, opts)), wallet, cluster)
     }
 
-    public async sendTransaction(tx: Transaction) : Promise<string> {
+    public async sendTransaction(tx: Transaction, signers: Signer[] = []) : Promise<string> {
         if (this.wallet.payer) {
-            return await this.program.provider.connection.sendTransaction(tx, [this.wallet.payer])
+            return await this.program.provider.connection.sendTransaction(tx, [this.wallet.payer, ...signers])
         } else {
             tx.feePayer = this.wallet.publicKey;
             tx.recentBlockhash = (await this.program.provider.connection.getLatestBlockhash()).blockhash;

@@ -29,6 +29,29 @@ export class ProgramAddresses<T extends anchor.Idl> {
     )
   }
 
+  async getGameRoundHistoryPubkey(game: PublicKey): Promise<[PublicKey, number]> {
+    return await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), 
+        game.toBuffer(), 
+        Buffer.from(anchor.utils.bytes.utf8.encode('round_history')), 
+      ],
+      this.program.programId
+    )
+  }
+
+  async getGameUserPredictionHistoryPubkey(game: PublicKey): Promise<[PublicKey, number]> {
+    return await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), 
+        game.toBuffer(), 
+        Buffer.from(anchor.utils.bytes.utf8.encode('user_prediction_history')), 
+      ],
+      this.program.programId
+    )
+  }
+
+
  async getFeeVaultATAPubkey(vaultPubkey: PublicKey): Promise<[PublicKey, number]> {
     return await PublicKey.findProgramAddress(
       [Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), vaultPubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('fee_vault_ata'))],
@@ -54,12 +77,7 @@ export class ProgramAddresses<T extends anchor.Idl> {
       this.program.programId
     )
   }
-
   
-
-  
-
-
  async getVaultPubkey(tokenMint: PublicKey): Promise<[PublicKey, number]> {
     return await PublicKey.findProgramAddress(
       [Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), this.owner.toBuffer(), tokenMint.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('vault'))],

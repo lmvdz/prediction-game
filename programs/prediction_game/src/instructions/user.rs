@@ -8,6 +8,8 @@ use crate::state::Round;
 use crate::state::User;
 use crate::state::UserClaimable;
 use crate::state::UserPrediction;
+use crate::state::UserPredictionHistory;
+use crate::state::UserPredictionHistoryItem;
 use crate::state::Vault;
 use crate::utils::transfer_token_account;
 use crate::utils::transfer_token_account_signed;
@@ -25,7 +27,8 @@ pub fn init_user(ctx: Context<InitUser>) -> Result<()> {
     
     let user_claimable = &mut user_claimable_loader.load_init()?;
     user_claimable.user = user.key();
-    user_claimable.claims = [ Claim { amount: 0, mint: Pubkey::default(), vault: Pubkey::default() }; 10];
+    user_claimable.claims = [ Claim { amount: 0, mint: Pubkey::default(), vault: Pubkey::default() }; 64];
+
     Ok(())
 
 }
@@ -33,6 +36,7 @@ pub fn init_user(ctx: Context<InitUser>) -> Result<()> {
 pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, amount: u64) -> Result<()> {
     let current_round = &mut ctx.accounts.current_round;
     let game = &mut ctx.accounts.game;
+    let mut user_prediction_history = ctx.accounts.user_prediction_history.load_mut()?;
     let user = &mut ctx.accounts.user;
     let mut user_claimable = ctx.accounts.user_claimable.load_mut()?;
 
@@ -111,6 +115,17 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
     if deposit_amount.gt(&0_u64) {
         require!(transfer_token_account(from_token_account, vault_ata, from_token_account_authority, token_program, deposit_amount).is_ok(), ErrorCode::UserPredictionFailedToDeposit);
     }
+
+    let next_record_id = user_prediction_history.next_record_id();
+
+    user_prediction_history.append(UserPredictionHistoryItem {
+        record_id: next_record_id,
+        address: user_prediction.address,
+        game: user_prediction.game,
+        round: user_prediction.round,
+        up_or_down: user_prediction.up_or_down,
+        amount: user_prediction.amount
+    });
 
     Ok(())
 }
@@ -372,6 +387,9 @@ pub struct InitUserPrediction<'info> {
 
     #[account()]
     pub game: Box<Account<'info, Game>>,
+
+    #[account(mut, constraint = game.user_prediction_history == user_prediction_history.key())]
+    pub user_prediction_history: AccountLoader<'info, UserPredictionHistory>,
 
     #[account(
         mut,

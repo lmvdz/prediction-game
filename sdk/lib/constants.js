@@ -26,6 +26,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.U64MAX = exports.U32MAX = exports.USER_PREDICTION_MIN_AMOUNT = exports.UNSIGNED_MIN = exports.PROGRAM_ID = void 0;
 const anchor = __importStar(require("@project-serum/anchor"));
 const web3_js_1 = require("@solana/web3.js");
+const LOCALNET_PROGRAM_ID = new web3_js_1.PublicKey("7ZFRSUUEgeJUMMyf7DYsYKurHctSAZed8ECMazomo7x");
 const MAINNET_PROGRAM_ID = new web3_js_1.PublicKey("7ZFRSUUEgeJUMMyf7DYsYKurHctSAZed8ECMazomo7x");
 const DEVNET_PROGRAM_ID = new web3_js_1.PublicKey("7ZFRSUUEgeJUMMyf7DYsYKurHctSAZed8ECMazomo7x");
 const TESTNET_PROGRAM_ID = new web3_js_1.PublicKey("7ZFRSUUEgeJUMMyf7DYsYKurHctSAZed8ECMazomo7x");
@@ -38,6 +39,9 @@ const PROGRAM_ID = (cluster) => {
     }
     else if (cluster === 'testnet') {
         return TESTNET_PROGRAM_ID;
+    }
+    else if (cluster === 'localnet') {
+        return LOCALNET_PROGRAM_ID;
     }
     return null;
 };

@@ -1,7 +1,6 @@
-// use pyth_sdk_solana::load_price_feed_from_account_info;
 use chainlink_solana as chainlink;
 use pyth_sdk_solana::load_price_feed_from_account_info;
-use switchboard::{AggregatorAccountData};
+use switchboard::AggregatorAccountData;
 use switchboard_v2 as switchboard;
 use num_enum::FromPrimitive;
 

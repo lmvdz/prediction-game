@@ -1,8 +1,12 @@
-const { config } = require('dotenv')
-const bs58 = require('bs58')
-const { Keypair } = require('@solana/web3.js')
+const { config } = require('dotenv');
+const bs58 = require('bs58');
+const { Keypair } = require('@solana/web3.js');
 
-config({path: '.env.local'})
+let args = process.argv.slice(2);
+
+let env = args[0];
+
+config({path: '.env.'+env});
 
 const privateKeyEnvVariable = "PRIVATE_KEY"
 const privateKey = process.env[privateKeyEnvVariable]

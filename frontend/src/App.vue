@@ -1,10 +1,10 @@
 <script setup lang="ts">
-// This starter template is using Vue 3 <script setup> SFCs
-// Check out https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup
+
 import Logo from './components/Logo.vue'
 import GithubLink from './components/GithubLink.vue'
 import DiscordLink from './components/DiscordLink.vue'
 import { WalletMultiButton } from 'solana-wallets-vue'
+
 </script>
 
 <script lang="ts">

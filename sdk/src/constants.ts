@@ -1,17 +1,20 @@
 import * as anchor from '@project-serum/anchor';
 import { Cluster, PublicKey } from '@solana/web3.js';
 
+const LOCALNET_PROGRAM_ID = new PublicKey("7ZFRSUUEgeJUMMyf7DYsYKurHctSAZed8ECMazomo7x");
 const MAINNET_PROGRAM_ID = new PublicKey("7ZFRSUUEgeJUMMyf7DYsYKurHctSAZed8ECMazomo7x");
 const DEVNET_PROGRAM_ID = new PublicKey("7ZFRSUUEgeJUMMyf7DYsYKurHctSAZed8ECMazomo7x");
 const TESTNET_PROGRAM_ID = new PublicKey("7ZFRSUUEgeJUMMyf7DYsYKurHctSAZed8ECMazomo7x");
 
-export const PROGRAM_ID = (cluster: Cluster) : PublicKey => {
+export const PROGRAM_ID = (cluster: Cluster | string) : PublicKey => {
     if (cluster === 'devnet') {
         return DEVNET_PROGRAM_ID
     } else if (cluster === 'mainnet-beta') {
         return MAINNET_PROGRAM_ID
     } else if (cluster === 'testnet') {
         return TESTNET_PROGRAM_ID
+    } else if (cluster as string === 'localnet') {
+        return LOCALNET_PROGRAM_ID
     }
     return null;
 }

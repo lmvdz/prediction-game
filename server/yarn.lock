@@ -43,9 +43,9 @@
     "@hapi/hoek" "^9.0.0"
 
 "@project-serum/anchor@^0.25.0-beta.1":
-  version "0.25.0-beta.1"
-  resolved "https://registry.yarnpkg.com/@project-serum/anchor/-/anchor-0.25.0-beta.1.tgz#7b113fb6604483d6740c8da9c6d86e9a5d5f6cf7"
-  integrity sha512-edesFlclgQzIluD2mC0xrGPnABBllKvbGd6MOtNZMCauUnx1Xbu073um8O6mrCeuZrz4PG9AhwAp1y5cOl3R4A==
+  version "0.25.0"
+  resolved "https://registry.yarnpkg.com/@project-serum/anchor/-/anchor-0.25.0.tgz#88ee4843336005cf5a64c80636ce626f0996f503"
+  integrity sha512-E6A5Y/ijqpfMJ5psJvbw0kVTzLZFUcOFgs6eSM2M2iWE1lVRF18T6hWZVNl6zqZsoz98jgnNHtVGJMs+ds9A7A==
   dependencies:
     "@project-serum/borsh" "^0.2.5"
     "@solana/web3.js" "^1.36.0"
@@ -116,9 +116,9 @@
     start-server-and-test "^1.14.0"
 
 "@solana/web3.js@^1.32.0", "@solana/web3.js@^1.36.0", "@solana/web3.js@^1.44.2":
-  version "1.47.1"
-  resolved "https://registry.yarnpkg.com/@solana/web3.js/-/web3.js-1.47.1.tgz#21243d4a19836584bc3429d3cee602191646f845"
-  integrity sha512-snsEZDR4smySxY6ZBNJUPStTVKkbgBiel14VZDjRC79Pcol3nbxjlg6HGg4rvfCSkSbpDPJPPwoTImigflEBBg==
+  version "1.47.3"
+  resolved "https://registry.yarnpkg.com/@solana/web3.js/-/web3.js-1.47.3.tgz#ec13f2cf4f9f54cc4fbd26d20be1e026c6e2279c"
+  integrity sha512-TQJulaN/+b0xXq5EhQAYFwVyOORxSyVJn1EiXupClZm8DY7f9EeUG6vl0FzSAgwEAwXKsgK3sVs/3px2e7H7dQ==
   dependencies:
     "@babel/runtime" "^7.12.5"
     "@ethersproject/sha2" "^5.5.0"
@@ -159,9 +159,9 @@
   integrity sha512-/THyiqyQAP9AfARo4pF+aCGcyiQ94tX/Is2I7HofNRqoYLgN1PBoOWu2/zTA5zMxzP5EFutMtWtGAFRKUe961Q==
 
 "@types/node@*":
-  version "18.0.0"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.0.0.tgz#67c7b724e1bcdd7a8821ce0d5ee184d3b4dd525a"
-  integrity sha512-cHlGmko4gWLVI27cGJntjs/Sj8th9aYwplmZFwmmgYQQvL5NUsgVJG7OddLvNfLqYS31KFN0s3qlaD9qCaxACA==
+  version "18.0.3"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.0.3.tgz#463fc47f13ec0688a33aec75d078a0541a447199"
+  integrity sha512-HzNRZtp4eepNitP+BD6k2L6DROIDG4Q0fm4x+dwfsr6LGmROENnok75VGw40628xf+iR24WeMFcHuuBDUAzzsQ==
 
 "@types/node@^12.12.54":
   version "12.20.55"

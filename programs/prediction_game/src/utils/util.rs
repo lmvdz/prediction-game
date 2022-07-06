@@ -10,6 +10,15 @@ pub fn close_token_account<'info>(token_account: AccountInfo<'info>, destination
     anchor_spl::token::close_account(CpiContext::new(token_program.clone(), cpi_accounts))
 }
 
+pub fn close_token_account_signed<'info>(token_account: AccountInfo<'info>, destination: AccountInfo<'info>, authority: AccountInfo<'info>, token_program: AccountInfo<'info>, signers: &[&[&[u8]]]) -> Result<()> {
+    let cpi_accounts = anchor_spl::token::CloseAccount {
+        account: token_account.clone(),
+        destination: destination.clone(),
+        authority: authority.clone(),
+    };
+    anchor_spl::token::close_account(CpiContext::new_with_signer(token_program.clone(), cpi_accounts, signers))
+}
+
 pub fn transfer_token_account<'info>(
     from_token_account: &mut Account<'info, TokenAccount>, 
     to_token_account: &Account<'info, TokenAccount>, 

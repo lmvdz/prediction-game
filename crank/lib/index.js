@@ -40,7 +40,9 @@ const user_1 = __importDefault(require("sdk/lib/accounts/user"));
 const crank_1 = __importDefault(require("sdk/lib/accounts/crank"));
 const vault_1 = __importDefault(require("sdk/lib/accounts/vault"));
 const cluster_1 = __importDefault(require("cluster"));
-(0, dotenv_1.config)({ path: '.env.local' });
+let args = process.argv.slice(2);
+let env = args[0];
+(0, dotenv_1.config)({ path: '.env.' + env });
 const privateKeyEnvVariable = "PRIVATE_KEY";
 // ENVIRONMENT VARIABLE FOR THE BOT PRIVATE KEY
 const privateKey = process.env[privateKeyEnvVariable];
@@ -195,10 +197,15 @@ const updateLoop = (workspace, vault, game, crank) => {
                 console.log(game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundStartPrice, game), game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game), vaultTokenAccountBalanaceResponse.value.uiAmount, feeVaultTokenAccountBalanaceResponse.value.uiAmount, ((game.account.unclaimedFees.div(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() + ((game.account.unclaimedFees.mod(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() / (10 ** vault.account.tokenDecimals))), game.account.baseSymbol, game.currentRound.account.roundNumber, game.currentRound.account.roundTimeDifference.toNumber(), game.currentRound.account.roundCurrentPrice.toNumber(), game.currentRound.account.finished, game.currentRound.account.feeCollected, game.currentRound.account.cranksPaid, game.currentRound.account.settled, game.currentRound.account.invalid, game.currentRound.account.totalUniqueCrankers, game.currentRound.account.totalCranksPaid);
             });
         });
+        // get the latest vault data (debug purposes)
         vault.updateVaultData(workspace).then((vault) => {
+            // update the game state (required)
             game.updateGame(workspace, crank).then((game) => {
+                // fetch latest game data (required)
                 game.updateGameData(workspace).then((game) => {
+                    // fetch latest round data (required)
                     game.updateRoundData(workspace).then((game) => {
+                        // finished round logic (required)
                         settleOrInitNext(workspace, game, crank).then((game) => {
                             updateLoop(workspace, vault, game, crank);
                         }).catch(error => {

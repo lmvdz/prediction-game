@@ -10,6 +10,8 @@ export declare class ProgramAddresses<T extends anchor.Idl> {
     owner: PublicKey;
     constructor(program: Program<T>, owner: PublicKey);
     getGamePubkey(vault: Vault, priceProgram: PublicKey, priceFeed: PublicKey): Promise<[PublicKey, number]>;
+    getGameRoundHistoryPubkey(game: PublicKey): Promise<[PublicKey, number]>;
+    getGameUserPredictionHistoryPubkey(game: PublicKey): Promise<[PublicKey, number]>;
     getFeeVaultATAPubkey(vaultPubkey: PublicKey): Promise<[PublicKey, number]>;
     getFeeVaultATAAuthorityPubkey(feeVaultAta: PublicKey): Promise<[PublicKey, number]>;
     getVaultATAPubkey(vaultPubkey: PublicKey): Promise<[PublicKey, number]>;

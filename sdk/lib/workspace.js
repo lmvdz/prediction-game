@@ -40,9 +40,9 @@ class Workspace {
     static load(connection, wallet, cluster, opts) {
         return new Workspace(new anchor_1.Program(prediction_game_1.IDL, (0, constants_1.PROGRAM_ID)(cluster), new anchor.AnchorProvider(connection, wallet, opts)), wallet, cluster);
     }
-    async sendTransaction(tx) {
+    async sendTransaction(tx, signers = []) {
         if (this.wallet.payer) {
-            return await this.program.provider.connection.sendTransaction(tx, [this.wallet.payer]);
+            return await this.program.provider.connection.sendTransaction(tx, [this.wallet.payer, ...signers]);
         }
         else {
             tx.feePayer = this.wallet.publicKey;

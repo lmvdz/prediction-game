@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 #[account]
 #[derive(Default)]
+#[repr(packed)]
 pub struct Round {
 
     pub owner: Pubkey,
@@ -43,5 +44,8 @@ pub struct Round {
     pub total_unique_crankers: u32,
     pub total_cranks: u32,
     pub total_cranks_paid: u32,
-    pub total_amount_paid_to_cranks: u64
+    pub total_amount_paid_to_cranks: u64,
+
+    pub padding01: [Pubkey; 8]
 }
+

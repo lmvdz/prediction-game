@@ -34,6 +34,8 @@ import DownArrowAnimation from '../lottie/65777-graph-moving-downward.json'
 import CrabAnimation from '../lottie/101494-rebound-rock-water-creature-by-dave-chenell.json'
 import { PollingAccountsFetcher } from 'polling-account-fetcher';
 import UserClaimable, { Claim, UserClaimableAccount } from 'sdk/lib/accounts/userClaimable';
+import RoundHistory, { RoundHistoryAccount, RoundHistoryItem } from 'sdk/lib/accounts/roundHistory';
+import UserPredictionHistory, { UserPredictionHistoryAccount, UserPredictionHistoryItem } from 'sdk/lib/accounts/userPredictionHistory';
 
 type TxStatus = {
     index: number,
@@ -74,6 +76,15 @@ let tokenList = ref(null as TokenInfo[]);
 
 let updateInterval = ref(null as NodeJS.Timer);
 let aggrWorkspace = ref('');
+
+let selectedGameHistory = ref(null as Game);
+
+let { showHistory, showHelp, showChart, showAccountInfo } = defineProps({
+  showHistory: Boolean,
+  showAccountInfo: Boolean,
+  showChart: Boolean,
+  showHelp: Boolean
+})
 
 const { txStatusList } = storeToRefs(useStore());
 
@@ -126,15 +137,14 @@ function loadPAF() {
 }
 
 function getRpcUrl() {
-  return window.location.host.startsWith("localhost") || window.location.host.startsWith("devnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net";
+  return window.location.host.startsWith("localhost") ? 'https://api.testnet.solana.com' :  window.location.host.startsWith("devnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net";
 }
 
 function getCluster() {
-  return window.location.host.startsWith("localhost") ? 'devnet' : window.location.host.split('.')[0] as Cluster;
+  return window.location.host.startsWith("localhost") ? 'testnet' : window.location.host.split('.')[0] as Cluster;
 }
 
 type FrontendGameData = {
-  img: any,
   mint: TokenInfo,
   priceProgram: string,
   priceFeed: string,
@@ -146,6 +156,12 @@ type FrontendGameData = {
   },
   chart: {
     show: boolean
+  },
+  history: {
+    show: {
+      rounds: boolean,
+      userPredictions: boolean
+    }
   },
   prediction: {
     show: boolean,
@@ -518,7 +534,6 @@ function getWorkspace() : Workspace {
 async function initFrontendGameData (game: Game) {
   if (!frontendGameData.value.has(game.account.address.toBase58())) {
     frontendGameData.value.set(game.account.address.toBase58(), {
-      img: null,
       mint: null,
       priceProgram: null,
       priceFeed: null,
@@ -530,6 +545,12 @@ async function initFrontendGameData (game: Game) {
       },
       chart: {
         show: false
+      },
+      history: {
+        show: {
+          rounds: true,
+          userPredictions: false
+        }
       },
       prediction: {
         show: false,
@@ -546,9 +567,8 @@ async function initFrontendGameData (game: Game) {
       roundTimeUpdateInterval: null
     })
     try {
-      let img = ((await import( /* @vite-ignore */ `../../node_modules/cryptocurrency-icons/32/color/${game.account.baseSymbol.toLowerCase()}.png`)));
       let mint;
-      if (getWorkspace() !== null && (getWorkspace()).cluster === 'devnet' || window.location.host.startsWith("localhost")) {
+      if (getWorkspace() !== null && (getWorkspace()).cluster === 'devnet' || (getWorkspace()).cluster === 'testnet' || window.location.host.startsWith("localhost")) {
         mint = tokenList.value.find((token: TokenInfo) => token.symbol === "USDC");
       } else if (getWorkspace() !== null && (getWorkspace()).cluster !== 'mainnet-beta') {
         mint = tokenList.value.find(async (token: TokenInfo) => token.address === getTokenMint(game).toBase58()) || tokenList.value.find((token: TokenInfo) => token.symbol === "USDC")
@@ -561,8 +581,7 @@ async function initFrontendGameData (game: Game) {
           ...frontendGameData.value.get(game.account.address.toBase58()), 
           mint,
           priceProgram,
-          priceFeed,
-          img
+          priceFeed
         }
       )
     } catch (error) {
@@ -627,6 +646,48 @@ async function loadUser() : Promise<void> {
       console.error(error);
     }
   }
+}
+
+async function loadGameHistories() : Promise<void> {
+  // console.log(wallet.value.publicKey.value.toBase58())
+  if (wallet.value.connected) {
+    try {
+      if (computedGames.value !== null) {
+        computedGames.value.forEach(game => {
+          let gameUserPredictionHistoryPubkey = game.account.userPredictionHistory;
+          if (!paf.value.accounts.has(gameUserPredictionHistoryPubkey.toBase58())) {
+            paf.value.addProgram<PredictionGame>('userPredictionHistory', gameUserPredictionHistoryPubkey.toBase58(), getWorkspace().program, async (data: UserPredictionHistoryAccount) => {
+              game.userPredictionHistory = new UserPredictionHistory(data)
+            }, (error) => {
+              console.error(error);
+              paf.value.accounts.delete(gameUserPredictionHistoryPubkey.toBase58())
+            });
+          }
+          let gameRoundHistoryPubkey = game.account.roundHistory;
+          if (!paf.value.accounts.has(gameRoundHistoryPubkey.toBase58())) {
+            paf.value.addProgram<PredictionGame>('roundHistory', gameRoundHistoryPubkey.toBase58(), getWorkspace().program, async (data: RoundHistoryAccount) => {
+              game.roundHistory = new RoundHistory(data)
+            }, (error) => {
+              console.error(error);
+              paf.value.accounts.delete(gameRoundHistoryPubkey.toBase58())
+            });
+          }
+        })
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+}
+
+function unloadGameHistories(game: Game) {
+  if (game.roundHistory !== null)
+  paf.value.accounts.delete(game.account.roundHistory.toBase58())
+  game.roundHistory = null;
+
+  if (game.userPredictionHistory !== null)
+  paf.value.accounts.delete(game.account.userPredictionHistory.toBase58())
+  game.userPredictionHistory = null;
 }
 
 async function loadUserClaimable() : Promise<void> {
@@ -705,7 +766,9 @@ async function loadGames() {
   return await Promise.allSettled(((await Promise.all((await (getWorkspace()).program.account.game.all()).map(async (gameProgramAccount) => (new Game(
     gameProgramAccount.account as unknown as GameAccount
   ))))) as Array<Game>).map(async newgame => {
+
     let newGameAddress = newgame.account.address.toBase58();
+
     if (!games.value.has(newGameAddress)) {
       games.value.add(newGameAddress);
     }
@@ -768,7 +831,8 @@ async function loadPredictions() {
 async function loadGeneric() {
   await loadVaults(),
   await loadRounds(),
-  await loadGames()
+  await loadGames(),
+  await loadGameHistories()
 }
 
 async function loadUserSpecific() {
@@ -1198,11 +1262,7 @@ async function userClaim(game: Game, amount = null) {
   hideTxStatus(txStatus, 5000)
 }
 
-let { showHelp, showChart, showAccountInfo } = defineProps({
-  showAccountInfo: Boolean,
-  showChart: Boolean,
-  showHelp: Boolean
-})
+
 
 let helpUrl = new URL(`../assets/SolPredictHelp.png`, import.meta.url).href;
 
@@ -1242,6 +1302,7 @@ export default defineComponent({
     <v-btn-group :style="`position: fixed; top: 0px; left: 0px; margin-left: ${useDisplay().width.value < 720 ? '15%;' : 'auto'}; right: 0px; width: 8em; margin-right: auto; margin-top: .5em; z-index: 1020;`">
       <v-btn icon="mdi-help" variant="plain"  :color="showHelp ? 'success' : 'grey'" @click="() => { showHelp = !showHelp; }"></v-btn>
       <v-btn icon="mdi-chart-box" variant="plain"  :color="showChart ? 'success' : 'grey'" @click="() => { showChart = !showChart; }"></v-btn>
+      <v-btn icon="mdi-history" variant="plain" :color="showHistory ? 'success' : 'grey'" @click="() => { showHistory = !showHistory; }"></v-btn>
       <v-btn icon="mdi-account" variant="plain" v-if=" useDisplay().width.value < 720"  :color="showAccountInfo ? 'success' : 'grey'" @click="() => { showAccountInfo = !showAccountInfo; }"></v-btn>
     </v-btn-group>
 
@@ -1948,6 +2009,133 @@ export default defineComponent({
             </v-row>
           </v-col>
         </v-fade-transition>
+      </v-row>
+    </v-fade-transition>
+    <v-fade-transition leave-absolute hide-on-leave>
+      <v-row v-show="useDisplay().width.value > 720 ? useDisplay().height.value >= 1280 ? true : showHistory : showHistory">
+        <v-col :cols="wallet !== null && wallet.connected && !showHistory ? 7 : 12" :style="`padding: 8px; transition: all .3s; margin-bottom: ${showAccountInfo ? '1em' : '0'}; margin-top: ${showChart ? '1em' : '0'};`">
+          <v-card>
+            <v-card-title>
+              <v-select :items="computedGames.map(g => {
+                return {
+                  'item-title': g.account.baseSymbol,
+                  'item-value': g
+                }
+              })" v-model="selectedGameHistory"></v-select>
+            </v-card-title>
+            <v-card-subtitle v-if="selectedGameHistory !== null && frontendGameData.get(selectedGameHistory.account.address.toBase58()) !== undefined && frontendGameData.get(selectedGameHistory.account.address.toBase58()) !== null">
+              <v-select :items="Object.keys(frontendGameData.get(selectedGameHistory.account.address.toBase58()).history.show)" @update:model-value="(val) => {
+                Object.keys(frontendGameData.get(selectedGameHistory.account.address.toBase58()).history.show).forEach(showable => {
+                  frontendGameData.get(selectedGameHistory.account.address.toBase58()).history.show[showable] = false;
+                })
+                frontendGameData.get(selectedGameHistory.account.address.toBase58()).history.show[val] = true;
+              }">
+              </v-select>
+            </v-card-subtitle>
+            <v-card-text>
+              <div v-if="selectedGameHistory !== null">
+                <v-card variant="plain" v-if="frontendGameData.get(selectedGameHistory.account.address.toBase58()) !== undefined && frontendGameData.get(selectedGameHistory.account.address.toBase58()) !== null && frontendGameData.get(selectedGameHistory.account.address.toBase58()).history.show.rounds">
+                  <v-card-title>Round History</v-card-title>
+                  <v-card-subtitle>{{ selectedGameHistory.account.baseSymbol }}</v-card-subtitle>
+                  <v-card-text>
+                    <v-list>
+                      <v-list-item>
+                        <v-list-item-content>
+                          <v-row :class="`historyItemHeader`">
+                            <v-col>
+                              Duration
+                            </v-col>
+                            <v-col>
+                              Start Price
+                            </v-col>
+                            <v-col>
+                              Price Difference
+                            </v-col>
+                            <v-col>
+                              Predictions
+                            </v-col>
+                            <v-col>
+                              Up Stake
+                            </v-col>
+                            <v-col>
+                              Down Stake
+                            </v-col>
+                            <v-col>
+                              Fee Collected
+                            </v-col>
+                          </v-row>
+                        </v-list-item-content>
+                      </v-list-item>
+                      <v-divider></v-divider>
+                      <v-list-item v-for="historyItem in selectedGameHistory.roundHistory.account.rounds.sort((a: RoundHistoryItem, b: RoundHistoryItem) => (a.recordId.sub(b.recordId)).toNumber())">
+                        <v-list-item-header># {{historyItem.roundNumber}}</v-list-item-header>
+                        <v-list-item-content>
+                          <v-row :class="`historyItem round ${historyItem.roundWinningDirection === 1 ? 'up' : 'down'}`">
+                            <v-col>
+                              {{historyItem.roundTimeDifference.toNumber()}}
+                            </v-col>
+                            <v-col>
+                              {{historyItem.roundStartPrice}}
+                            </v-col>
+                            <v-col>
+                              {{historyItem.roundPriceDifference}}
+                            </v-col>
+                            <v-col>
+                              {{historyItem.totalPredictions}}
+                            </v-col>
+                            <v-col>
+                              {{historyItem.totalUpAmount}}
+                            </v-col>
+                            <v-col>
+                              {{historyItem.totalDownAmount}}
+                            </v-col>
+                            <v-col>
+                              {{historyItem.totalFeeCollected}}
+                            </v-col>
+                          </v-row>
+                        </v-list-item-content>
+                      </v-list-item>
+                    </v-list>
+                  </v-card-text>
+                </v-card>
+                <v-card variant="plain" v-else-if="frontendGameData.get(selectedGameHistory.account.address.toBase58()) !== undefined && frontendGameData.get(selectedGameHistory.account.address.toBase58()) !== null && frontendGameData.get(selectedGameHistory.account.address.toBase58()).history.show.userPredictions">
+                  <v-card-title>User Prediction History</v-card-title>
+                  <v-card-subtitle>{{ selectedGameHistory.account.baseSymbol }}</v-card-subtitle>
+                  <v-card-text>
+                    <v-list>
+                      <v-list-item>
+                        <v-list-item-content>
+                          <v-row :class="`historyItemHeader`">
+                            <v-col>
+                              Direction
+                            </v-col>
+                            <v-col>
+                              Amount
+                            </v-col>
+                          </v-row>
+                        </v-list-item-content>
+                      </v-list-item>
+                      <v-divider></v-divider>
+                      <v-list-item v-for="historyItem in selectedGameHistory.userPredictionHistory.account.userPredictions.sort((a: UserPredictionHistoryItem, b: UserPredictionHistoryItem) => (a.recordId.sub(b.recordId)).toNumber())">
+                        <v-list-item-content>
+                          <v-row :class="`historyItem prediction ${historyItem.upOrDown === 1 ? 'up' : 'down'}`">
+                            <v-col>
+                              {{UpOrDown[historyItem.upOrDown]}}
+                            </v-col>
+                            <v-col>
+                              {{ bnQuoteAssetToNumberFromGame(historyItem.amount, selectedGameHistory) }} {{ getGameQuoteSymbol(selectedGameHistory) }}
+                            </v-col>
+                          </v-row>
+                        </v-list-item-content>
+                      </v-list-item>
+                    </v-list>
+                  </v-card-text>
+                </v-card>
+              </div>
+            </v-card-text>
+          </v-card>
+          
+        </v-col>
       </v-row>
     </v-fade-transition>
     <v-fade-transition leave-absolute hide-on-leave>

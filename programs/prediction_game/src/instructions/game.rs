@@ -5,10 +5,12 @@ use anchor_spl::token::TokenAccount;
 use crate::errors::ErrorCode;
 
 use crate::state::Crank;
+use crate::state::RoundHistory;
 use crate::state::UserClaimable;
 use crate::state::UserPrediction;
 use crate::state::Game;
 use crate::state::Round;
+use crate::state::UserPredictionHistory;
 use crate::state::Vault;
 use crate::utils::transfer_token_account_signed;
 
@@ -39,6 +41,9 @@ pub fn init_game(ctx: Context<InitializeGame>, oracle: u8, base_symbol: String, 
 
     game.fee_bps = fee_bps;
     game.crank_bps = crank_bps;
+
+    game.round_history = Pubkey::default();
+    game.user_prediction_history = Pubkey::default();
 
     Ok(())
 }
@@ -392,6 +397,20 @@ pub fn update_game<'info>(mut ctx: Context<'_, '_, '_, 'info, UpdateGame<'info>>
     Ok(())
 }
 
+pub fn init_game_history(ctx: Context<InitGameHistory>) -> Result<()> {
+
+    let game = &mut ctx.accounts.game;
+
+
+    ctx.accounts.round_history.load_init()?;
+    ctx.accounts.user_prediction_history.load_init()?;
+
+    game.round_history = ctx.accounts.round_history.to_account_info().key();
+    game.user_prediction_history = ctx.accounts.user_prediction_history.to_account_info().key();
+
+    Ok(())
+}
+
 #[derive(Accounts)]
 pub struct InitializeGame<'info> {
     #[account(mut)]
@@ -416,11 +435,42 @@ pub struct InitializeGame<'info> {
 
     /// CHECK:
     pub price_feed: AccountInfo<'info>,
-
-    // required for TokenAccount
-    pub rent: Sysvar<'info, Rent>,
     
-    pub token_program: Program<'info, Token>,
+    // required for Account
+    pub system_program: Program<'info, System>,
+}
+#[derive(Accounts)]
+pub struct InitGameHistory<'info> {
+    #[account(mut)]
+    pub owner: Signer<'info>,
+
+    #[account(
+        mut, 
+        constraint = game.round_history == Pubkey::default(), 
+        constraint = game.user_prediction_history == Pubkey::default(),
+        constraint = game.owner == owner.key()
+    )]
+    pub game: Box<Account<'info, Game>>,
+
+    // #[account(
+    //     init,
+    //     seeds = [ env!("CARGO_PKG_VERSION").as_bytes(), game.key().as_ref(), b"round_history" ],
+    //     bump,
+    //     payer = owner,
+    //     space = std::mem::size_of::<RoundHistory>() + 8
+    // )]
+    #[account(zero)]
+    pub round_history: AccountLoader<'info, RoundHistory>,
+
+    // #[account(
+    //     init,
+    //     seeds = [ env!("CARGO_PKG_VERSION").as_bytes(), game.key().as_ref(), b"user_prediction_history" ],
+    //     bump,
+    //     payer = owner,
+    //     space = std::mem::size_of::<UserPredictionHistory>() + 8
+    // )]
+    #[account(zero)]
+    pub user_prediction_history: AccountLoader<'info, UserPredictionHistory>,
     
     // required for Account
     pub system_program: Program<'info, System>,
@@ -629,4 +679,49 @@ pub struct AdminCloseGame<'info> {
     pub game: Box<Account<'info, Game>>,
 
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct AdminCloseGameHistory<'info> {
+    #[account()]
+    pub signer: Signer<'info>,
+
+    #[account(mut, close = game_history_close_receiver)]
+    pub user_prediction_history: AccountLoader<'info, UserPredictionHistory>,
+
+    #[account(mut, close = game_history_close_receiver)]
+    pub round_history: AccountLoader<'info, RoundHistory>,
+
+    #[account(
+        mut
+    )]
+    pub game_history_close_receiver: SystemAccount<'info>
+}
+
+#[derive(Accounts)]
+pub struct AdminCloseRoundHistory<'info> {
+    #[account()]
+    pub signer: Signer<'info>,
+
+    #[account(mut, close = round_history_close_receiver)]
+    pub round_history: AccountLoader<'info, RoundHistory>,
+
+    #[account(
+        mut
+    )]
+    pub round_history_close_receiver: SystemAccount<'info>
+}
+
+#[derive(Accounts)]
+pub struct AdminCloseUserPredictionHistory<'info> {
+    #[account()]
+    pub signer: Signer<'info>,
+
+    #[account(mut, close = user_prediction_history_close_receiver)]
+    pub user_prediction_history: AccountLoader<'info, UserPredictionHistory>,
+
+    #[account(
+        mut
+    )]
+    pub user_prediction_history_close_receiver: SystemAccount<'info>
 }

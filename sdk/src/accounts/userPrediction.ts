@@ -26,7 +26,9 @@ export type UserPredictionAccount = {
     upOrDown: number
     amount: anchor.BN
     
-    settled: boolean
+    settled: boolean,
+
+    padding01: PublicKey[]
 
 }
 
@@ -66,6 +68,7 @@ export default class UserPrediction implements DataUpdatable<UserPredictionAccou
             currentRound: (round as Round).account !== undefined ? (round as Round).account.address : round as PublicKey,
             
             userPrediction: userPredictionPubkey,
+            userPredictionHistory: game.account.userPredictionHistory,
 
             // deposit
             vault: vault.account.address,

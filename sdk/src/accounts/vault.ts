@@ -21,7 +21,9 @@ export type VaultAccount = {
 
     vaultAta: PublicKey
     vaultAtaAuthority: PublicKey
-    vaultAtaAuthorityNonce: number
+    vaultAtaAuthorityNonce: number,
+
+    padding01: PublicKey[]
 
 }
 
@@ -73,6 +75,7 @@ export default class Vault implements DataUpdatable<VaultAccount> {
         let [vaultPubkey, _vaultPubkeyBump] = await workspace.programAddresses.getVaultPubkey(tokenMint);
 
         let ix = await this.initializeVaultInstruction(workspace, tokenMint, vaultPubkey);
+        ix.keys.forEach(key => console.log(key.pubkey.toBase58()))
         let tx = new Transaction().add(ix);
         
 
@@ -92,6 +95,91 @@ export default class Vault implements DataUpdatable<VaultAccount> {
                     reject(error);
                 }
             }, 500)
+        })
+    }
+
+    public async closeVaultTokenAccounts(workspace: Workspace, receiverAta: PublicKey) {
+        return new Promise((resolve, reject) => {
+            workspace.program.methods.closeFeeVaultAtaInstruction().accounts({
+                signer: workspace.owner,
+                vault: this.account.address,
+                receiver: workspace.owner,
+                receiverAta,
+                feeVault: this.account.feeVaultAta,
+                feeVaultAtaAuthority: this.account.feeVaultAtaAuthority,
+                tokenProgram: TOKEN_PROGRAM_ID
+            }).instruction().then(closeFeeVaultAtaIX => {
+                workspace.program.methods.closeVaultAtaInstruction().accounts({
+                    signer: workspace.owner,
+                    vault: this.account.address,
+                    receiver: workspace.owner,
+                    receiverAta,
+                    vaultAta: this.account.vaultAta,
+                    vaultAtaAuthority: this.account.vaultAtaAuthority,
+                    tokenProgram: TOKEN_PROGRAM_ID
+                }).instruction().then(closeVaultAtaIX => {
+                    let tx = new Transaction()
+                    tx.add(closeFeeVaultAtaIX, closeVaultAtaIX);
+                    tx.feePayer = workspace.wallet.payer.publicKey;
+                    workspace.program.provider.connection.getLatestBlockhash().then(blockhash => {
+                        tx.recentBlockhash = blockhash.blockhash;
+                        tx.sign(workspace.wallet.payer)
+                        workspace.sendTransaction(tx).then(txSignature => {
+                            confirmTxRetry(workspace, txSignature).then(() => {
+                                resolve(true);
+                            }).catch(error => {
+                                reject(error);
+                            })
+                        }).catch(error => {
+                            console.error(error);
+                            reject(error);
+                        })
+                    }).catch(error => {
+                        console.error(error);
+                        reject(error);
+                    })
+                }).catch(error => {
+                    console.error(error);
+                    reject(error);
+                })
+            }).catch(error => {
+                console.error(error);
+                reject(error);
+            })
+        })
+    }
+
+    public async closeVault(workspace: Workspace) {
+        return new Promise((resolve, reject) => {
+            workspace.program.methods.adminCloseVaultInstruction().accounts({
+                signer: workspace.owner,
+                receiver: workspace.owner,
+                vault: this.account.address
+            }).instruction().then((closeVaultIX) => {
+                let tx = new Transaction()
+                tx.add(closeVaultIX);
+                tx.feePayer = workspace.wallet.payer.publicKey;
+                workspace.program.provider.connection.getLatestBlockhash().then(blockhash => {
+                    tx.recentBlockhash = blockhash.blockhash;
+                    tx.sign(workspace.wallet.payer)
+                    workspace.sendTransaction(tx).then(txSignature => {
+                        confirmTxRetry(workspace, txSignature).then(() => {
+                            resolve(true);
+                        }).catch(error => {
+                            reject(error);
+                        })
+                    }).catch(error => {
+                        console.error(error);
+                        reject(error);
+                    })
+                }).catch(error => {
+                    console.error(error);
+                    reject(error);
+                })
+            }).catch(error => {
+                console.error(error);
+                reject(error);
+            })
         })
     }
 }

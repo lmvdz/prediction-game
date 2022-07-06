@@ -21,6 +21,10 @@ pub mod prediction_game {
         instructions::game::init_game(ctx, oracle, base_symbol, fee_bps, crank_bps, round_length)
     }
 
+    pub fn init_game_history_instruction(ctx: Context<InitGameHistory>) -> Result<()> {
+        instructions::game::init_game_history(ctx)
+    }
+
     pub fn init_vault_instruction(ctx: Context<InitializeVault>, vault_nonce: u8, fee_vault_nonce: u8) -> Result<()> {
         instructions::vault::init_vault(ctx, vault_nonce, fee_vault_nonce)
     }
@@ -94,8 +98,14 @@ pub mod prediction_game {
         Ok(())
     }
 
-    pub fn close_fee_vault_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CloseFeeVaultTokenAccount<'info>>) -> Result<()> {
+    pub fn close_fee_vault_ata_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CloseFeeVaultTokenAccount<'info>>) -> Result<()> {
         instructions::vault::close_fee_vault_token_account(ctx)
+    }
+    pub fn close_vault_ata_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CloseVaultTokenAccount<'info>>) -> Result<()> {
+        instructions::vault::close_vault_token_account(ctx)
+    }
+    pub fn admin_close_vault_instruction(_ctx: Context<AdminCloseVaultAccount>) -> Result<()> {
+        Ok(())
     }
 
     pub fn close_round_instruction<'info>(_ctx: Context<'_, '_, '_, 'info, CloseRound<'info>>) -> Result<()> {
@@ -106,9 +116,7 @@ pub mod prediction_game {
         Ok(())
     }
 
-    pub fn close_vault_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CloseVaultTokenAccount<'info>>) -> Result<()> {
-        instructions::vault::close_vault_token_account(ctx)
-    }
+    
 
     pub fn close_user_prediction_instruction(_ctx: Context<CloseUserPrediction>) -> Result<()> {
         Ok(())
@@ -126,10 +134,17 @@ pub mod prediction_game {
         Ok(())
     }
 
+    pub fn admin_close_round_history_instruction(_ctx: Context<AdminCloseRoundHistory>) -> Result<()> {
+        Ok(())
+    }
+
+    pub fn admin_close_user_prediction_history_instruction(_ctx: Context<AdminCloseUserPredictionHistory>) -> Result<()> {
+        Ok(())
+    }
+
     pub fn admin_close_user_claimable_instruction(_ctx: Context<AdminCloseUserClaimable>) -> Result<()> {
         Ok(())
     }
-    
     
 
     

@@ -9,6 +9,7 @@ export declare type UserAccount = {
     address: PublicKey;
     owner: PublicKey;
     userClaimable: PublicKey;
+    padding01: PublicKey[];
 };
 export default class User implements DataUpdatable<UserAccount> {
     account: UserAccount;

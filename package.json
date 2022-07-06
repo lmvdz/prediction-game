@@ -1,0 +1,21 @@
+{
+  "name": "solana-prediction",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "anchor-dev": "anchor build && anchor deploy --provider.cluster devnet",
+    "anchor-testnet": "anchor build && anchor deploy --provider.cluster testnet",
+    "anchor-mainnet": "anchor build && anchor deploy --provider.cluster mainnet-beta",
+    "sdk": "cd sdk && yarn build && cd ../crank && yarn upgrade && yarn build && cd ../server && yarn upgrade && cd ../frontend && yarn upgrade"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lmvdz/prediction-game.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lmvdz/prediction-game/issues"
+  },
+  "homepage": "https://github.com/lmvdz/prediction-game#readme"
+}

@@ -125,10 +125,8 @@ pub enum ErrorCode {
     UserPredictionCanOnlyBeUpOrDown,
     #[msg("Round winning direction invalid")]
     RoundWinningDirectionInvalid,
-    #[msg("Failed to Close Up Vault Token Account")]
-    FailedToCloseUpTokenAccount,
-    #[msg("Failed to Close Down Vault Token Account")]
-    FailedToCloseDownTokenAccount,
+    #[msg("Failed to Close Vault Token Account")]
+    FailedToCloseVaultTokenAccount,
     #[msg("Token Account Mint mismatch")]
     TokenAccountMintMismatch,
     #[msg("From token account zero balance")]

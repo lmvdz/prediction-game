@@ -11,11 +11,14 @@ export declare type GameSeed = {
     roundLength: anchor.BN;
     oracle: Oracle;
 };
-export declare function closeAll(owner: Keypair, connection: Connection, cluster: Cluster): Promise<void>;
+export declare function createFakeMint(connection: Connection, owner: Keypair, keypair?: Keypair, mintDecimals?: number): Promise<Mint>;
+export declare function closeAll(owner: Keypair, connection: Connection, cluster: Cluster, mintReceiverAta: PublicKey): Promise<void>;
 export declare function closeAllGames(owner: Keypair, connection: Connection, cluster: Cluster): Promise<void>;
+export declare function closeAllVaults(owner: Keypair, connection: Connection, cluster: Cluster, mintReceiverAta: PublicKey): Promise<void>;
 export declare function closeAllUserPredictions(owner: Keypair, connection: Connection, cluster: Cluster): Promise<void>;
 export declare function closeAllCranks(owner: Keypair, connection: Connection, cluster: Cluster): Promise<void>;
 export declare function closeAllRounds(owner: Keypair, connection: Connection, cluster: Cluster): Promise<void>;
 export declare function closeAllUser(owner: Keypair, connection: Connection, cluster: Cluster): Promise<void>;
 export declare function closeAllUserClaimable(owner: Keypair, connection: Connection, cluster: Cluster): Promise<void>;
+export declare function closeAllHistory(owner: Keypair, connection: Connection, cluster: Cluster): Promise<void>;
 export declare function init(owner: Keypair, connection: Connection, cluster: Cluster, mint: Mint): Promise<void>;

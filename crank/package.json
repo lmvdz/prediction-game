@@ -5,7 +5,10 @@
   "license": "MIT",
   "scripts": {
     "build": "ts-node build/index.ts",
-    "start": "node lib/index.js"
+    "start": "node lib/index.js mainnet",
+    "start-dev": "node lib/index.js devnet",
+    "start-test": "node lib/index.js testnet",
+    "start-local": "node lib/index.js local"
   },
   "devDependencies": {
     "@types/cors": "^2.8.12",

@@ -2,18 +2,18 @@ import { Cluster, PublicKey } from "@solana/web3.js";
 import { Connection, Keypair } from "@solana/web3.js";
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
 import * as anchor from "@project-serum/anchor"
-import bs58 from 'bs58';
 import Game, { GameAccount, Oracle } from "./accounts/game";
-import { createMint, getMint, Mint, MintLayout, mintTo } from "@solana/spl-token";
+import { createMint, getMint, Mint } from "@solana/spl-token";
 import { fetchAccountRetry } from "./util";
 import { Workspace } from "./workspace";
 import Vault, { VaultAccount } from "./accounts/vault";
-import { ProgramAccount } from "@project-serum/anchor";
 import UserPrediction, { UserPredictionAccount } from "./accounts/userPrediction";
 import Crank, { CrankAccount } from "./accounts/crank";
 import Round, { RoundAccount } from "./accounts/round";
 import User, { UserAccount } from "./accounts/user";
 import UserClaimable from "./accounts/userClaimable";
+import UserPredictionHistory, { UserPredictionHistoryAccount } from "./accounts/userPredictionHistory";
+import RoundHistory, { RoundHistoryAccount } from "./accounts/roundHistory";
 
 export const gameSeeds: Array<GameSeed> = [ 
     { 
@@ -47,7 +47,7 @@ export type GameSeed = {
     oracle: Oracle
 }
 
-async function createFakeMint(connection: Connection, owner: Keypair, keypair?: Keypair, mintDecimals = 6) : Promise<Mint> {
+export async function createFakeMint(connection: Connection, owner: Keypair, keypair?: Keypair, mintDecimals = 6) : Promise<Mint> {
     const mintKey = keypair || Keypair.generate();
 
     try {
@@ -62,13 +62,12 @@ async function createFakeMint(connection: Connection, owner: Keypair, keypair?: 
 const loadGame = (workspace: Workspace, baseSymbol: string, vault: Vault, oracle: Oracle, priceProgram: PublicKey, priceFeed: PublicKey, roundLength: anchor.BN) : Promise<Game> => {
     return new Promise((resolve, reject) => {
         workspace.programAddresses.getGamePubkey(vault, priceProgram, priceFeed).then(([gamePubkey, _vaultPubkeyBump]) => {
-            console.log(gamePubkey.toBase58(), vault.account.address.toBase58());
             fetchAccountRetry<GameAccount>(workspace, 'game', (gamePubkey)).then(gameAccount => {
                 resolve(new Game(
                     gameAccount
                 ));
             }).catch(error => {
-                Game.initializeGame(
+                Game.initGameAndHistory(
                     workspace, 
                     baseSymbol,
                     vault, 
@@ -124,14 +123,16 @@ async function initFromGameSeed(workspace: Workspace, gameSeed: GameSeed, mint: 
     
 }
 
-export async function closeAll(owner: Keypair, connection: Connection, cluster: Cluster) {
+export async function closeAll(owner: Keypair, connection: Connection, cluster: Cluster, mintReceiverAta: PublicKey) {
     Promise.allSettled([
+        await closeAllVaults(owner, connection, cluster, mintReceiverAta),
         await closeAllUserClaimable(owner, connection, cluster),
         await closeAllRounds(owner, connection, cluster),
         await closeAllCranks(owner, connection, cluster),
         await closeAllUserPredictions(owner, connection, cluster),
         await closeAllUser(owner, connection, cluster),
-        await closeAllGames(owner, connection, cluster)
+        await closeAllGames(owner, connection, cluster),
+        await closeAllHistory(owner, connection, cluster)
     ])
 }
 
@@ -142,8 +143,30 @@ export async function closeAllGames(owner: Keypair, connection: Connection, clus
     await Promise.allSettled( (await workspace.program.account.game.all()).map(async gameAccount => {
         console.log('game', gameAccount.publicKey.toBase58());
         let game = new Game(gameAccount.account as unknown as GameAccount);
-        await (game).adminCloseGame(workspace);
+        return await (game).adminCloseGame(workspace);
     }));
+}
+
+export async function closeAllVaults(owner: Keypair, connection: Connection, cluster: Cluster, mintReceiverAta: PublicKey) {
+    const botWallet: NodeWallet = new NodeWallet(owner);
+    const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
+
+    try {
+        await Promise.allSettled( (await workspace.program.account.vault.all()).map(async vaultAccount => {
+            try {
+                console.log('vault', vaultAccount.publicKey.toBase58());
+                let vault = new Vault(vaultAccount.account);
+                await vault.closeVaultTokenAccounts(workspace, mintReceiverAta)
+                await vault.closeVault(workspace)
+            } catch (error) {
+                console.error(error);
+            }
+        }));
+    } catch (error) {
+        console.error(error);
+    }
+
+    
 }
 
 export async function closeAllUserPredictions(owner: Keypair, connection: Connection, cluster: Cluster) {
@@ -153,7 +176,7 @@ export async function closeAllUserPredictions(owner: Keypair, connection: Connec
     await Promise.allSettled( (await workspace.program.account.userPrediction.all()).map(async userPredictionAccount => {
         console.log('userPrediction', userPredictionAccount.publicKey.toBase58());
         let userPrediction = new UserPrediction(userPredictionAccount.account as unknown as UserPredictionAccount);
-        await UserPrediction.adminCloseUserPrediction(workspace, userPrediction);
+        return await UserPrediction.adminCloseUserPrediction(workspace, userPrediction);
     }));
 }
 
@@ -164,7 +187,7 @@ export async function closeAllCranks(owner: Keypair, connection: Connection, clu
     await Promise.allSettled( (await workspace.program.account.crank.all()).map(async crankAccount => {
         console.log('crank', crankAccount.publicKey.toBase58());
         let crank = new Crank(crankAccount.account as unknown as CrankAccount);
-        await crank.adminCloseCrankAccount(workspace)
+        return await crank.adminCloseCrankAccount(workspace)
     }));
 }
 
@@ -175,7 +198,7 @@ export async function closeAllRounds(owner: Keypair, connection: Connection, clu
     await Promise.allSettled( (await workspace.program.account.round.all()).map(async roundAccount => {
         console.log('round', roundAccount.publicKey.toBase58());
         let round = new Round(roundAccount.account as unknown as RoundAccount);
-        await Round.adminCloseRound(workspace, round)
+        return await Round.adminCloseRound(workspace, round)
     }));
 }
 
@@ -187,7 +210,7 @@ export async function closeAllUser(owner: Keypair, connection: Connection, clust
         console.log('user', userAccount.publicKey.toBase58());
         let user = new User(userAccount.account as unknown as UserAccount);
         try {
-            await user.adminCloseUserAccount(workspace)
+            return await user.adminCloseUserAccount(workspace)
         } catch(error) {
             console.error(error);
         }
@@ -201,8 +224,21 @@ export async function closeAllUserClaimable(owner: Keypair, connection: Connecti
 
     await Promise.allSettled( (await workspace.program.account.userClaimable.all()).map(async userClaimableAccount => {
         console.log('userClaimable', userClaimableAccount.publicKey.toBase58());
-        await UserClaimable.adminCloseUserClaimable(workspace, userClaimableAccount.publicKey)
+        return await UserClaimable.adminCloseUserClaimable(workspace, userClaimableAccount.publicKey)
     }));
+}
+
+export async function closeAllHistory(owner: Keypair, connection: Connection, cluster: Cluster) {
+    const botWallet: NodeWallet = new NodeWallet(owner);
+    const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
+
+    await Promise.allSettled( [...(await workspace.program.account.userPredictionHistory.all()).map(async userPredictionHistory => {
+        console.log('userPredictionHistory', userPredictionHistory.publicKey.toBase58());
+        return await UserPredictionHistory.adminCloseUserUserPredictionHistory(workspace, userPredictionHistory.publicKey)
+    }), ...(await workspace.program.account.roundHistory.all()).map(async roundHistory => {
+        console.log('roundHistory', roundHistory.publicKey.toBase58());
+        return await RoundHistory.adminCloseUserRoundHistory(workspace, roundHistory.publicKey)
+    })] );
 }
 
 
@@ -213,10 +249,9 @@ export async function init(owner: Keypair, connection: Connection, cluster: Clus
     const workspace: Workspace = Workspace.load(connection, botWallet, cluster, { commitment: 'confirmed' });
     
     (await Promise.all(gameSeeds.map(async (gameSeed : GameSeed) => {
-        console.log(gameSeed);
         return await initFromGameSeed(workspace, gameSeed, mint.address);
     }))).forEach(([vault, game]) => {
-        console.log(vault.account.address.toBase58(), game.account.baseSymbol, game.account.vault.toBase58())
+        console.log(game.account.baseSymbol + ' loaded.');
     })
 
 }

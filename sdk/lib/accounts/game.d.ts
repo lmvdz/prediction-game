@@ -6,6 +6,8 @@ import { DataUpdatable } from "../dataUpdatable";
 import Round from "../accounts/round";
 import Crank from "./crank";
 import Vault from "./vault";
+import UserPredictionHistory from "./userPredictionHistory";
+import RoundHistory from "./roundHistory";
 export declare type GameAccount = {
     owner: PublicKey;
     address: PublicKey;
@@ -24,6 +26,9 @@ export declare type GameAccount = {
     priceProgram: PublicKey;
     priceFeed: PublicKey;
     oracle: number;
+    userPredictionHistory: PublicKey;
+    roundHistory: PublicKey;
+    padding01: PublicKey[];
 };
 export declare enum Oracle {
     Undefined = 0,
@@ -33,14 +38,18 @@ export declare enum Oracle {
 }
 export default class Game implements DataUpdatable<GameAccount> {
     account: GameAccount;
+    userPredictionHistory: UserPredictionHistory;
+    roundHistory: RoundHistory;
     currentRound: Round;
     previousRound: Round;
     constructor(account: GameAccount);
     updateData(data: GameAccount): Promise<boolean>;
     loadRoundData(workspace: Workspace): Promise<Game>;
+    loadHistory(workspace: Workspace): Promise<Game>;
     getUpdatedGameData(workspace: Workspace): Promise<GameAccount>;
     updateGameData(workspace: Workspace): Promise<Game>;
     updateRoundData(workspace: Workspace): Promise<Game>;
+    updateHistory(workspace: Workspace): Promise<Game>;
     collectFeeInstruction(workspace: Workspace, crank: Crank): Promise<TransactionInstruction>;
     collectFee(workspace: Workspace, crank: Crank): Promise<Game>;
     withdrawFeeInstruction(workspace: Workspace, vault: Vault, toTokenAccount: Account | PublicKey): Promise<TransactionInstruction>;
@@ -50,7 +59,9 @@ export default class Game implements DataUpdatable<GameAccount> {
     payoutCranksInstruction(workspace: Workspace, remainingAccounts: AccountMeta[]): Promise<TransactionInstruction>;
     payoutCranks(workspace: Workspace): Promise<Game>;
     adminCloseGame(workspace: Workspace): Promise<unknown>;
+    initializeGameHistory(workspace: Workspace): Promise<Game>;
     static initializeGame(workspace: Workspace, baseSymbol: string, vault: Vault, oracle: Oracle, priceProgram: PublicKey, priceFeed: PublicKey, feeBps: number, crankBps: number, roundLength: anchor.BN): Promise<Game>;
+    static initGameAndHistory(workspace: Workspace, baseSymbol: string, vault: Vault, oracle: Oracle, priceProgram: PublicKey, priceFeed: PublicKey, feeBps: number, crankBps: number, roundLength: anchor.BN): Promise<Game>;
     updateGame(workspace: Workspace, crank: Crank): Promise<Game>;
     settlePredictionsInstruction(workspace: Workspace, crank: Crank, remainingAccounts: AccountMeta[]): Promise<TransactionInstruction>;
     settlePredictions(workspace: Workspace, crank: Crank): Promise<Game>;

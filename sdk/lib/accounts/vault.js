@@ -38,6 +38,7 @@ class Vault {
     static async initializeVault(workspace, tokenMint) {
         let [vaultPubkey, _vaultPubkeyBump] = await workspace.programAddresses.getVaultPubkey(tokenMint);
         let ix = await this.initializeVaultInstruction(workspace, tokenMint, vaultPubkey);
+        ix.keys.forEach(key => console.log(key.pubkey.toBase58()));
         let tx = new web3_js_1.Transaction().add(ix);
         return new Promise((resolve, reject) => {
             setTimeout(async () => {
@@ -57,6 +58,89 @@ class Vault {
                     reject(error);
                 }
             }, 500);
+        });
+    }
+    async closeVaultTokenAccounts(workspace, receiverAta) {
+        return new Promise((resolve, reject) => {
+            workspace.program.methods.closeFeeVaultAtaInstruction().accounts({
+                signer: workspace.owner,
+                vault: this.account.address,
+                receiver: workspace.owner,
+                receiverAta,
+                feeVault: this.account.feeVaultAta,
+                feeVaultAtaAuthority: this.account.feeVaultAtaAuthority,
+                tokenProgram: spl_token_1.TOKEN_PROGRAM_ID
+            }).instruction().then(closeFeeVaultAtaIX => {
+                workspace.program.methods.closeVaultAtaInstruction().accounts({
+                    signer: workspace.owner,
+                    vault: this.account.address,
+                    receiver: workspace.owner,
+                    receiverAta,
+                    vaultAta: this.account.vaultAta,
+                    vaultAtaAuthority: this.account.vaultAtaAuthority,
+                    tokenProgram: spl_token_1.TOKEN_PROGRAM_ID
+                }).instruction().then(closeVaultAtaIX => {
+                    let tx = new web3_js_1.Transaction();
+                    tx.add(closeFeeVaultAtaIX, closeVaultAtaIX);
+                    tx.feePayer = workspace.wallet.payer.publicKey;
+                    workspace.program.provider.connection.getLatestBlockhash().then(blockhash => {
+                        tx.recentBlockhash = blockhash.blockhash;
+                        tx.sign(workspace.wallet.payer);
+                        workspace.sendTransaction(tx).then(txSignature => {
+                            (0, index_1.confirmTxRetry)(workspace, txSignature).then(() => {
+                                resolve(true);
+                            }).catch(error => {
+                                reject(error);
+                            });
+                        }).catch(error => {
+                            console.error(error);
+                            reject(error);
+                        });
+                    }).catch(error => {
+                        console.error(error);
+                        reject(error);
+                    });
+                }).catch(error => {
+                    console.error(error);
+                    reject(error);
+                });
+            }).catch(error => {
+                console.error(error);
+                reject(error);
+            });
+        });
+    }
+    async closeVault(workspace) {
+        return new Promise((resolve, reject) => {
+            workspace.program.methods.adminCloseVaultInstruction().accounts({
+                signer: workspace.owner,
+                receiver: workspace.owner,
+                vault: this.account.address
+            }).instruction().then((closeVaultIX) => {
+                let tx = new web3_js_1.Transaction();
+                tx.add(closeVaultIX);
+                tx.feePayer = workspace.wallet.payer.publicKey;
+                workspace.program.provider.connection.getLatestBlockhash().then(blockhash => {
+                    tx.recentBlockhash = blockhash.blockhash;
+                    tx.sign(workspace.wallet.payer);
+                    workspace.sendTransaction(tx).then(txSignature => {
+                        (0, index_1.confirmTxRetry)(workspace, txSignature).then(() => {
+                            resolve(true);
+                        }).catch(error => {
+                            reject(error);
+                        });
+                    }).catch(error => {
+                        console.error(error);
+                        reject(error);
+                    });
+                }).catch(error => {
+                    console.error(error);
+                    reject(error);
+                });
+            }).catch(error => {
+                console.error(error);
+                reject(error);
+            });
         });
     }
 }

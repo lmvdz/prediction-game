@@ -33,6 +33,8 @@ const spl_token_1 = require("@solana/spl-token");
 const chunk_1 = __importDefault(require("../util/chunk"));
 const round_1 = __importDefault(require("../accounts/round"));
 const index_1 = require("../util/index");
+const userPredictionHistory_1 = __importDefault(require("./userPredictionHistory"));
+const roundHistory_1 = __importDefault(require("./roundHistory"));
 var Oracle;
 (function (Oracle) {
     Oracle[Oracle["Undefined"] = 0] = "Undefined";
@@ -53,6 +55,11 @@ class Game {
         this.previousRound = new round_1.default(await (0, index_1.fetchAccountRetry)(workspace, 'round', (this.account.previousRound)));
         return this;
     }
+    async loadHistory(workspace) {
+        this.userPredictionHistory = new userPredictionHistory_1.default(await (0, index_1.fetchAccountRetry)(workspace, 'userPredictionHistory', (this.account.userPredictionHistory)));
+        this.roundHistory = new roundHistory_1.default(await (0, index_1.fetchAccountRetry)(workspace, 'roundHistory', (this.account.roundHistory)));
+        return this;
+    }
     async getUpdatedGameData(workspace) {
         return await (0, index_1.fetchAccountRetry)(workspace, 'game', (this.account.address));
     }
@@ -63,6 +70,11 @@ class Game {
     async updateRoundData(workspace) {
         await this.currentRound.updateData(await (0, index_1.fetchAccountRetry)(workspace, 'round', (this.account.currentRound)));
         await this.previousRound.updateData(await (0, index_1.fetchAccountRetry)(workspace, 'round', (this.account.previousRound)));
+        return this;
+    }
+    async updateHistory(workspace) {
+        await this.userPredictionHistory.updateData(await (0, index_1.fetchAccountRetry)(workspace, 'userPredictionHistory', (this.account.userPredictionHistory)));
+        await this.roundHistory.updateData(await (0, index_1.fetchAccountRetry)(workspace, 'roundHistory', (this.account.roundHistory)));
         return this;
     }
     async collectFeeInstruction(workspace, crank) {
@@ -242,6 +254,47 @@ class Game {
             });
         });
     }
+    async initializeGameHistory(workspace) {
+        const roundHistory = anchor.web3.Keypair.generate();
+        const userPredictionHistory = anchor.web3.Keypair.generate();
+        // console.log(baseSymbol, vaultPubkeyBump, feeVaultPubkeyBump)
+        return new Promise((resolve, reject) => {
+            workspace.program.methods.initGameHistoryInstruction().accounts({
+                owner: workspace.owner,
+                game: this.account.address,
+                roundHistory: roundHistory.publicKey,
+                userPredictionHistory: userPredictionHistory.publicKey,
+                systemProgram: web3_js_1.SystemProgram.programId
+            }).transaction().then((tx) => {
+                workspace.program.account.roundHistory.createInstruction(roundHistory).then(roundHistoryCreateIX => {
+                    workspace.program.account.userPredictionHistory.createInstruction(userPredictionHistory).then(userPredictionHistoryCreateIX => {
+                        tx.instructions.push(...[roundHistoryCreateIX, userPredictionHistoryCreateIX]);
+                        workspace.sendTransaction(tx, [roundHistory, userPredictionHistory]).then(txSignature => {
+                            (0, index_1.confirmTxRetry)(workspace, txSignature).then(() => {
+                                (0, index_1.fetchAccountRetry)(workspace, 'userPredictionHistory', userPredictionHistory.publicKey).then(userPredictionHistoryAccount => {
+                                    this.userPredictionHistory = new userPredictionHistory_1.default(userPredictionHistoryAccount);
+                                    (0, index_1.fetchAccountRetry)(workspace, 'roundHistory', roundHistory.publicKey).then(roundHistoryAccount => {
+                                        this.roundHistory = new roundHistory_1.default(roundHistoryAccount);
+                                        resolve(this);
+                                    }).catch(error => {
+                                        reject(error);
+                                    });
+                                }).catch(error => {
+                                    reject(error);
+                                });
+                            }).catch(error => {
+                                reject(error);
+                            });
+                        }).catch(error => {
+                            reject(error);
+                        });
+                    });
+                });
+            }).catch(error => {
+                reject(error);
+            });
+        });
+    }
     static async initializeGame(workspace, baseSymbol, vault, oracle, priceProgram, priceFeed, feeBps, crankBps, roundLength) {
         const [gamePubkey, _gamePubkeyBump] = await workspace.programAddresses.getGamePubkey(vault, priceProgram, priceFeed);
         // console.log(baseSymbol, vaultPubkeyBump, feeVaultPubkeyBump)
@@ -252,14 +305,74 @@ class Game {
                 vault: vault.account.address,
                 priceProgram,
                 priceFeed,
-                rent: web3_js_1.SYSVAR_RENT_PUBKEY,
-                tokenProgram: spl_token_1.TOKEN_PROGRAM_ID,
-                systemProgram: web3_js_1.SystemProgram.programId,
+                systemProgram: web3_js_1.SystemProgram.programId
             }).transaction().then((tx) => {
                 workspace.sendTransaction(tx).then(txSignature => {
                     (0, index_1.confirmTxRetry)(workspace, txSignature).then(() => {
                         (0, index_1.fetchAccountRetry)(workspace, 'game', gamePubkey).then(gameAccount => {
                             resolve(new Game(gameAccount));
+                        }).catch(error => {
+                            reject(error);
+                        });
+                    }).catch(error => {
+                        reject(error);
+                    });
+                }).catch(error => {
+                    reject(error);
+                });
+            }).catch(error => {
+                reject(error);
+            });
+        });
+    }
+    static async initGameAndHistory(workspace, baseSymbol, vault, oracle, priceProgram, priceFeed, feeBps, crankBps, roundLength) {
+        const [gamePubkey, _gamePubkeyBump] = await workspace.programAddresses.getGamePubkey(vault, priceProgram, priceFeed);
+        const roundHistory = anchor.web3.Keypair.generate();
+        const userPredictionHistory = anchor.web3.Keypair.generate();
+        return new Promise((resolve, reject) => {
+            workspace.program.methods.initGameInstruction(oracle, baseSymbol, feeBps, crankBps, roundLength).accounts({
+                owner: workspace.owner,
+                game: gamePubkey,
+                vault: vault.account.address,
+                priceProgram,
+                priceFeed,
+                systemProgram: web3_js_1.SystemProgram.programId,
+            }).instruction().then((initGameInstruction) => {
+                workspace.program.methods.initGameHistoryInstruction().accounts({
+                    owner: workspace.owner,
+                    game: gamePubkey,
+                    roundHistory: roundHistory.publicKey,
+                    userPredictionHistory: userPredictionHistory.publicKey,
+                    systemProgram: web3_js_1.SystemProgram.programId
+                }).instruction().then(initGameHistoryInstruction => {
+                    workspace.program.account.roundHistory.createInstruction(roundHistory).then(roundHistoryCreateIX => {
+                        workspace.program.account.userPredictionHistory.createInstruction(userPredictionHistory).then(userPredictionHistoryCreateIX => {
+                            let tx = new web3_js_1.Transaction();
+                            tx.add(...[initGameInstruction, roundHistoryCreateIX, userPredictionHistoryCreateIX, initGameHistoryInstruction]);
+                            workspace.sendTransaction(tx, [roundHistory, userPredictionHistory]).then(txSignature => {
+                                (0, index_1.confirmTxRetry)(workspace, txSignature).then(() => {
+                                    (0, index_1.fetchAccountRetry)(workspace, 'game', gamePubkey).then(gameAccount => {
+                                        let game = new Game(gameAccount);
+                                        (0, index_1.fetchAccountRetry)(workspace, 'userPredictionHistory', userPredictionHistory.publicKey).then(userPredictionHistoryAccount => {
+                                            game.userPredictionHistory = new userPredictionHistory_1.default(userPredictionHistoryAccount);
+                                            (0, index_1.fetchAccountRetry)(workspace, 'roundHistory', roundHistory.publicKey).then(roundHistoryAccount => {
+                                                game.roundHistory = new roundHistory_1.default(roundHistoryAccount);
+                                                resolve(game);
+                                            }).catch(error => {
+                                                reject(error);
+                                            });
+                                        }).catch(error => {
+                                            reject(error);
+                                        });
+                                    }).catch(error => {
+                                        reject(error);
+                                    });
+                                }).catch(error => {
+                                    reject(error);
+                                });
+                            }).catch(error => {
+                                reject(error);
+                            });
                         }).catch(error => {
                             reject(error);
                         });

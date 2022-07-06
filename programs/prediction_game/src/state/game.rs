@@ -1,7 +1,9 @@
 use anchor_lang::prelude::*;
 
+
 #[account]
 #[derive(Default)]
+#[repr(packed)]
 pub struct Game {
     
     pub owner: Pubkey,
@@ -30,4 +32,10 @@ pub struct Game {
     pub oracle: u8,
     pub price_program: Pubkey,
     pub price_feed: Pubkey,
+
+    pub user_prediction_history: Pubkey,
+    pub round_history: Pubkey,
+
+    pub padding01: [Pubkey; 8]
+    
 }

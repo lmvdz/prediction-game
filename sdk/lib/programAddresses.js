@@ -41,6 +41,20 @@ class ProgramAddresses {
             Buffer.from(anchor.utils.bytes.utf8.encode('game')),
         ], this.program.programId);
     }
+    async getGameRoundHistoryPubkey(game) {
+        return await web3_js_1.PublicKey.findProgramAddress([
+            Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)),
+            game.toBuffer(),
+            Buffer.from(anchor.utils.bytes.utf8.encode('round_history')),
+        ], this.program.programId);
+    }
+    async getGameUserPredictionHistoryPubkey(game) {
+        return await web3_js_1.PublicKey.findProgramAddress([
+            Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)),
+            game.toBuffer(),
+            Buffer.from(anchor.utils.bytes.utf8.encode('user_prediction_history')),
+        ], this.program.programId);
+    }
     async getFeeVaultATAPubkey(vaultPubkey) {
         return await web3_js_1.PublicKey.findProgramAddress([Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), vaultPubkey.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('fee_vault_ata'))], this.program.programId);
     }

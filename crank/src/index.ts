@@ -14,7 +14,11 @@ import Vault, { VaultAccount } from "sdk/lib/accounts/vault";
 import { ProgramAccount } from "@project-serum/anchor";
 import cluster from 'cluster';
 
-config({path: '.env.local'})
+let args = process.argv.slice(2)
+
+let env = args[0]
+
+config({path: '.env.'+env})
 
 const privateKeyEnvVariable = "PRIVATE_KEY"
 // ENVIRONMENT VARIABLE FOR THE BOT PRIVATE KEY
@@ -199,10 +203,15 @@ const updateLoop = (workspace: Workspace, vault: Vault, game: Game, crank: Crank
                 );
             })
         })
+        // get the latest vault data (debug purposes)
         vault.updateVaultData(workspace).then((vault: Vault) => {
+            // update the game state (required)
             game.updateGame(workspace, crank).then((game: Game) => {
+                // fetch latest game data (required)
                 game.updateGameData(workspace).then((game: Game) => {
+                    // fetch latest round data (required)
                     game.updateRoundData(workspace).then((game: Game) => {
+                        // finished round logic (required)
                         settleOrInitNext(workspace, game, crank).then((game: Game) => {
                             updateLoop(workspace, vault, game, crank)
                         }).catch(error => {

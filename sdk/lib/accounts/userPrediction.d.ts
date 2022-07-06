@@ -18,6 +18,7 @@ export declare type UserPredictionAccount = {
     upOrDown: number;
     amount: anchor.BN;
     settled: boolean;
+    padding01: PublicKey[];
 };
 export default class UserPrediction implements DataUpdatable<UserPredictionAccount> {
     account: UserPredictionAccount;

@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "mainnet": "node index.js mainnet",
+    "dev": "node index.js devnet",
+    "testnet": "node index.js testnet",
+    "local": "node index.js local"
   },
   "author": "",
   "license": "ISC",

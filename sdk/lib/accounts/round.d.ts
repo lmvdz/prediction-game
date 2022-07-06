@@ -35,6 +35,7 @@ export declare type RoundAccount = {
     totalCranks: number;
     totalCranksPaid: number;
     totalAmountPaidToCranks: anchor.BN;
+    padding01: PublicKey[];
 };
 export default class Round implements DataUpdatable<RoundAccount> {
     account: RoundAccount;

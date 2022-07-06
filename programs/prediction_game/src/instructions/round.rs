@@ -1,8 +1,10 @@
+use std::cell::RefMut;
+
 use anchor_lang::prelude::*;
 
 use crate::errors::ErrorCode;
 
-use crate::state::{Round, Game, Crank, get_price};
+use crate::state::{Round, Game, Crank, get_price, RoundHistory, RoundHistoryItem};
 
 pub fn init_first_round(ctx: Context<InitFirstRound>) -> Result<()> {
     let round = &mut ctx.accounts.round;
@@ -64,10 +66,18 @@ pub fn init_first_round(ctx: Context<InitFirstRound>) -> Result<()> {
 }
 
 
-fn init_round_shared<'info>(next_round: &mut Box<Account<Round>>, current_round: &mut Box<Account<Round>>, game: &mut Box<Account<Game>>, price_program: &AccountInfo<'info>, price_feed: &AccountInfo<'info>) -> Result<()> {
+fn init_round_shared<'info>(
+    next_round: &mut Box<Account<Round>>, 
+    current_round: &mut Box<Account<Round>>, 
+    game: &mut Box<Account<Game>>, 
+    round_history: &mut RefMut<RoundHistory>, 
+    price_program: &AccountInfo<'info>, 
+    price_feed: &AccountInfo<'info>
+) -> Result<()> {
     
     game.current_round = next_round.key();
     game.previous_round = current_round.key();
+
 
     if game.total_volume.saturating_add(current_round.total_up_amount.into()).eq(&u128::MAX) {
         let leftover = game.total_volume.saturating_sub(u128::MAX.saturating_sub(current_round.total_up_amount.into()));
@@ -132,6 +142,33 @@ fn init_round_shared<'info>(next_round: &mut Box<Account<Round>>, current_round:
     next_round.total_amount_paid_to_cranks = 0;
     next_round.total_cranks_paid = 0;
 
+    // once the round is finished append it to the history
+    let next_record_id = round_history.next_record_id();
+
+    round_history.append(RoundHistoryItem {
+        record_id: next_record_id,
+        round_number: current_round.round_number,
+        round_start_time: current_round.round_start_time,
+        round_current_time: current_round.round_current_time,
+        round_time_difference: current_round.round_time_difference,
+        round_start_price: current_round.round_start_price,
+        round_current_price: current_round.round_current_price,
+        round_end_price: current_round.round_end_price,
+        round_price_difference: current_round.round_price_difference,
+        round_price_decimals: current_round.round_price_decimals,
+        round_winning_direction: current_round.round_winning_direction,
+        total_fee_collected: current_round.total_fee_collected,
+        total_up_amount: current_round.total_up_amount,
+        total_down_amount: current_round.total_down_amount,
+        total_amount_settled: current_round.total_amount_settled,
+        total_predictions_settled: current_round.total_predictions_settled,
+        total_predictions: current_round.total_predictions,
+        total_unique_crankers: current_round.total_unique_crankers,
+        total_cranks: current_round.total_cranks,
+        total_cranks_paid: current_round.total_cranks_paid,
+        total_amount_paid_to_cranks: current_round.total_amount_paid_to_cranks
+    });
+
     Ok(())
 }
 
@@ -143,7 +180,9 @@ pub fn init_second_round(ctx: Context<InitSecondRound>) -> Result<()> {
     let price_program = &ctx.accounts.price_program;
     let price_feed = &ctx.accounts.price_feed;
 
-    init_round_shared(second_round, first_round, game, price_program, price_feed)
+    let round_history = &mut ctx.accounts.round_history.load_mut()?;
+
+    init_round_shared(second_round, first_round, game, round_history, price_program, price_feed)
 }
 
 pub fn init_next_round_and_close_previous(ctx: Context<InitNextRoundAndClosePrevious>) -> Result<()> {
@@ -154,7 +193,9 @@ pub fn init_next_round_and_close_previous(ctx: Context<InitNextRoundAndClosePrev
     let price_program = &ctx.accounts.price_program;
     let price_feed = &ctx.accounts.price_feed;
 
-    init_round_shared(next_round, current_round, game, price_program, price_feed)
+    let round_history = &mut ctx.accounts.round_history.load_mut()?;
+
+    init_round_shared(next_round, current_round, game, round_history, price_program, price_feed)
 }
 
 
@@ -279,6 +320,9 @@ pub struct InitSecondRound<'info> {
     pub game: Box<Account<'info, Game>>,
 
     #[account(mut)]
+    pub round_history: AccountLoader<'info, RoundHistory>,
+
+    #[account(mut)]
     pub crank: Box<Account<'info, Crank>>,
 
     #[account(
@@ -330,6 +374,9 @@ pub struct InitNextRoundAndClosePrevious<'info> {
 
     #[account(mut)]
     pub game: Box<Account<'info, Game>>,
+
+    #[account(mut)]
+    pub round_history: AccountLoader<'info, RoundHistory>,
 
     #[account(mut)]
     pub crank: Box<Account<'info, Crank>>,

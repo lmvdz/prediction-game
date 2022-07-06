@@ -12,6 +12,7 @@ export declare type VaultAccount = {
     vaultAta: PublicKey;
     vaultAtaAuthority: PublicKey;
     vaultAtaAuthorityNonce: number;
+    padding01: PublicKey[];
 };
 export default class Vault implements DataUpdatable<VaultAccount> {
     account: VaultAccount;
@@ -21,4 +22,6 @@ export default class Vault implements DataUpdatable<VaultAccount> {
     updateVaultData(workspace: Workspace): Promise<Vault>;
     static initializeVaultInstruction(workspace: Workspace, tokenMint: PublicKey, vaultPubkey: PublicKey): Promise<TransactionInstruction>;
     static initializeVault(workspace: Workspace, tokenMint: PublicKey): Promise<Vault>;
+    closeVaultTokenAccounts(workspace: Workspace, receiverAta: PublicKey): Promise<unknown>;
+    closeVault(workspace: Workspace): Promise<unknown>;
 }

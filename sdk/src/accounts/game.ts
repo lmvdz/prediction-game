@@ -10,6 +10,8 @@ import Crank from "./crank"
 import Vault from "./vault"
 import { ProgramAccount } from "@project-serum/anchor"
 import UserPrediction, { UserPredictionAccount } from "./userPrediction"
+import UserPredictionHistory, { UserPredictionHistoryAccount } from "./userPredictionHistory"
+import RoundHistory, { RoundHistoryAccount } from "./roundHistory"
 
 export type GameAccount = {
 
@@ -38,6 +40,11 @@ export type GameAccount = {
     priceProgram: PublicKey
     priceFeed: PublicKey
     oracle: number
+
+    userPredictionHistory: PublicKey,
+    roundHistory: PublicKey,
+
+    padding01: PublicKey[]
 }
 
 export enum Oracle {
@@ -50,6 +57,8 @@ export enum Oracle {
 export default class Game implements DataUpdatable<GameAccount> {
 
     account: GameAccount
+    userPredictionHistory: UserPredictionHistory
+    roundHistory: RoundHistory
     currentRound: Round
     previousRound: Round
 
@@ -70,6 +79,12 @@ export default class Game implements DataUpdatable<GameAccount> {
         return this;
     }
 
+    public async loadHistory(workspace: Workspace) : Promise<Game> {
+        this.userPredictionHistory = new UserPredictionHistory(await fetchAccountRetry<UserPredictionHistoryAccount>(workspace, 'userPredictionHistory', (this.account.userPredictionHistory)));
+        this.roundHistory = new RoundHistory(await fetchAccountRetry<RoundHistoryAccount>(workspace, 'roundHistory', (this.account.roundHistory)));
+        return this;
+    }
+
     public async getUpdatedGameData(workspace: Workspace) : Promise<GameAccount> {
         return await fetchAccountRetry<GameAccount>(workspace, 'game', (this.account.address));
     }
@@ -82,6 +97,12 @@ export default class Game implements DataUpdatable<GameAccount> {
     public async updateRoundData(workspace: Workspace) : Promise<Game> {
         await this.currentRound.updateData(await fetchAccountRetry<RoundAccount>(workspace, 'round', (this.account.currentRound)));
         await this.previousRound.updateData(await fetchAccountRetry<RoundAccount>(workspace, 'round', (this.account.previousRound)));
+        return this;
+    }
+
+    public async updateHistory(workspace: Workspace) : Promise<Game> {
+        await this.userPredictionHistory.updateData(await fetchAccountRetry<UserPredictionHistoryAccount>(workspace, 'userPredictionHistory', (this.account.userPredictionHistory)));
+        await this.roundHistory.updateData(await fetchAccountRetry<RoundHistoryAccount>(workspace, 'roundHistory', (this.account.roundHistory)));
         return this;
     }
 
@@ -266,6 +287,58 @@ export default class Game implements DataUpdatable<GameAccount> {
         })
     }
 
+
+    public async initializeGameHistory(workspace: Workspace): Promise<Game> {
+        const roundHistory = anchor.web3.Keypair.generate();
+        const userPredictionHistory = anchor.web3.Keypair.generate();
+
+        // console.log(baseSymbol, vaultPubkeyBump, feeVaultPubkeyBump)
+
+        return new Promise((resolve, reject) => {
+            workspace.program.methods.initGameHistoryInstruction().accounts({
+                owner: workspace.owner,
+                game: this.account.address,
+                roundHistory: roundHistory.publicKey,
+                userPredictionHistory: userPredictionHistory.publicKey,
+                systemProgram: SystemProgram.programId
+            }).transaction().then((tx) => {
+                workspace.program.account.roundHistory.createInstruction(roundHistory).then(roundHistoryCreateIX => {
+                    workspace.program.account.userPredictionHistory.createInstruction(userPredictionHistory).then(userPredictionHistoryCreateIX => {
+                        tx.instructions.push(...[roundHistoryCreateIX, userPredictionHistoryCreateIX])
+                        workspace.sendTransaction(tx, [roundHistory, userPredictionHistory]).then(txSignature => {
+                            confirmTxRetry(workspace, txSignature).then(() => {
+                                fetchAccountRetry<UserPredictionHistoryAccount>(workspace, 'userPredictionHistory', userPredictionHistory.publicKey).then(userPredictionHistoryAccount => {
+                                    this.userPredictionHistory = new UserPredictionHistory(
+                                        userPredictionHistoryAccount
+                                    );
+                                    fetchAccountRetry<RoundHistoryAccount>(workspace, 'roundHistory', roundHistory.publicKey).then(roundHistoryAccount => {
+                                        this.roundHistory = new RoundHistory(
+                                            roundHistoryAccount
+                                        );
+                                        resolve(this);
+                                    }).catch(error => {
+                                        reject(error);
+                                    })
+                                }).catch(error => {
+                                    reject(error);
+                                })
+                            }).catch(error => {
+                                reject(error);
+                            })
+                        }).catch(error => {
+                            reject(error);
+                        })
+                    })
+                })
+                
+            }).catch(error => {
+                reject(error);
+            })
+            
+        })
+
+    }
+
     public static async initializeGame(workspace: Workspace, baseSymbol: string, vault: Vault, oracle: Oracle, priceProgram: PublicKey, priceFeed: PublicKey, feeBps: number, crankBps: number, roundLength: anchor.BN): Promise<Game> {
         const [gamePubkey, _gamePubkeyBump] = await workspace.programAddresses.getGamePubkey(vault, priceProgram, priceFeed);
 
@@ -278,10 +351,7 @@ export default class Game implements DataUpdatable<GameAccount> {
                 vault: vault.account.address,
                 priceProgram,
                 priceFeed,
-                rent: SYSVAR_RENT_PUBKEY,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                systemProgram: SystemProgram.programId,
-                
+                systemProgram: SystemProgram.programId
             }).transaction().then((tx) => {
                 workspace.sendTransaction(tx).then(txSignature => {
                     confirmTxRetry(workspace, txSignature).then(() => {
@@ -305,8 +375,78 @@ export default class Game implements DataUpdatable<GameAccount> {
             })
             
         })
+    }
 
+    public static async initGameAndHistory(workspace: Workspace, baseSymbol: string, vault: Vault, oracle: Oracle, priceProgram: PublicKey, priceFeed: PublicKey, feeBps: number, crankBps: number, roundLength: anchor.BN) : Promise<Game> {
+        const [gamePubkey, _gamePubkeyBump] = await workspace.programAddresses.getGamePubkey(vault, priceProgram, priceFeed);
+        const roundHistory = anchor.web3.Keypair.generate();
+        const userPredictionHistory = anchor.web3.Keypair.generate();
 
+        return new Promise((resolve, reject) => {
+            workspace.program.methods.initGameInstruction(oracle, baseSymbol, feeBps, crankBps, roundLength).accounts({
+                owner: workspace.owner,
+                game: gamePubkey,
+                vault: vault.account.address,
+                priceProgram,
+                priceFeed,
+                systemProgram: SystemProgram.programId,
+            }).instruction().then((initGameInstruction) => {
+                workspace.program.methods.initGameHistoryInstruction().accounts({
+                    owner: workspace.owner,
+                    game: gamePubkey,
+                    roundHistory: roundHistory.publicKey,
+                    userPredictionHistory: userPredictionHistory.publicKey,
+                    systemProgram: SystemProgram.programId
+                }).instruction().then(initGameHistoryInstruction => {
+                    
+                    workspace.program.account.roundHistory.createInstruction(roundHistory).then(roundHistoryCreateIX => {
+                        workspace.program.account.userPredictionHistory.createInstruction(userPredictionHistory).then(userPredictionHistoryCreateIX => {
+                            let tx = new Transaction();
+                            tx.add(...[initGameInstruction, roundHistoryCreateIX, userPredictionHistoryCreateIX, initGameHistoryInstruction])
+                            workspace.sendTransaction(tx, [roundHistory, userPredictionHistory]).then(txSignature => {
+                                confirmTxRetry(workspace, txSignature).then(() => {
+                                    fetchAccountRetry<GameAccount>(workspace, 'game', gamePubkey).then(gameAccount => {
+                                        let game = new Game(
+                                            gameAccount
+                                        )
+                                        fetchAccountRetry<UserPredictionHistoryAccount>(workspace, 'userPredictionHistory', userPredictionHistory.publicKey).then(userPredictionHistoryAccount => {
+                                            game.userPredictionHistory = new UserPredictionHistory(
+                                                userPredictionHistoryAccount
+                                            );
+                                            fetchAccountRetry<RoundHistoryAccount>(workspace, 'roundHistory', roundHistory.publicKey).then(roundHistoryAccount => {
+                                                game.roundHistory = new RoundHistory(
+                                                    roundHistoryAccount
+                                                );
+                                                resolve(game)
+                                            }).catch(error => {
+                                                reject(error);
+                                            })
+                                        }).catch(error => {
+                                            reject(error);
+                                        })
+                                        
+                                    }).catch(error => {
+                                        reject(error);
+                                    })
+                                }).catch(error => {
+                                    reject(error);
+                                })
+                            }).catch(error => {
+                                reject(error);
+                            })
+                        }).catch(error => {
+                            reject(error);
+                        })
+                    }).catch(error => {
+                        reject(error);
+                    })
+                }).catch(error => {
+                    reject(error);
+                })
+            }).catch(error => {
+                reject(error);
+            })
+        })
     }
 
     public updateGame(workspace: Workspace, crank: Crank): Promise<Game> {
@@ -334,6 +474,8 @@ export default class Game implements DataUpdatable<GameAccount> {
             })
         })
     }
+
+
 
     public async settlePredictionsInstruction(workspace: Workspace, crank: Crank, remainingAccounts: AccountMeta[]) : Promise<TransactionInstruction> {
         return await workspace.program.methods.settlePredictionsInstruction().accounts({
