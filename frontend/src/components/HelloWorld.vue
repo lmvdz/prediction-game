@@ -54,6 +54,7 @@ let computedUser = computed(() => getUser());
 let userClaimableAddress = ref(null as PublicKey);
 let computedClaimable = computed(() => getUserClaimable());
 let games = ref(new Set<string>());
+let histories = ref(new Map<string, { roundHistory: RoundHistory, userPredictionHistory: UserPredictionHistory }>)
 let computedGames = computed(() => [...games.value.values()].map(gamePubkey => getGame(gamePubkey)));
 let rounds = ref(new Set<string>());
 let computedRounds = computed(() => [...rounds.value.values()].map(roundPubkey => getRound(roundPubkey)));
@@ -77,7 +78,7 @@ let tokenList = ref(null as TokenInfo[]);
 let updateInterval = ref(null as NodeJS.Timer);
 let aggrWorkspace = ref('');
 
-let selectedGameHistory = ref(null as Game);
+let selectedGameHistory = ref(null as string);
 
 let { showHistory, showHelp, showChart, showAccountInfo } = defineProps({
   showHistory: Boolean,
@@ -137,11 +138,11 @@ function loadPAF() {
 }
 
 function getRpcUrl() {
-  return window.location.host.startsWith("localhost") ? 'https://api.testnet.solana.com' :  window.location.host.startsWith("devnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net";
+  return window.location.host.startsWith("localhost") || window.location.host.startsWith("devnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net";
 }
 
 function getCluster() {
-  return window.location.host.startsWith("localhost") ? 'testnet' : window.location.host.split('.')[0] as Cluster;
+  return window.location.host.startsWith("localhost") ? 'devnet' : window.location.host.split('.')[0] as Cluster;
 }
 
 type FrontendGameData = {
@@ -635,6 +636,7 @@ async function loadUser() : Promise<void> {
     try {
       // let userPubkey = (await (getWorkspace()).programAddresses.getUserPubkey(new PublicKey((wallet.value.publicKey as PublicKey).toBase58())))[0];
       if (!paf.value.accounts.has(userAddress.value.toBase58())) {
+        //@ts-ignore
         paf.value.addProgram<PredictionGame>('user', userAddress.value.toBase58(), getWorkspace().program, async (data: UserAccount) => {
           // console.log("updated user " + data.address.toBase58())
         }, (error) => {
@@ -650,33 +652,44 @@ async function loadUser() : Promise<void> {
 
 async function loadGameHistories() : Promise<void> {
   // console.log(wallet.value.publicKey.value.toBase58())
-  if (wallet.value.connected) {
-    try {
-      if (computedGames.value !== null) {
-        computedGames.value.forEach(game => {
-          let gameUserPredictionHistoryPubkey = game.account.userPredictionHistory;
-          if (!paf.value.accounts.has(gameUserPredictionHistoryPubkey.toBase58())) {
-            paf.value.addProgram<PredictionGame>('userPredictionHistory', gameUserPredictionHistoryPubkey.toBase58(), getWorkspace().program, async (data: UserPredictionHistoryAccount) => {
-              game.userPredictionHistory = new UserPredictionHistory(data)
-            }, (error) => {
-              console.error(error);
-              paf.value.accounts.delete(gameUserPredictionHistoryPubkey.toBase58())
-            });
-          }
-          let gameRoundHistoryPubkey = game.account.roundHistory;
-          if (!paf.value.accounts.has(gameRoundHistoryPubkey.toBase58())) {
-            paf.value.addProgram<PredictionGame>('roundHistory', gameRoundHistoryPubkey.toBase58(), getWorkspace().program, async (data: RoundHistoryAccount) => {
-              game.roundHistory = new RoundHistory(data)
-            }, (error) => {
-              console.error(error);
-              paf.value.accounts.delete(gameRoundHistoryPubkey.toBase58())
-            });
-          }
-        })
-      }
-    } catch (error) {
-      console.error(error);
+  try {
+    if (computedGames.value !== null) {
+      computedGames.value.forEach(game => {
+        let gameUserPredictionHistoryPubkey = game.account.userPredictionHistory;
+        if (!paf.value.accounts.has(gameUserPredictionHistoryPubkey.toBase58())) {
+          //@ts-ignore
+          paf.value.addProgram<PredictionGame>('userPredictionHistory', gameUserPredictionHistoryPubkey.toBase58(), getWorkspace().program, async (data: UserPredictionHistoryAccount) => {
+            let userPredictionHistory = new UserPredictionHistory(data);
+            if (!histories.value.has(game.account.address.toBase58())) {
+              histories.value.set(game.account.address.toBase58(), { roundHistory: null, userPredictionHistory });
+            } else {
+              histories.value.set(game.account.address.toBase58(), { ...histories.value.get(game.account.address.toBase58()), userPredictionHistory });
+            }
+            
+          }, (error) => {
+            console.error(error);
+            paf.value.accounts.delete(gameUserPredictionHistoryPubkey.toBase58())
+          });
+        }
+        let gameRoundHistoryPubkey = game.account.roundHistory;
+        if (!paf.value.accounts.has(gameRoundHistoryPubkey.toBase58())) {
+          //@ts-ignore
+          paf.value.addProgram<PredictionGame>('roundHistory', gameRoundHistoryPubkey.toBase58(), getWorkspace().program, async (data: RoundHistoryAccount) => {
+            let roundHistory = new RoundHistory(data);
+            if (!histories.value.has(game.account.address.toBase58())) {
+              histories.value.set(game.account.address.toBase58(), { roundHistory, userPredictionHistory: null });
+            } else {
+              histories.value.set(game.account.address.toBase58(), { ...histories.value.get(game.account.address.toBase58()), roundHistory });
+            }
+          }, (error) => {
+            console.error(error);
+            paf.value.accounts.delete(gameRoundHistoryPubkey.toBase58())
+          });
+        }
+      })
     }
+  } catch (error) {
+    console.error(error);
   }
 }
 
@@ -696,6 +709,7 @@ async function loadUserClaimable() : Promise<void> {
     try {
       if (userClaimableAddress.value !== null) {
         if (!paf.value.accounts.has(userClaimableAddress.value.toBase58())) {
+          //@ts-ignore
           paf.value.addProgram<PredictionGame>('userClaimable', userClaimableAddress.value.toBase58(), getWorkspace().program, async (data: UserClaimableAccount) => {
             data.claims.forEach(claim => {
               console.log(claim.mint.toBase58(), claim.vault.toBase58(), claim.amount.toNumber());
@@ -729,6 +743,7 @@ async function loadRounds() {
     }
 
     if (!paf.value.accounts.has(roundAddress)) {
+      //@ts-ignore
       paf.value.addProgram<PredictionGame>('round', roundAddress, getWorkspace().program, async (data: RoundAccount) => {
         if (frontendGameData.value.get(data.game.toBase58()) !== undefined) {
           // round time difference updater
@@ -774,7 +789,7 @@ async function loadGames() {
     }
 
     if (!paf.value.accounts.has(newGameAddress)) {
-
+      //@ts-ignore
       paf.value.addProgram<PredictionGame>('game', newGameAddress, getWorkspace().program, async (data: GameAccount) => {
         await initFrontendGameData(getGame(data.address.toBase58()));
        }, (error) => {
@@ -796,6 +811,7 @@ async function loadVaults() {
       }
         
       if (!paf.value.accounts.has(vaultAddress)) {
+        //@ts-ignore
         paf.value.addProgram<PredictionGame>('vault', vaultAddress, getWorkspace().program, async (data: VaultAccount) => {
         }, (error) => {
           paf.value.accounts.delete(vaultAddress)
@@ -815,6 +831,7 @@ async function loadPredictions() {
           userPredictions.value.add(userPredictionProgramAccountAddress)
         }
         if (!paf.value.accounts.has(userPredictionProgramAccountAddress)) {
+          //@ts-ignore
           paf.value.addProgram<PredictionGame>('userPrediction', userPredictionProgramAccountAddress, getWorkspace().program, async (data: UserPredictionAccount) => {
           }, (error) => {
             paf.value.accounts.delete(userPredictionProgramAccountAddress)
@@ -2012,95 +2029,128 @@ export default defineComponent({
       </v-row>
     </v-fade-transition>
     <v-fade-transition leave-absolute hide-on-leave>
+      <v-row v-show="useDisplay().width.value > 720 ? useDisplay().height.value >= 1280 ? true : showChart : showChart">
+        <v-col :cols="wallet !== null && wallet.connected && !showChart ? 7 : 12" :style="`padding: 8px; transition: all .3s; margin-top: ${showAccountInfo ? '1em' : '0'};`">
+          <div :style="`resize: vertical; border-radius: .25em; width: 100%; height: ${useDisplay().width.value > 720 && useDisplay().height.value >= 1280 ? useDisplay().height.value - (useDisplay().height.value * 0.25) + 'px' : useDisplay().height.value - (useDisplay().height.value * 0.25) + 'px'}; overflow: hidden;`">
+            <iframe id="aggr" 
+              :src="`${'https://aggr.solpredict.io'}?workspace-url=${aggrWorkspace}`" 
+              frameborder="0" style=" border-radius: .25em; width: 100%; height: 100%;"
+            ></iframe>
+          </div>
+          
+          <!-- <iframe id="aggr" 
+            :src="`https://v3.aggr.trade`" 
+            frameborder="0" style="border-radius: .25em; width: 100%; min-height: 50vh; max-height: 50vh; margin: .75em;"
+          ></iframe> -->
+          
+        </v-col>
+      </v-row>
+    </v-fade-transition>
+    <v-fade-transition leave-absolute hide-on-leave>
       <v-row v-show="useDisplay().width.value > 720 ? useDisplay().height.value >= 1280 ? true : showHistory : showHistory">
-        <v-col :cols="wallet !== null && wallet.connected && !showHistory ? 7 : 12" :style="`padding: 8px; transition: all .3s; margin-bottom: ${showAccountInfo ? '1em' : '0'}; margin-top: ${showChart ? '1em' : '0'};`">
-          <v-card>
+        <v-col :cols="wallet !== null && wallet.connected && !showHistory ? 7 : 12" :style="`padding: 8px; transition: all .3s; margin-bottom: ${showAccountInfo ? '1em' : '0'}; margin-top: ${showChart ? '1em' : '1em'};`">
+          <v-card style="height: 100%;">
             <v-card-title>
-              <v-select :items="computedGames.map(g => {
-                return {
-                  'item-title': g.account.baseSymbol,
-                  'item-value': g
-                }
-              })" v-model="selectedGameHistory"></v-select>
+              <v-container fluid>
+                <v-row align="center">
+                  <v-col cols="12" sm="6" class="d-flex">
+                    <v-select style="margin: 0;" :items="computedGames.filter(g => g !== undefined && g.account !== undefined).map(g => {
+                      return {
+                        'title': g.account.baseSymbol,
+                        'value': g.account.address.toBase58()
+                      }
+                    })" v-model="selectedGameHistory"></v-select>
+                  </v-col>
+                  <v-col cols="12" sm="6" class="d-flex">
+                    <v-select style="margin: 0;"  v-if="
+                    selectedGameHistory !== null && 
+                    frontendGameData.get(selectedGameHistory) !== undefined && 
+                    frontendGameData.get(selectedGameHistory) !== null
+                  " :items="Object.keys(frontendGameData.get(selectedGameHistory).history.show)" @update:model-value="(val) => {
+                      Object.keys(frontendGameData.get(selectedGameHistory).history.show).forEach(showable => {
+                        frontendGameData.get(selectedGameHistory).history.show[showable] = false;
+                      })
+                      frontendGameData.get(selectedGameHistory).history.show[val] = true;
+                    }"></v-select>
+                  </v-col>
+
+                </v-row>
+              </v-container>
             </v-card-title>
-            <v-card-subtitle v-if="selectedGameHistory !== null && frontendGameData.get(selectedGameHistory.account.address.toBase58()) !== undefined && frontendGameData.get(selectedGameHistory.account.address.toBase58()) !== null">
-              <v-select :items="Object.keys(frontendGameData.get(selectedGameHistory.account.address.toBase58()).history.show)" @update:model-value="(val) => {
-                Object.keys(frontendGameData.get(selectedGameHistory.account.address.toBase58()).history.show).forEach(showable => {
-                  frontendGameData.get(selectedGameHistory.account.address.toBase58()).history.show[showable] = false;
-                })
-                frontendGameData.get(selectedGameHistory.account.address.toBase58()).history.show[val] = true;
-              }">
-              </v-select>
-            </v-card-subtitle>
             <v-card-text>
-              <div v-if="selectedGameHistory !== null">
-                <v-card variant="plain" v-if="frontendGameData.get(selectedGameHistory.account.address.toBase58()) !== undefined && frontendGameData.get(selectedGameHistory.account.address.toBase58()) !== null && frontendGameData.get(selectedGameHistory.account.address.toBase58()).history.show.rounds">
+              <div v-if="selectedGameHistory !== null && selectedGameHistory !== undefined && histories.get(selectedGameHistory) !== undefined">
+                <v-card variant="plain" v-if="
+                  frontendGameData.get(selectedGameHistory) !== undefined && 
+                  frontendGameData.get(selectedGameHistory) !== null && 
+                  frontendGameData.get(selectedGameHistory).history.show.rounds &&
+                  histories.get(selectedGameHistory).roundHistory !== null
+                ">
                   <v-card-title>Round History</v-card-title>
-                  <v-card-subtitle>{{ selectedGameHistory.account.baseSymbol }}</v-card-subtitle>
+                  <v-card-subtitle>{{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).account.baseSymbol }}</v-card-subtitle>
                   <v-card-text>
-                    <v-list>
-                      <v-list-item>
-                        <v-list-item-content>
-                          <v-row :class="`historyItemHeader`">
-                            <v-col>
-                              Duration
-                            </v-col>
-                            <v-col>
-                              Start Price
-                            </v-col>
-                            <v-col>
-                              Price Difference
-                            </v-col>
-                            <v-col>
-                              Predictions
-                            </v-col>
-                            <v-col>
-                              Up Stake
-                            </v-col>
-                            <v-col>
-                              Down Stake
-                            </v-col>
-                            <v-col>
-                              Fee Collected
-                            </v-col>
-                          </v-row>
-                        </v-list-item-content>
-                      </v-list-item>
-                      <v-divider></v-divider>
-                      <v-list-item v-for="historyItem in selectedGameHistory.roundHistory.account.rounds.sort((a: RoundHistoryItem, b: RoundHistoryItem) => (a.recordId.sub(b.recordId)).toNumber())">
-                        <v-list-item-header># {{historyItem.roundNumber}}</v-list-item-header>
-                        <v-list-item-content>
-                          <v-row :class="`historyItem round ${historyItem.roundWinningDirection === 1 ? 'up' : 'down'}`">
-                            <v-col>
+                    <v-table
+                    >
+                      <thead>
+                        <tr>
+                          <th>
+                            Duration 
+                          </th>
+                          <th>
+                            Start Price
+                          </th>
+                          <th>
+                            Price Difference
+                          </th>
+                          <th>
+                            Predictions
+                          </th>
+                          <th>
+                            Up Stake
+                          </th>
+                          <th>
+                            Down Stake
+                          </th>
+                          <th>
+                            Fee Collected
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="historyItem in histories.get(selectedGameHistory).roundHistory.account.rounds.filter(round => !round.recordId.eq(new anchor.BN(0))).sort((a: RoundHistoryItem, b: RoundHistoryItem) => (b.recordId.sub(a.recordId)).toNumber())">
+                          <td>
                               {{historyItem.roundTimeDifference.toNumber()}}
-                            </v-col>
-                            <v-col>
-                              {{historyItem.roundStartPrice}}
-                            </v-col>
-                            <v-col>
-                              {{historyItem.roundPriceDifference}}
-                            </v-col>
-                            <v-col>
+                            </td>
+                            <td>
+                              {{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.convertOraclePriceToNumber(historyItem.roundStartPrice, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)).toFixed(2) }}
+                            </td>
+                            <td>
+                              {{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.convertOraclePriceToNumber(historyItem.roundPriceDifference, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)).toFixed(2) }}
+                            </td>
+                            <td>
                               {{historyItem.totalPredictions}}
-                            </v-col>
-                            <v-col>
+                            </td>
+                            <td>
                               {{historyItem.totalUpAmount}}
-                            </v-col>
-                            <v-col>
+                            </td>
+                            <td>
                               {{historyItem.totalDownAmount}}
-                            </v-col>
-                            <v-col>
+                            </td>
+                            <td>
                               {{historyItem.totalFeeCollected}}
-                            </v-col>
-                          </v-row>
-                        </v-list-item-content>
-                      </v-list-item>
-                    </v-list>
+                            </td>
+                        </tr>
+                      </tbody>
+                    </v-table>
                   </v-card-text>
                 </v-card>
-                <v-card variant="plain" v-else-if="frontendGameData.get(selectedGameHistory.account.address.toBase58()) !== undefined && frontendGameData.get(selectedGameHistory.account.address.toBase58()) !== null && frontendGameData.get(selectedGameHistory.account.address.toBase58()).history.show.userPredictions">
+                <v-card variant="plain" v-else-if="
+                  frontendGameData.get(selectedGameHistory) !== undefined && 
+                  frontendGameData.get(selectedGameHistory) !== null && 
+                  frontendGameData.get(selectedGameHistory).history.show.userPredictions &&
+                  histories.get(selectedGameHistory).userPredictionHistory !== null
+                ">
                   <v-card-title>User Prediction History</v-card-title>
-                  <v-card-subtitle>{{ selectedGameHistory.account.baseSymbol }}</v-card-subtitle>
+                  <v-card-subtitle>{{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).account.baseSymbol }}</v-card-subtitle>
                   <v-card-text>
                     <v-list>
                       <v-list-item>
@@ -2116,14 +2166,14 @@ export default defineComponent({
                         </v-list-item-content>
                       </v-list-item>
                       <v-divider></v-divider>
-                      <v-list-item v-for="historyItem in selectedGameHistory.userPredictionHistory.account.userPredictions.sort((a: UserPredictionHistoryItem, b: UserPredictionHistoryItem) => (a.recordId.sub(b.recordId)).toNumber())">
+                      <v-list-item v-for="historyItem in histories.get(selectedGameHistory).userPredictionHistory.account.userPredictions.filter(userPrediction => !userPrediction.recordId.eq(new anchor.BN(0))).sort((a: UserPredictionHistoryItem, b: UserPredictionHistoryItem) => (a.recordId.sub(b.recordId)).toNumber())">
                         <v-list-item-content>
                           <v-row :class="`historyItem prediction ${historyItem.upOrDown === 1 ? 'up' : 'down'}`">
                             <v-col>
                               {{UpOrDown[historyItem.upOrDown]}}
                             </v-col>
                             <v-col>
-                              {{ bnQuoteAssetToNumberFromGame(historyItem.amount, selectedGameHistory) }} {{ getGameQuoteSymbol(selectedGameHistory) }}
+                              {{ bnQuoteAssetToNumberFromGame(historyItem.amount, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }} {{ getGameQuoteSymbol(computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }}
                             </v-col>
                           </v-row>
                         </v-list-item-content>
@@ -2134,25 +2184,6 @@ export default defineComponent({
               </div>
             </v-card-text>
           </v-card>
-          
-        </v-col>
-      </v-row>
-    </v-fade-transition>
-    <v-fade-transition leave-absolute hide-on-leave>
-      <v-row v-show="useDisplay().width.value > 720 ? useDisplay().height.value >= 1280 ? true : showChart : showChart">
-        <v-col :cols="wallet !== null && wallet.connected && !showChart ? 7 : 12" :style="`padding: 8px; transition: all .3s; margin-top: ${showAccountInfo ? '1em' : '0'};`">
-          <div :style="`resize: vertical; border-radius: .25em; width: 100%; height: ${useDisplay().width.value > 720 && useDisplay().height.value >= 1280 ? useDisplay().height.value - (useDisplay().height.value * 0.25) + 'px' : useDisplay().height.value - (useDisplay().height.value * 0.25) + 'px'}; overflow: hidden;`">
-            <iframe id="aggr" 
-              :src="`${'https://aggr.solpredict.io'}?workspace-url=${aggrWorkspace}`" 
-              frameborder="0" style=" border-radius: .25em; width: 100%; height: 100%;"
-            ></iframe>
-          </div>
-          
-          <!-- <iframe id="aggr" 
-            :src="`https://v3.aggr.trade`" 
-            frameborder="0" style="border-radius: .25em; width: 100%; min-height: 50vh; max-height: 50vh; margin: .75em;"
-          ></iframe> -->
-          
         </v-col>
       </v-row>
     </v-fade-transition>
