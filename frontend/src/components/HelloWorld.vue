@@ -2156,33 +2156,29 @@ export default defineComponent({
                   <v-card-title>User Prediction History</v-card-title>
                   <v-card-subtitle>{{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).account.baseSymbol }}</v-card-subtitle>
                   <v-card-text>
-                    <v-list>
-                      <v-list-item>
-                        <v-list-item-content>
-                          <v-row :class="`historyItemHeader`">
-                            <v-col>
-                              Direction
-                            </v-col>
-                            <v-col>
-                              Amount
-                            </v-col>
-                          </v-row>
-                        </v-list-item-content>
-                      </v-list-item>
-                      <v-divider></v-divider>
-                      <v-list-item v-for="historyItem in histories.get(selectedGameHistory).userPredictionHistory.account.userPredictions.filter(userPrediction => !userPrediction.recordId.eq(new anchor.BN(0))).sort((a: UserPredictionHistoryItem, b: UserPredictionHistoryItem) => (a.recordId.sub(b.recordId)).toNumber())">
-                        <v-list-item-content>
-                          <v-row :class="`historyItem prediction ${historyItem.upOrDown === 1 ? 'up' : 'down'}`">
-                            <v-col>
-                              {{UpOrDown[historyItem.upOrDown]}}
-                            </v-col>
-                            <v-col>
-                              {{ bnQuoteAssetToNumberFromGame(historyItem.amount, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }} {{ getGameQuoteSymbol(computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }}
-                            </v-col>
-                          </v-row>
-                        </v-list-item-content>
-                      </v-list-item>
-                    </v-list>
+                    <v-table
+                    >
+                      <thead>
+                        <tr>
+                          <th>
+                            Direction
+                          </th>
+                          <th>
+                            Amount
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="historyItem in histories.get(selectedGameHistory).userPredictionHistory.account.userPredictions.filter(userPrediction => !userPrediction.recordId.eq(new anchor.BN(0))).sort((a: UserPredictionHistoryItem, b: UserPredictionHistoryItem) => (a.recordId.sub(b.recordId)).toNumber())">
+                          <td>
+                            {{UpOrDown[historyItem.upOrDown]}}
+                          </td>
+                          <td>
+                           {{ bnQuoteAssetToNumberFromGame(historyItem.amount, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }} {{ getGameQuoteSymbol(computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </v-table>
                   </v-card-text>
                 </v-card>
               </div>
