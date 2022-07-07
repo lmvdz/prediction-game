@@ -1565,10 +1565,14 @@ export default defineComponent({
                             </v-card-title>
                             <div style="margin-top: 1.05em;"></div>
                             <v-card-subtitle  v-if="frontendGameData.get(game.account.address.toBase58()).priceFeed !== null" class="text-center">
+                              
                               <span style="margin: 0 auto;">
-                                Pool $ {{ 
+                                $ {{ 
                                   bnToNumber(game.currentRound.account.totalUpAmount.add(game.currentRound.account.totalDownAmount), getVaultFromGame(game).account.tokenDecimals).toFixed(2)
                                 }}
+                                <v-tooltip activator="parent" location="bottom">
+                                  Pool Balance
+                                </v-tooltip>
                               </span>
                             </v-card-subtitle>
                           </v-col>
@@ -2054,7 +2058,7 @@ export default defineComponent({
               <v-container fluid>
                 <v-row align="center">
                   <v-col cols="12" sm="6" class="d-flex">
-                    <v-select style="margin: 0;" :items="computedGames.filter(g => g !== undefined && g.account !== undefined).map(g => {
+                    <v-select style="margin: 0;" label="Asset" :items="computedGames.filter(g => g !== undefined && g.account !== undefined).map(g => {
                       return {
                         'title': g.account.baseSymbol,
                         'value': g.account.address.toBase58()
@@ -2062,7 +2066,7 @@ export default defineComponent({
                     })" v-model="selectedGameHistory"></v-select>
                   </v-col>
                   <v-col cols="12" sm="6" class="d-flex">
-                    <v-select style="margin: 0;"  v-if="
+                    <v-select style="margin: 0;"  label="History" v-if="
                     selectedGameHistory !== null && 
                     frontendGameData.get(selectedGameHistory) !== undefined && 
                     frontendGameData.get(selectedGameHistory) !== null
@@ -2096,10 +2100,10 @@ export default defineComponent({
                             Duration 
                           </th>
                           <th>
-                            Start Price
+                            Start Price $
                           </th>
                           <th>
-                            Price Difference
+                            Price Difference $
                           </th>
                           <th>
                             Predictions
@@ -2130,13 +2134,13 @@ export default defineComponent({
                               {{historyItem.totalPredictions}}
                             </td>
                             <td>
-                              {{historyItem.totalUpAmount}}
+                              {{ bnQuoteAssetToNumberFromGame(historyItem.totalUpAmount, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }} {{ getGameQuoteSymbol(computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }}
                             </td>
                             <td>
-                              {{historyItem.totalDownAmount}}
+                              {{ bnQuoteAssetToNumberFromGame(historyItem.totalDownAmount, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }} {{ getGameQuoteSymbol(computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }}
                             </td>
                             <td>
-                              {{historyItem.totalFeeCollected}}
+                              {{ bnQuoteAssetToNumberFromGame(historyItem.totalFeeCollected, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }} {{ getGameQuoteSymbol(computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }}
                             </td>
                         </tr>
                       </tbody>
