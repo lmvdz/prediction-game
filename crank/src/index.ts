@@ -4,14 +4,13 @@ import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
 import * as anchor from "@project-serum/anchor"
 import { config } from 'dotenv';
 import bs58 from 'bs58';
-import Game, { GameAccount, Oracle } from "sdk/lib/accounts/game";
-import Round, { RoundAccount } from "sdk/lib/accounts/round";
+import Game, { GameAccount } from "sdk/lib/accounts/game";
+import Round from "sdk/lib/accounts/round";
 import { fetchAccountRetry } from "sdk/lib/util";
-import { Workspace } from "sdk";
+import { Oracle, Workspace } from "sdk";
 import User, { UserAccount } from "sdk/lib/accounts/user";
 import Crank, { CrankAccount } from "sdk/lib/accounts/crank";
-import Vault, { VaultAccount } from "sdk/lib/accounts/vault";
-import { ProgramAccount } from "@project-serum/anchor";
+import Vault from "sdk/lib/accounts/vault";
 import cluster from 'cluster';
 
 let args = process.argv.slice(2)
@@ -141,6 +140,7 @@ const settleOrInitNext = (workspace: Workspace, game: Game, crank: Crank) : Prom
             game.collectFee(workspace, crank).then((game) => {
                 resolve(game);
             }).catch(error => {
+                console.error(error);
                 reject(error);
             })
         } else if (game.currentRound.account.feeCollected && !game.currentRound.account.settled) {
@@ -148,6 +148,7 @@ const settleOrInitNext = (workspace: Workspace, game: Game, crank: Crank) : Prom
             game.settlePredictions(workspace, crank).then((game) => {
                 resolve(game);
             }).catch(error => {
+                console.error(error);
                 reject(error);
             })
         } else if (game.currentRound.account.settled && !game.currentRound.account.cranksPaid) {
@@ -155,6 +156,7 @@ const settleOrInitNext = (workspace: Workspace, game: Game, crank: Crank) : Prom
             game.payoutCranks(workspace).then(game => {
                 resolve(game);
             }).catch(error => {
+                console.error(error);
                 reject(error);
             })
         } else if (game.currentRound.account.cranksPaid) {
@@ -162,6 +164,7 @@ const settleOrInitNext = (workspace: Workspace, game: Game, crank: Crank) : Prom
             initNext(workspace, game, crank).then(game => {
                 resolve(game);
             }).catch(error => {
+                console.error(error);
                 reject(error);
             })
         } else {
@@ -174,6 +177,7 @@ const settleOrInitNext = (workspace: Workspace, game: Game, crank: Crank) : Prom
 let loopCount = 0;
 
 const updateLoop = (workspace: Workspace, vault: Vault, game: Game, crank: Crank) => {
+    console.log('updateLoop', game.baseSymbolAsString())
     if (loopCount > (60 * 60)) {
         run();
         loopCount = 0;
@@ -181,39 +185,56 @@ const updateLoop = (workspace: Workspace, vault: Vault, game: Game, crank: Crank
     }
     loopCount++;
     setTimeout(() => {
-        workspace.program.provider.connection.getTokenAccountBalance(vault.account.vaultAta).then(vaultTokenAccountBalanaceResponse => {
-            workspace.program.provider.connection.getTokenAccountBalance(vault.account.feeVaultAta).then(feeVaultTokenAccountBalanaceResponse => {
-                console.log(
-                    game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundStartPrice, game),
-                    game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game),
-                    vaultTokenAccountBalanaceResponse.value.uiAmount,
-                    feeVaultTokenAccountBalanaceResponse.value.uiAmount,
-                    ((game.account.unclaimedFees.div(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() + ((game.account.unclaimedFees.mod(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() / (10 ** vault.account.tokenDecimals))),
-                    game.account.baseSymbol,
-                    game.currentRound.account.roundNumber, 
-                    game.currentRound.account.roundTimeDifference.toNumber(),
-                    game.currentRound.account.roundCurrentPrice.toNumber(),
-                    game.currentRound.account.finished,
-                    game.currentRound.account.feeCollected,
-                    game.currentRound.account.cranksPaid,
-                    game.currentRound.account.settled,
-                    game.currentRound.account.invalid,
-                    game.currentRound.account.totalUniqueCrankers,
-                    game.currentRound.account.totalCranksPaid
-                );
-            })
-        })
-        // get the latest vault data (debug purposes)
-        vault.updateVaultData(workspace).then((vault: Vault) => {
-            // update the game state (required)
-            game.updateGame(workspace, crank).then((game: Game) => {
-                // fetch latest game data (required)
-                game.updateGameData(workspace).then((game: Game) => {
-                    // fetch latest round data (required)
-                    game.updateRoundData(workspace).then((game: Game) => {
-                        // finished round logic (required)
-                        settleOrInitNext(workspace, game, crank).then((game: Game) => {
-                            updateLoop(workspace, vault, game, crank)
+        
+        // workspace.program.provider.connection.getTokenAccountBalance(vault.account.vaultAta).then(vaultTokenAccountBalanaceResponse => {
+        //     workspace.program.provider.connection.getTokenAccountBalance(vault.account.feeVaultAta).then(feeVaultTokenAccountBalanaceResponse => {
+                
+        //     }).catch(error => {
+        //         console.error(error);
+        //     })
+        // }).catch(error => {
+        //     console.error(error);
+        // })
+        try {
+            console.log(
+                game.currentRound.account.roundPriceDecimals.toNumber(),
+                game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundStartPrice, game),
+                game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game),
+                // vaultTokenAccountBalanaceResponse.value.uiAmount,
+                // feeVaultTokenAccountBalanaceResponse.value.uiAmount,
+                ((game.account.unclaimedFees.div(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() + ((game.account.unclaimedFees.mod(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() / (10 ** vault.account.tokenDecimals))),
+                game.baseSymbolAsString(),
+                Oracle[game.account.oracle],
+                game.currentRound.account.roundNumber, 
+                game.currentRound.account.roundTimeDifference.toNumber(),
+                game.currentRound.account.roundCurrentPrice.toNumber(),
+                game.currentRound.account.finished,
+                game.currentRound.account.feeCollected,
+                game.currentRound.account.cranksPaid,
+                game.currentRound.account.settled,
+                game.currentRound.account.invalid,
+                game.currentRound.account.totalUniqueCrankers,
+                game.currentRound.account.totalCranksPaid
+            );
+            // get the latest vault data (debug purposes)
+            vault.updateVaultData(workspace).then((vault: Vault) => {
+                console.log('updatedVaultData', game.baseSymbolAsString())
+                // update the game state (required)
+                game.updateGame(workspace, crank).then((game: Game) => {
+                    console.log('updatedGame', game.baseSymbolAsString())
+                    // fetch latest game data (required)
+                    game.updateGameData(workspace).then((game: Game) => {
+                        console.log('updatedGameData', game.baseSymbolAsString())
+                        // fetch latest round data (required)
+                        game.updateRoundData(workspace).then((game: Game) => {
+                            console.log('updatedRoundData', game.baseSymbolAsString())
+                            // finished round logic (required)
+                            settleOrInitNext(workspace, game, crank).then((game: Game) => {
+                                updateLoop(workspace, vault, game, crank)
+                            }).catch(error => {
+                                console.error(error);
+                                updateLoop(workspace, vault, game, crank)
+                            })
                         }).catch(error => {
                             console.error(error);
                             updateLoop(workspace, vault, game, crank)
@@ -222,19 +243,20 @@ const updateLoop = (workspace: Workspace, vault: Vault, game: Game, crank: Crank
                         console.error(error);
                         updateLoop(workspace, vault, game, crank)
                     })
+                    
                 }).catch(error => {
                     console.error(error);
                     updateLoop(workspace, vault, game, crank)
                 })
-                
             }).catch(error => {
                 console.error(error);
                 updateLoop(workspace, vault, game, crank)
             })
-        }).catch(error => {
+        } catch (error) {
             console.error(error);
-            updateLoop(workspace, vault, game, crank)
-        })
+        }
+        
+        
         
     }, game.currentRound.account.finished ? 5 * 1000 : 10 * 1000)
 }
@@ -281,7 +303,13 @@ async function run() {
         let vault = vaults.find(v => v.account.address.toBase58() === game.account.vault.toBase58())
         if (vault) {
             setTimeout(() => {
-                crankLoop(workspace, vault, game);
+                try {
+                    crankLoop(workspace, vault, game);
+                } catch(error) {
+                    console.error(error);
+                    crankLoop(workspace, vault, game);
+                }
+                
             }, 1000)
             
         }
@@ -294,6 +322,7 @@ const runLoop = () => {
     try {
         run();
     } catch (error) {
+        console.error(error);
         setTimeout(() => {
             runLoop();
         }, 1000)

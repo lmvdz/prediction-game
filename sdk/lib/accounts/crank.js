@@ -76,7 +76,6 @@ class Crank {
         return await workspace.program.methods.adminCloseCrankAccountInstruction().accounts({
             signer: workspace.owner,
             crank: this.account.address,
-            game: this.account.game,
             receiver: workspace.owner
         }).instruction();
     }
@@ -90,6 +89,7 @@ class Crank {
                     await (0, index_1.confirmTxRetry)(workspace, txSignature);
                 }
                 catch (error) {
+                    console.error(error);
                     reject(error);
                 }
                 try {

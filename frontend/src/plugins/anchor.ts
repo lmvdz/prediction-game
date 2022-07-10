@@ -42,5 +42,6 @@ export const initWorkspace = (rpcUrl: string, cluster: Cluster) => {
   let provider = computed(() => new anchor.AnchorProvider(connection, wallet.value, { commitment: 'confirmed'}))
   let program = computed(() => new anchor.Program<PredictionGame>(IDL, PROGRAM_ID(cluster), provider.value, new BorshCoder(IDL)))
 
+  //@ts-ignore
   workspace = new Workspace(program.value, wallet.value as anchor.Wallet, cluster)
 }

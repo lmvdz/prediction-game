@@ -24,9 +24,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const anchor = __importStar(require("@project-serum/anchor"));
-const game_1 = require("./game");
 const constants_1 = require("../constants");
 const index_1 = require("../util/index");
+const types_1 = require("../types");
 class Round {
     constructor(account) {
         this.account = account;
@@ -36,27 +36,34 @@ class Round {
         return true;
     }
     convertOraclePriceToNumber(oraclePrice, game) {
-        if (game.account.oracle === game_1.Oracle.Chainlink) {
-            let scaled_val = oraclePrice.toString();
-            if (scaled_val.length <= (this.account.roundPriceDecimals * 8)) {
-                let zeros = "";
-                for (let x = 0; x < (this.account.roundPriceDecimals * 8) - scaled_val.length; x++) {
-                    zeros += "0";
+        try {
+            if (game.account.oracle === types_1.Oracle.Chainlink) {
+                let scaled_val = oraclePrice.toString();
+                if (scaled_val.length <= (this.account.roundPriceDecimals.toNumber() * 8)) {
+                    let zeros = "";
+                    for (let x = 0; x < (this.account.roundPriceDecimals.toNumber() * 8) - scaled_val.length; x++) {
+                        zeros += "0";
+                    }
+                    let charArray = [...scaled_val];
+                    charArray.splice(0, 0, ...zeros);
+                    scaled_val = "0." + charArray.join("");
+                    return parseFloat(scaled_val);
                 }
-                let charArray = [...scaled_val];
-                charArray.splice(0, 0, ...zeros);
-                scaled_val = "0." + charArray.join("");
-                return parseFloat(scaled_val);
+                else {
+                    let charArray = Array.from(scaled_val);
+                    charArray.splice(charArray.length - (this.account.roundPriceDecimals.toNumber() * 8), 0, ".");
+                    return parseFloat(charArray.join(""));
+                }
             }
-            else {
-                let charArray = Array.from(scaled_val);
-                charArray.splice(charArray.length - (this.account.roundPriceDecimals * 8), 0, ".");
-                return parseFloat(charArray.join(""));
+            else if (game.account.oracle === types_1.Oracle.Pyth) {
+                return parseFloat((oraclePrice.div((new anchor.BN(10)).pow(this.account.roundPriceDecimals.mul(new anchor.BN(-1)))).toNumber() + (oraclePrice.mod((new anchor.BN(10)).pow(this.account.roundPriceDecimals.mul(new anchor.BN(-1)))).toNumber() / (10 ** this.account.roundPriceDecimals.mul(new anchor.BN(-1)).toNumber()))).toFixed(2));
+            }
+            else if (game.account.oracle === types_1.Oracle.Switchboard) {
+                return parseFloat((oraclePrice.div((new anchor.BN(10)).pow(this.account.roundPriceDecimals)).toNumber() + (oraclePrice.mod((new anchor.BN(10)).pow(this.account.roundPriceDecimals)).toNumber() / (10 ** this.account.roundPriceDecimals.toNumber()))).toFixed(2));
             }
         }
-        else if (game.account.oracle === game_1.Oracle.Pyth || game.account.oracle === game_1.Oracle.Switchboard) {
-            return parseFloat((oraclePrice.div(new anchor.BN(10).pow(new anchor.BN(this.account.roundPriceDecimals))).toNumber() +
-                (oraclePrice.mod(new anchor.BN(10).pow(new anchor.BN(this.account.roundPriceDecimals))).toNumber() / (10 ** this.account.roundPriceDecimals))).toFixed(2));
+        catch (error) {
+            console.error(error);
         }
     }
     static initializeFirst(workspace, game, crank) {
@@ -99,7 +106,8 @@ class Round {
     static initializeSecond(workspace, game, crank) {
         return new Promise((resolve, reject) => {
             workspace.programAddresses.getRoundPubkey(game.account.address, new anchor.BN(2)).then(([roundPubkey, _secondRoundPubkeyBump]) => {
-                workspace.program.methods.initSecondRoundInstruction().accounts({
+                let roundNumberAsBuffer = workspace.programAddresses.roundToBuffer(new anchor.BN(2));
+                workspace.program.methods.initSecondRoundInstruction([roundNumberAsBuffer[0], roundNumberAsBuffer[1], roundNumberAsBuffer[2], roundNumberAsBuffer[3]]).accounts({
                     signer: workspace.owner,
                     game: game.account.address,
                     crank: crank.account.address,
@@ -141,8 +149,9 @@ class Round {
             if (nextRoundNumber.gt(constants_1.U32MAX)) {
                 nextRoundNumber = new anchor.BN(1);
             }
+            let roundNumberAsBuffer = workspace.programAddresses.roundToBuffer(nextRoundNumber);
             workspace.programAddresses.getRoundPubkey(game.account.address, nextRoundNumber).then(([roundPubkey, _roundPubkeyBump]) => {
-                workspace.program.methods.initNextRoundAndClosePreviousInstruction().accounts({
+                workspace.program.methods.initNextRoundAndClosePreviousInstruction([roundNumberAsBuffer[0], roundNumberAsBuffer[1], roundNumberAsBuffer[2], roundNumberAsBuffer[3]]).accounts({
                     signer: workspace.owner,
                     game: game.account.address,
                     crank: crank.account.address,
@@ -184,7 +193,6 @@ class Round {
         return new Promise((resolve, reject) => {
             workspace.program.methods.adminCloseRoundInstruction().accounts({
                 signer: workspace.owner,
-                game: round.account.game,
                 round: round.account.address,
                 receiver: workspace.owner
             }).transaction().then(tx => {

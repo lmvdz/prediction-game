@@ -5,18 +5,18 @@ import { computed, defineComponent, onMounted } from 'vue'
 
 import { useDisplay } from 'vuetify'
 import { WalletMultiButton } from 'solana-wallets-vue'
-import { Program, ProgramAccount } from "@project-serum/anchor";
+import { ProgramAccount } from "@project-serum/anchor";
 import { Cluster, LAMPORTS_PER_SOL, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
-import { confirmTxRetry, fetchAccountRetry } from "sdk/lib/util";
+import { confirmTxRetry } from "sdk/lib/util";
 import { TokenInfo } from "@solana/spl-token-registry";
-import { IDL, PROGRAM_ID, UpOrDown } from 'sdk'
+import { UpOrDown, Oracle } from 'sdk'
 import UserPrediction, { UserPredictionAccount } from "sdk/lib/accounts/userPrediction";
 import User, { UserAccount } from "sdk/lib/accounts/user";
 import Vault, { VaultAccount } from "sdk/lib/accounts/vault";
 import Round, { RoundAccount } from "sdk/lib/accounts/round";
-import { Account, AccountLayout, AccountState, ASSOCIATED_TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAccount, getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { Account, AccountLayout, AccountState, ASSOCIATED_TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { storeToRefs } from "pinia";
-import { Ref, ref, shallowRef, watch } from "vue";
+import { ref, watch } from "vue";
 import { PredictionGame, USER_PREDICTION_MIN_AMOUNT, Workspace } from 'sdk'
 import Game, { GameAccount } from "sdk/lib/accounts/game";
 import { U64MAX } from 'sdk';
@@ -79,6 +79,7 @@ let updateInterval = ref(null as NodeJS.Timer);
 let aggrWorkspace = ref('');
 
 let selectedGameHistory = ref(null as string);
+let roundHistorySelectedRound = ref(null as string);
 
 let { showHistory, showHelp, showChart, showAccountInfo } = defineProps({
   showHistory: Boolean,
@@ -1282,7 +1283,9 @@ async function userClaim(game: Game, amount = null) {
 
 
 let helpUrl = new URL(`../assets/SolPredictHelp.png`, import.meta.url).href;
-
+let pythUrl = new URL(`../assets/pyth.svg`, import.meta.url).href;
+let switchboardUrl = new URL(`../assets/switchboard.svg`, import.meta.url).href;
+let chainlinkUrl = new URL(`../assets/chainlink.svg`, import.meta.url).href;
 
 </script>
 
@@ -1362,58 +1365,72 @@ export default defineComponent({
                             'game-card up' :
                         'game-card down' :
                       'game-card' :
-                      
-                        
                     'game-card' 
 
                   }`" 
+                  
                   v-if="game.currentRound && frontendGameData.get(game.account.address.toBase58()) !== undefined"
                 >
+                <v-img
+                    :src="game.account.oracle === Oracle.Pyth ? pythUrl : game.account.oracle === Oracle.Switchboard ? switchboardUrl : game.account.oracle === Oracle.Chainlink ? chainlinkUrl : ''"
+                    width="300px"
+                    :aspectRatio="1"
+                    style="position: absolute; z-index: -1;"
 
+                  >
+                </v-img>
+                <!-- <v-img
+                    :src="gameIndex === 0 ? pythUrl : gameIndex === 1 ? switchboardUrl : gameIndex === 2 ? chainlinkUrl : ''"
+                    width="300px"
+                    :aspectRatio="1"
+                    style="position: absolute; z-index: -1;"
+
+                  >
+                </v-img> -->
                   <v-btn-group>
 
-                    <v-btn 
-                      icon size="x-small"
-                      style="z-index: 1; margin: 0px !important;"
-                      v-if="wallet !== null && wallet.connected && getClaimableAmountForGame(game).gt(new anchor.BN(0)) && frontendGameData.get(game.account.address.toBase58()) !== undefined && frontendGameData.get(game.account.address.toBase58()).mint !== null"
-                      variant="text"
-                      color="success"
-                      @click="async () => {
-                        await userClaim(game, getClaimableForGame(game).amount)
-                      }"
-                    >
-                      <v-tooltip
-                        activator="parent"
-                        location="top"
+                      <v-btn 
+                        icon size="x-small"
+                        style="z-index: 1; margin: 0px !important;"
+                        v-if="wallet !== null && wallet.connected && getClaimableAmountForGame(game).gt(new anchor.BN(0)) && frontendGameData.get(game.account.address.toBase58()) !== undefined && frontendGameData.get(game.account.address.toBase58()).mint !== null"
+                        variant="text"
+                        color="success"
+                        @click="async () => {
+                          await userClaim(game, getClaimableForGame(game).amount)
+                        }"
                       >
-                        Claim {{ getClaimableAmountForGameAsNumber(game) }} {{ frontendGameData.get(game.account.address.toBase58()).mint.symbol }}
-                      </v-tooltip>
-                      <v-icon>mdi-currency-usd</v-icon>
-                    </v-btn>
+                        <v-tooltip
+                          activator="parent"
+                          location="top"
+                        >
+                          Claim {{ getClaimableAmountForGameAsNumber(game) }} {{ frontendGameData.get(game.account.address.toBase58()).mint.symbol }}
+                        </v-tooltip>
+                        <v-icon>mdi-currency-usd</v-icon>
+                      </v-btn>
 
-                    <v-btn icon size="x-small" style="z-index: 1; margin: 0px !important;" :variant="!frontendGameData.get(game.account.address.toBase58()).information.show ? 'text' : 'plain'" @click.stop="() => { frontendGameData.get(game.account.address.toBase58()).information.show = !frontendGameData.get(game.account.address.toBase58()).information.show }">
-                      <v-tooltip
-                        activator="parent"
-                        location="top"
-                      >Information</v-tooltip>
-                      <v-icon class="information-icon">{{ !frontendGameData.get(game.account.address.toBase58()).information.show ? 'mdi-information-variant' : 'mdi-close' }}</v-icon>
-                    </v-btn>
+                      <v-btn icon size="x-small" style="z-index: 1; margin: 0px !important;" :variant="!frontendGameData.get(game.account.address.toBase58()).information.show ? 'text' : 'plain'" @click.stop="() => { frontendGameData.get(game.account.address.toBase58()).information.show = !frontendGameData.get(game.account.address.toBase58()).information.show }">
+                        <v-tooltip
+                          activator="parent"
+                          location="top"
+                        >Information</v-tooltip>
+                        <v-icon class="information-icon">{{ !frontendGameData.get(game.account.address.toBase58()).information.show ? 'mdi-information-variant' : 'mdi-close' }}</v-icon>
+                      </v-btn>
 
-                    <v-btn icon size="x-small" style="z-index: 1; margin: 0px !important;" color="warning" v-if="frontendGameData.get(game.account.address.toBase58()).noUpdateReceieved" :variant="'plain'">
-                      <v-tooltip
-                        activator="parent"
-                        location="top"
-                      >No Round Updates Recieved</v-tooltip>
-                      <v-icon color="white" class="information-icon">{{ 'mdi-alert' }}</v-icon>
-                    </v-btn>
+                      <v-btn icon size="x-small" style="z-index: 1; margin: 0px !important;" color="warning" v-if="frontendGameData.get(game.account.address.toBase58()).noUpdateReceieved" :variant="'plain'">
+                        <v-tooltip
+                          activator="parent"
+                          location="top"
+                        >No Round Updates Recieved</v-tooltip>
+                        <v-icon color="white" class="information-icon">{{ 'mdi-alert' }}</v-icon>
+                      </v-btn>
 
-                    <v-btn icon size="x-small" style="z-index: 1; margin: 0px !important;" variant="text" @click.stop="() => { aggrWorkspace = getProtocol()+'//'+getHost()+'/workspaces/'+game.account.baseSymbol.toLowerCase()+'.json'  }">
-                      <v-tooltip
-                        activator="parent"
-                        location="top"
-                      >Open in Aggr</v-tooltip>
-                      <v-icon class="information-icon">mdi-chart-line-variant</v-icon>
-                    </v-btn>
+                      <v-btn icon size="x-small" style="z-index: 1; margin: 0px !important;" variant="text" @click.stop="() => { aggrWorkspace = getProtocol()+'//'+getHost()+'/workspaces/'+game.account.baseSymbol.toLowerCase()+'.json'  }">
+                        <v-tooltip
+                          activator="parent"
+                          location="top"
+                        >Open in Aggr</v-tooltip>
+                        <v-icon class="information-icon">mdi-chart-line-variant</v-icon>
+                      </v-btn>
                   </v-btn-group>
                   <v-progress-linear 
                     v-if="game.account !== undefined && game.currentRound !== undefined && game.currentRound !== null"
@@ -1433,298 +1450,298 @@ export default defineComponent({
                     :buffer-value="Math.floor((frontendGameData.get(game.account.address.toBase58()).timeRemaining / game.currentRound.account.roundLength) * 100) < game.currentRound.account.roundLength/2 ? game.currentRound.account.roundLength/2 : game.currentRound.account.roundLength"
                   ></v-progress-linear>
                   <v-btn 
-                    v-if="game.account !== undefined && game.currentRound !== undefined && game.currentRound !== null"
-                    :variant="frontendGameData.get(game.account.address.toBase58()).information.show ? 'text' : 'text'" 
-                    style="background-color: rgba(0,0,0,0); width: 100%; height: 100%; padding: 1em; transition: all .3s;"
-                    @click="() => {
+                      v-if="game.account !== undefined && game.currentRound !== undefined && game.currentRound !== null"
+                      :variant="frontendGameData.get(game.account.address.toBase58()).information.show ? 'text' : 'text'" 
+                      style="background-color: rgba(0,0,0,0); width: 100%; height: 100%; padding: 1em; transition: all .3s;"
+                      @click="() => {
 
-                      if (game.currentRound.account.roundPredictionsAllowed) {
-                        frontendGameData.get(game.account.address.toBase58()).prediction.show = !frontendGameData.get(game.account.address.toBase58()).prediction.show;
-                      } else {
-                        frontendGameData.get(game.account.address.toBase58()).prediction.show = !frontendGameData.get(game.account.address.toBase58()).prediction.show;
-                        frontendGameData.get(game.account.address.toBase58()).prediction.direction = UpOrDown.None; 
-                      }
-                    }">
-                    <v-icon 
-                      v-if="game.currentRound !== undefined && game.currentRound !== null && !frontendGameData.get(game.account.address.toBase58()).information.show" 
-                      :color="(!game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())) ? 'error' : 'success'"
-                      :style="`transition: all .3s; background-color: rgba(0, 0, 0, 0); position: absolute; left: 0; right: 0; ${!frontendGameData.get(game.account.address.toBase58()).prediction.show ? 'top: 0; bottom: 0em; left: 0em; margin-top: auto; margin-bottom: auto;' : 'bottom: -0.5em; left: 0%;'} margin-left: auto; margin-right: auto;`">
-                      {{ !game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58()) ? 'mdi-lock' : 'mdi-lock-open' }}
-                    </v-icon>
-                    <v-row v-if="!frontendGameData.get(game.account.address.toBase58()).information.show" style="transition: all .3s; max-width: 300px; min-width: 300px;">
-                      <v-col :style="`transition: all .3s; min-width: 150px; max-width: 150px; margin: 0; ${frontendGameData.get(game.account.address.toBase58()).prediction.show ? 'display: none;' : ''}`" v-if="game.currentRound">
-                        <v-row :v-ripple="game.currentRound.account.roundPredictionsAllowed"
-                              :class="`up-area ${game.currentRound.account.roundPredictionsAllowed ? 'hover' : ''}`"
-                              style="margin-right: 4px; margin-bottom: 1em; width: 146px;"
+                        if (game.currentRound.account.roundPredictionsAllowed) {
+                          frontendGameData.get(game.account.address.toBase58()).prediction.show = !frontendGameData.get(game.account.address.toBase58()).prediction.show;
+                        } else {
+                          frontendGameData.get(game.account.address.toBase58()).prediction.show = !frontendGameData.get(game.account.address.toBase58()).prediction.show;
+                          frontendGameData.get(game.account.address.toBase58()).prediction.direction = UpOrDown.None; 
+                        }
+                      }">
+                      <v-icon 
+                        v-if="game.currentRound !== undefined && game.currentRound !== null && !frontendGameData.get(game.account.address.toBase58()).information.show" 
+                        :color="(!game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())) ? 'error' : 'success'"
+                        :style="`transition: all .3s; background-color: rgba(0, 0, 0, 0); position: absolute; left: 0; right: 0; ${!frontendGameData.get(game.account.address.toBase58()).prediction.show ? 'top: 0; bottom: 0em; left: 0em; margin-top: auto; margin-bottom: auto;' : 'bottom: -0.5em; left: 0%;'} margin-left: auto; margin-right: auto;`">
+                        {{ !game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58()) ? 'mdi-lock' : 'mdi-lock-open' }}
+                      </v-icon>
+                      <v-row v-if="!frontendGameData.get(game.account.address.toBase58()).information.show" style="transition: all .3s; max-width: 300px; min-width: 300px;">
+                        <v-col :style="`transition: all .3s; min-width: 150px; max-width: 150px; margin: 0; ${frontendGameData.get(game.account.address.toBase58()).prediction.show ? 'display: none;' : ''}`" v-if="game.currentRound">
+                          <v-row :v-ripple="game.currentRound.account.roundPredictionsAllowed"
+                                :class="`up-area ${game.currentRound.account.roundPredictionsAllowed ? 'hover' : ''}`"
+                                style="margin-right: 4px; margin-bottom: 1em; width: 146px;"
+                                @click.stop="(e) => { 
+                                  e.preventDefault(); 
+                                  if ( wallet !== null && wallet.connected && game.currentRound.account.roundPredictionsAllowed && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())) {
+                                    frontendGameData.get(game.account.address.toBase58()).prediction.direction = UpOrDown.Up;
+                                  }
+                                  frontendGameData.get(game.account.address.toBase58()).prediction.show = true; 
+                                }">
+                            <v-col >
+                              <v-tooltip
+                                v-if="game.currentRound.account.roundPredictionsAllowed" 
+                                activator="parent"
+                                location="top"
+                              >Predict Up</v-tooltip>
+                              <v-card-title>
+                                <v-btn
+                                  variant="plain"
+                                  :disabled="wallet === null || !wallet.connected || !game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"
+                                  @click.stop="(e) => { 
+                                    e.preventDefault(); 
+                                    frontendGameData.get(game.account.address.toBase58()).prediction.show = true; 
+                                    frontendGameData.get(game.account.address.toBase58()).prediction.direction = UpOrDown.Up; 
+                                  }"
+                                  class="icon-hover"
+                                  style="margin: auto;"
+                                > <v-icon color="success" :class="`icon-hover success`">mdi-arrow-up-bold</v-icon>  </v-btn>
+                              </v-card-title>
+                              <v-card-subtitle>
+                                <span style="margin: 0 auto;">
+                                  {{ game.currentRound.account.totalUpAmount.gt(new anchor.BN(0)) ? (game.currentRound.account.totalDownAmount.add(game.currentRound.account.totalUpAmount)).div(game.currentRound.account.totalUpAmount).toNumber().toFixed(2) + 'x' : '1.00x' }}
+                                </span>
+                              </v-card-subtitle>
+                            </v-col>
+                          </v-row>
+                          
+                          <v-divider ></v-divider>
+                          <v-row :v-ripple="game.currentRound.account.roundPredictionsAllowed"
+                              :class="`down-area ${game.currentRound.account.roundPredictionsAllowed ? 'hover' : ''}`"
+                              style="margin-right: 4px; margin-top: 1em; width: 146px;"
                               @click.stop="(e) => { 
                                 e.preventDefault(); 
-                                if ( wallet !== null && wallet.connected && game.currentRound.account.roundPredictionsAllowed && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())) {
-                                  frontendGameData.get(game.account.address.toBase58()).prediction.direction = UpOrDown.Up;
-                                }
                                 frontendGameData.get(game.account.address.toBase58()).prediction.show = true; 
+                                if ( wallet !== null && wallet.connected && game.currentRound.account.roundPredictionsAllowed && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())) {
+                                  frontendGameData.get(game.account.address.toBase58()).prediction.direction = UpOrDown.Down;
+                                }
                               }">
-                          <v-col >
-                            <v-tooltip
-                              v-if="game.currentRound.account.roundPredictionsAllowed" 
-                              activator="parent"
-                              location="top"
-                            >Predict Up</v-tooltip>
-                            <v-card-title>
-                              <v-btn
-                                variant="plain"
-                                :disabled="wallet === null || !wallet.connected || !game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"
-                                @click.stop="(e) => { 
-                                  e.preventDefault(); 
-                                  frontendGameData.get(game.account.address.toBase58()).prediction.show = true; 
-                                  frontendGameData.get(game.account.address.toBase58()).prediction.direction = UpOrDown.Up; 
-                                }"
-                                class="icon-hover"
-                                style="margin: auto;"
-                              > <v-icon color="success" :class="`icon-hover success`">mdi-arrow-up-bold</v-icon>  </v-btn>
-                            </v-card-title>
-                            <v-card-subtitle>
-                              <span style="margin: 0 auto;">
-                                {{ game.currentRound.account.totalUpAmount.gt(new anchor.BN(0)) ? (game.currentRound.account.totalDownAmount.add(game.currentRound.account.totalUpAmount)).div(game.currentRound.account.totalUpAmount).toNumber().toFixed(2) + 'x' : '1.00x' }}
-                              </span>
-                            </v-card-subtitle>
-                          </v-col>
-                        </v-row>
-                        
-                        <v-divider ></v-divider>
-                        <v-row :v-ripple="game.currentRound.account.roundPredictionsAllowed"
-                            :class="`down-area ${game.currentRound.account.roundPredictionsAllowed ? 'hover' : ''}`"
-                            style="margin-right: 4px; margin-top: 1em; width: 146px;"
-                            @click.stop="(e) => { 
-                              e.preventDefault(); 
-                              frontendGameData.get(game.account.address.toBase58()).prediction.show = true; 
-                              if ( wallet !== null && wallet.connected && game.currentRound.account.roundPredictionsAllowed && !computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())) {
-                                frontendGameData.get(game.account.address.toBase58()).prediction.direction = UpOrDown.Down;
-                              }
-                            }">
-                          <v-col >
-                            <v-tooltip
-                              v-if="game.currentRound.account.roundPredictionsAllowed" 
-                              activator="parent"
-                              location="bottom"
-                            >Predict Down</v-tooltip>
-                            <v-card-subtitle>
-                              <span style="margin: 0 auto;">
-                                {{ game.currentRound.account.totalDownAmount.gt(new anchor.BN(0)) ? (game.currentRound.account.totalDownAmount.add(game.currentRound.account.totalUpAmount)).div(game.currentRound.account.totalDownAmount).toNumber().toFixed(2) + 'x' : '1.00x'}}
-                              </span>
-                            </v-card-subtitle>
-                            <v-card-title>
-                              <v-btn 
-                                variant="plain"
-                                :disabled="wallet === null || !wallet.connected || !game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"
-                                @click.stop="(e) => { 
-                                  e.preventDefault(); 
-                                  frontendGameData.get(game.account.address.toBase58()).prediction.show = true; 
-                                  frontendGameData.get(game.account.address.toBase58()).prediction.direction = UpOrDown.Down; 
-                                }"
-                                class="icon-hover"
-                                style="margin: auto;"
-                              > <v-icon color="error" class="icon-hover down">mdi-arrow-down-bold</v-icon>
-                              </v-btn>
-                              
-                            </v-card-title>
-                          </v-col>
-                        </v-row>
-                        
-                      </v-col>
-                      <v-col v-else-if="!frontendGameData.get(game.account.address.toBase58()).prediction.show && frontendGameData.get(game.account.address.toBase58()).needsToLoad" style=" width: 146px; margin: auto; transition: all .3s;">
-                        <v-progress-circular color="#6864b7" indeterminate/>
-                      </v-col>
-                      <v-col v-else-if="!frontendGameData.get(game.account.address.toBase58()).prediction.show" style="width: 146px; margin: auto; transition: all .3s;">
-                        <v-icon size="32px">mdi-alert</v-icon>
-                      </v-col>
-                      <v-divider v-if="!frontendGameData.get(game.account.address.toBase58()).prediction.show" vertical></v-divider>
-                      <!-- COIN & QUOTE -->
-                      <v-col :style="`transition: all .3s; max-width: 150px; min-width: 150px; margin: 0px; height: 100%;`" justify="center" class="text-center">
-                        <!-- COIN & QUOTE -->
-                        <v-row >
-                          <v-col >
-                            <v-card-title class="text-center" v-if="frontendGameData.get(game.account.address.toBase58()).mint !== null && frontendGameData.get(game.account.address.toBase58()).mint !== undefined">
-                              
-                                <v-tooltip
-                                  top
-                                >
-                                  <template v-slot:activator="{ props  }">
-                                    <v-row>
-                                      <v-col>
-                                        <CryptoIcon style="margin: 0 auto;" max-width="32px" :icon="game.account.baseSymbol.toLowerCase()"/>
-                                      </v-col>
-                                      <v-divider vertical></v-divider>
-                                      <v-col>
-                                        <CryptoIcon v-if="frontendGameData.get(game.account.address.toBase58()).mint !== null && frontendGameData.get(game.account.address.toBase58()).mint !== undefined" style="margin: 0 auto;" max-width="32px" :icon="frontendGameData.get(game.account.address.toBase58()).mint.symbol.toLowerCase()"/>
-                                      </v-col>
-                                    </v-row>
-                                  </template>
-                                  <span>{{game.account.baseSymbol}} / {{ frontendGameData.get(game.account.address.toBase58()).mint.symbol }}</span>
-                                </v-tooltip>
-                              <!-- <p style="margin: 0 auto;">{{ game.account.baseSymbol }} / {{ frontendGameData.get(game.account.address.toBase58()).mint.symbol }}</p>  -->
-                            </v-card-title>
-                            <div style="margin-top: 1.05em;"></div>
-                            <v-card-subtitle  v-if="frontendGameData.get(game.account.address.toBase58()).priceFeed !== null" class="text-center">
-                              
-                              <span style="margin: 0 auto;">
-                                $ {{ 
-                                  bnToNumber(game.currentRound.account.totalUpAmount.add(game.currentRound.account.totalDownAmount), getVaultFromGame(game).account.tokenDecimals).toFixed(2)
-                                }}
-                                <v-tooltip activator="parent" location="bottom">
-                                  Pool Balance
-                                </v-tooltip>
-                              </span>
-                            </v-card-subtitle>
-                          </v-col>
+                            <v-col >
+                              <v-tooltip
+                                v-if="game.currentRound.account.roundPredictionsAllowed" 
+                                activator="parent"
+                                location="bottom"
+                              >Predict Down</v-tooltip>
+                              <v-card-subtitle>
+                                <span style="margin: 0 auto;">
+                                  {{ game.currentRound.account.totalDownAmount.gt(new anchor.BN(0)) ? (game.currentRound.account.totalDownAmount.add(game.currentRound.account.totalUpAmount)).div(game.currentRound.account.totalDownAmount).toNumber().toFixed(2) + 'x' : '1.00x'}}
+                                </span>
+                              </v-card-subtitle>
+                              <v-card-title>
+                                <v-btn 
+                                  variant="plain"
+                                  :disabled="wallet === null || !wallet.connected || !game.currentRound.account.roundPredictionsAllowed || computedUserPredictions.some(prediction => prediction !== undefined && prediction !== null && prediction.account.round.toBase58() === game.currentRound.account.address.toBase58())"
+                                  @click.stop="(e) => { 
+                                    e.preventDefault(); 
+                                    frontendGameData.get(game.account.address.toBase58()).prediction.show = true; 
+                                    frontendGameData.get(game.account.address.toBase58()).prediction.direction = UpOrDown.Down; 
+                                  }"
+                                  class="icon-hover"
+                                  style="margin: auto;"
+                                > <v-icon color="error" class="icon-hover down">mdi-arrow-down-bold</v-icon>
+                                </v-btn>
+                                
+                              </v-card-title>
+                            </v-col>
+                          </v-row>
                           
-                        </v-row>
-                        <v-divider v-if="!frontendGameData.get(game.account.address.toBase58()).prediction.show" style="margin-top: 1.4em;"></v-divider>
-                        <!-- START PRICE AND DIFF (NO SHOW PREDICTION)-->
-                        <v-row style="margin: 0;" v-if="game.currentRound && !frontendGameData.get(game.account.address.toBase58()).prediction.show">
-                          <v-col style="margin: 0; padding: 0;">
-                            <v-card-text class="text-center" >
-                              <v-row style="margin: 1px;">
-                                <v-col style="margin: auto 0; padding: .5em 0;" class="start-price">
+                        </v-col>
+                        <v-col v-else-if="!frontendGameData.get(game.account.address.toBase58()).prediction.show && frontendGameData.get(game.account.address.toBase58()).needsToLoad" style=" width: 146px; margin: auto; transition: all .3s;">
+                          <v-progress-circular color="#6864b7" indeterminate/>
+                        </v-col>
+                        <v-col v-else-if="!frontendGameData.get(game.account.address.toBase58()).prediction.show" style="width: 146px; margin: auto; transition: all .3s;">
+                          <v-icon size="32px">mdi-alert</v-icon>
+                        </v-col>
+                        <v-divider v-if="!frontendGameData.get(game.account.address.toBase58()).prediction.show" vertical></v-divider>
+                        <!-- COIN & QUOTE -->
+                        <v-col :style="`transition: all .3s; max-width: 150px; min-width: 150px; margin: 0px; height: 100%;`" justify="center" class="text-center">
+                          <!-- COIN & QUOTE -->
+                          <v-row >
+                            <v-col >
+                              <v-card-title class="text-center" v-if="frontendGameData.get(game.account.address.toBase58()).mint !== null && frontendGameData.get(game.account.address.toBase58()).mint !== undefined">
+                                
+                                  <v-tooltip
+                                    top
+                                  >
+                                    <template v-slot:activator="{ props  }">
+                                      <v-row>
+                                        <v-col>
+                                          <CryptoIcon style="margin: 0 auto;" max-width="32px" :icon="game.account.baseSymbol.toLowerCase()"/>
+                                        </v-col>
+                                        <v-divider vertical></v-divider>
+                                        <v-col>
+                                          <CryptoIcon v-if="frontendGameData.get(game.account.address.toBase58()).mint !== null && frontendGameData.get(game.account.address.toBase58()).mint !== undefined" style="margin: 0 auto;" max-width="32px" :icon="frontendGameData.get(game.account.address.toBase58()).mint.symbol.toLowerCase()"/>
+                                        </v-col>
+                                      </v-row>
+                                    </template>
+                                    <span>{{game.account.baseSymbol}} / {{ frontendGameData.get(game.account.address.toBase58()).mint.symbol }}</span>
+                                  </v-tooltip>
+                                <!-- <p style="margin: 0 auto;">{{ game.account.baseSymbol }} / {{ frontendGameData.get(game.account.address.toBase58()).mint.symbol }}</p>  -->
+                              </v-card-title>
+                              <div style="margin-top: 1.05em;"></div>
+                              <v-card-subtitle  v-if="frontendGameData.get(game.account.address.toBase58()).priceFeed !== null" class="text-center">
+                                
+                                <span style="margin: 0 auto;">
+                                  $ {{ 
+                                    bnToNumber(game.currentRound.account.totalUpAmount.add(game.currentRound.account.totalDownAmount), getVaultFromGame(game).account.tokenDecimals).toFixed(2)
+                                  }}
+                                  <v-tooltip activator="parent" location="bottom">
+                                    Pool Balance
+                                  </v-tooltip>
+                                </span>
+                              </v-card-subtitle>
+                            </v-col>
+                            
+                          </v-row>
+                          <v-divider v-if="!frontendGameData.get(game.account.address.toBase58()).prediction.show" style="margin-top: 1.4em;"></v-divider>
+                          <!-- START PRICE AND DIFF (NO SHOW PREDICTION)-->
+                          <v-row style="margin: 0;" v-if="game.currentRound && !frontendGameData.get(game.account.address.toBase58()).prediction.show">
+                            <v-col style="margin: 0; padding: 0;">
+                              <v-card-text class="text-center" >
+                                <v-row style="margin: 1px;">
+                                  <v-col style="margin: auto 0; padding: .5em 0;" class="start-price">
+                                  <v-tooltip
+                                    activator="parent"
+                                    location="end"
+                                  >Starting Price</v-tooltip>
+                                    $ {{  game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundStartPrice, game).toFixed(2) }}
+                                  </v-col>
+                                </v-row>
+                                <v-row style="margin: 1px;">
+                                  <v-col style="margin: 0; padding: .5em 0; position: relative;" :class="`price-difference ${
+                                      game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) > 0 ? 'up' : game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) < 0 ? 'down' : 'tie'
+                                    }`">
+                                    <v-tooltip
+                                      activator="parent"
+                                      location="end"
+                                    >Price Difference</v-tooltip>
+                                    <div style="pointer-events: all !important; opacity: 50%; height: 32px; width: 32px; position: absolute; top: 0; left: -56px; bottom: 0; right: 0; margin: auto; z-index: 1005;">
+                                      <LottieAnimation :speed=".75" v-if="game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) > 0" :animationData="UpArrowAnimation" :height="32" :width="32" />
+                                      <LottieAnimation :speed=".75" v-else-if="game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) < 0" :animationData="DownArrowAnimation" :height="32" :width="32" />
+                                      <LottieAnimation v-else :animation-data="CrabAnimation" :height="32" :width="32"/>
+                                    
+                                    </div>
+                                    <span style="margin-left: 24px;">
+                                      $ {{ 
+                                        game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game).toFixed(2)
+                                      }}
+                                    </span>
+                                    
+                                  </v-col>
+                                </v-row>
+                              </v-card-text>
+                            </v-col>
+                          </v-row>
+                          
+                        </v-col>
+                        <v-divider v-if="frontendGameData.get(game.account.address.toBase58()).prediction.show" vertical></v-divider>
+                        <!-- BUTTON SHOW TOP RIGHT -->
+                        <v-col v-if="frontendGameData.get(game.account.address.toBase58()).prediction.show" style="transition: all .3s; width: 150px !important; margin: 0 auto;">
+                          <v-card-text justify="center" class="text-center" v-if="game.currentRound && game.currentRound.account">
+                            <v-row style="margin: 1px;">
+                              <v-col style="margin: auto 0; padding: .5em 0;" class="start-price">
                                 <v-tooltip
                                   activator="parent"
                                   location="end"
                                 >Starting Price</v-tooltip>
-                                  $ {{  game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundStartPrice, game).toFixed(2) }}
-                                </v-col>
-                              </v-row>
-                              <v-row style="margin: 1px;">
-                                <v-col style="margin: 0; padding: .5em 0; position: relative;" :class="`price-difference ${
-                                    game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) > 0 ? 'up' : game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) < 0 ? 'down' : 'tie'
-                                  }`">
-                                  <v-tooltip
-                                    activator="parent"
-                                    location="end"
-                                  >Price Difference</v-tooltip>
-                                  <div style="pointer-events: all !important; opacity: 50%; height: 32px; width: 32px; position: absolute; top: 0; left: -56px; bottom: 0; right: 0; margin: auto; z-index: 1005;">
-                                    <LottieAnimation :speed=".75" v-if="game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) > 0" :animationData="UpArrowAnimation" :height="32" :width="32" />
-                                    <LottieAnimation :speed=".75" v-else-if="game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) < 0" :animationData="DownArrowAnimation" :height="32" :width="32" />
-                                    <LottieAnimation v-else :animation-data="CrabAnimation" :height="32" :width="32"/>
-                                  
-                                  </div>
-                                  <span style="margin-left: 24px;">
-                                    $ {{ 
-                                      game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game).toFixed(2)
-                                    }}
-                                  </span>
-                                  
-                                </v-col>
-                              </v-row>
-                            </v-card-text>
-                          </v-col>
-                        </v-row>
-                        
-                      </v-col>
-                      <v-divider v-if="frontendGameData.get(game.account.address.toBase58()).prediction.show" vertical></v-divider>
-                      <!-- BUTTON SHOW TOP RIGHT -->
-                      <v-col v-if="frontendGameData.get(game.account.address.toBase58()).prediction.show" style="transition: all .3s; width: 150px !important; margin: 0 auto;">
-                        <v-card-text justify="center" class="text-center" v-if="game.currentRound && game.currentRound.account">
-                          <v-row style="margin: 1px;">
-                            <v-col style="margin: auto 0; padding: .5em 0;" class="start-price">
-                              <v-tooltip
-                                activator="parent"
-                                location="end"
-                              >Starting Price</v-tooltip>
-                                $ {{  game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundStartPrice, game).toFixed(2) }}                      
-                            </v-col>
-                          </v-row>
-                          <v-row style="margin: 1px;">
-                            <v-col style="margin: 0; padding: .5em 0; position: relative;" :class="`price-difference ${
-                                game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) > 0 ? 'up' : game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) < 0 ? 'down' : 'tie'
-                              }`">
-                              <v-tooltip
-                                activator="parent"
-                                location="end"
-                              >Price Difference</v-tooltip>
-                              <div style="pointer-events: all !important; opacity: 50%; height: 32px; width: 32px; position: absolute; top: 0; left: -56px; bottom: 0; right: 0; margin: auto; z-index: 1005;">
-                                <LottieAnimation :speed=".75" v-if="game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) > 0" :animationData="UpArrowAnimation" :height="32" :width="32" />
-                                <LottieAnimation :speed=".75" v-else-if="game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) < 0" :animationData="DownArrowAnimation" :height="32" :width="32" />
-                                <LottieAnimation v-else :animation-data="CrabAnimation" :height="32" :width="32"/>
-                              
-                              </div>
-                              <span style="margin-left: 24px;">
-                                $ {{ 
-                                  game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game).toFixed(2)
-                                }}
-                              </span>
-                              
-                            </v-col>
-                          </v-row>
-                        </v-card-text>
-                      </v-col>
-                    </v-row>
-                    <!-- INFORMATION -->
-                    <v-row v-else justify="center" class="center-text">
-                      <v-col style="width: 100%; margin: auto;" v-if="game && game.currentRound">
-                        <v-card-title class="text-center" v-if="frontendGameData.get(game.account.address.toBase58()).mint !== null">
-                          <v-spacer></v-spacer>
-                          <v-row>
-                            <v-col>
-                              <CryptoIcon style="margin: 0 auto;" max-width="32px" :icon="game.account.baseSymbol.toLowerCase()"/>
-                            </v-col>
-                            <v-divider vertical></v-divider>
-                            <v-col>
-                              <CryptoIcon v-if="frontendGameData.get(game.account.address.toBase58()).mint !== null && frontendGameData.get(game.account.address.toBase58()).mint !== undefined" style="margin: 0 auto;" max-width="32px" :icon="frontendGameData.get(game.account.address.toBase58()).mint.symbol.toLowerCase()"/>
-                            </v-col>
-                          </v-row>
-                          <v-spacer></v-spacer>
-                          <!-- <p style="margin: 0 auto;">{{ game.account.baseSymbol }} / {{ frontendGameData.get(game.account.address.toBase58()).mint.symbol }}</p>  -->
-                        </v-card-title>
-                        <v-card-subtitle>
-                          <span style="margin: 0 auto;">
-                            {{ frontendGameData.get(game.account.address.toBase58()).priceFeed.substr(0, 4) + '..' + frontendGameData.get(game.account.address.toBase58()).priceFeed.substr(frontendGameData.get(game.account.address.toBase58()).priceFeed.length - 4)}}
-                            <a style="text-decoration: none;" target="_blank" :href="`https://solscan.io/account/${frontendGameData.get(game.account.address.toBase58()).priceFeed}?cluser=${getWorkspace() !== null ? getWorkspace().cluster : ''}`"><v-tooltip activator="parent" location="bottom">Solscan</v-tooltip>&nbsp;<v-icon size="xsmall">mdi-open-in-new</v-icon></a>
-                          </span>
-                        </v-card-subtitle>
-                        <v-card-text>
-                          <span style="margin: 0 auto;">Time Remaining: 
-                            {{ 
-                              Math.max(0, Math.floor((frontendGameData.get(game.account.address.toBase58()).timeRemaining) / 60)) + ':' 
-                              + ((frontendGameData.get(game.account.address.toBase58()).timeRemaining) % 60 >= 10 ? ((frontendGameData.get(game.account.address.toBase58()).timeRemaining) % 60) : '0' + Math.max(0, (frontendGameData.get(game.account.address.toBase58()).timeRemaining) % 60)) }}
-                          </span>
-                          <br>
-                          <span style="margin: 0 auto;">Game Volume: {{ 
-                            bnToNumber(game.account.totalVolume.add(U64MAX.mul(game.account.totalVolumeRollover)), getVaultFromGame(game).account.tokenDecimals).toFixed(2)
-                          }} {{ frontendGameData.get(game.account.address.toBase58()).mint !== null ? '' + frontendGameData.get(game.account.address.toBase58()).mint.symbol + '' : '' }}</span>
-                          <br>
-                          <span style="margin: 0 auto;">Current Round: {{ game.currentRound.account.roundNumber }}</span>
-                          <br>
-                          <span style="margin: 0 auto;">Times Cranked: {{ game.currentRound.account.totalCranks }}</span>
-                          <br>
-                          <span style="margin: 0 auto;">Total Crankers: {{ game.currentRound.account.totalUniqueCrankers }}</span>
-                          <br>
-                          <br>
-                          <span style="margin: 0 auto;">
-                            Staked Up: {{ 
-                              bnToNumber(game.currentRound.account.totalUpAmount, getVaultFromGame(game).account.tokenDecimals).toFixed(2)
-                            }} {{ frontendGameData.get(game.account.address.toBase58()).mint !== null ? '' + frontendGameData.get(game.account.address.toBase58()).mint.symbol + '' : '' }}
-                          </span>
-                          <br>
-                          <span style="margin: 0 auto;">
-                            Staked Down: {{ 
-                              bnToNumber(game.currentRound.account.totalDownAmount, getVaultFromGame(game).account.tokenDecimals).toFixed(2)
-                            }} {{ frontendGameData.get(game.account.address.toBase58()).mint !== null ? '' + frontendGameData.get(game.account.address.toBase58()).mint.symbol + '' : '' }}
-                          </span>
-                          <br>
-                          <br>
-                          <span style="margin: 0 auto;">
-                            Fee Collected: {{ 
-                              bnToNumber(game.currentRound.account.totalFeeCollected, getVaultFromGame(game).account.tokenDecimals).toFixed(2)
-                            }} {{ frontendGameData.get(game.account.address.toBase58()).mint !== null ? '' + frontendGameData.get(game.account.address.toBase58()).mint.symbol + '' : '' }}
-                          </span>
-                          <br>
-                          <span style="margin: 0 auto;">
-                            Paid to Cranks: {{ 
-                              bnToNumber(game.currentRound.account.totalAmountPaidToCranks, getVaultFromGame(game).account.tokenDecimals).toFixed(2)
-                            }} {{ frontendGameData.get(game.account.address.toBase58()).mint !== null ? '' + frontendGameData.get(game.account.address.toBase58()).mint.symbol + '' : '' }}
-                          </span>
-                        </v-card-text>
-                      </v-col>
-                    </v-row>
+                                  $ {{  game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundStartPrice, game).toFixed(2) }}                      
+                              </v-col>
+                            </v-row>
+                            <v-row style="margin: 1px;">
+                              <v-col style="margin: 0; padding: .5em 0; position: relative;" :class="`price-difference ${
+                                  game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) > 0 ? 'up' : game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) < 0 ? 'down' : 'tie'
+                                }`">
+                                <v-tooltip
+                                  activator="parent"
+                                  location="end"
+                                >Price Difference</v-tooltip>
+                                <div style="pointer-events: all !important; opacity: 50%; height: 32px; width: 32px; position: absolute; top: 0; left: -56px; bottom: 0; right: 0; margin: auto; z-index: 1005;">
+                                  <LottieAnimation :speed=".75" v-if="game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) > 0" :animationData="UpArrowAnimation" :height="32" :width="32" />
+                                  <LottieAnimation :speed=".75" v-else-if="game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) < 0" :animationData="DownArrowAnimation" :height="32" :width="32" />
+                                  <LottieAnimation v-else :animation-data="CrabAnimation" :height="32" :width="32"/>
+                                
+                                </div>
+                                <span style="margin-left: 24px;">
+                                  $ {{ 
+                                    game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game).toFixed(2)
+                                  }}
+                                </span>
+                                
+                              </v-col>
+                            </v-row>
+                          </v-card-text>
+                        </v-col>
+                      </v-row>
+                      <!-- INFORMATION -->
+                      <v-row v-else justify="center" class="center-text">
+                        <v-col style="width: 100%; margin: auto;" v-if="game && game.currentRound">
+                          <v-card-title class="text-center" v-if="frontendGameData.get(game.account.address.toBase58()).mint !== null">
+                            <v-spacer></v-spacer>
+                            <v-row justify="center">
+                              <v-col cols="4">
+                                <CryptoIcon style="margin: 0 auto;" max-width="32px" :icon="game.account.baseSymbol.toLowerCase()"/>
+                              </v-col>
+                              <v-divider vertical></v-divider>
+                              <v-col cols="4">
+                                <CryptoIcon v-if="frontendGameData.get(game.account.address.toBase58()).mint !== null && frontendGameData.get(game.account.address.toBase58()).mint !== undefined" style="margin: 0 auto;" max-width="32px" :icon="frontendGameData.get(game.account.address.toBase58()).mint.symbol.toLowerCase()"/>
+                              </v-col>
+                            </v-row>
+                            <v-spacer></v-spacer>
+                            <!-- <p style="margin: 0 auto;">{{ game.account.baseSymbol }} / {{ frontendGameData.get(game.account.address.toBase58()).mint.symbol }}</p>  -->
+                          </v-card-title>
+                          <v-card-subtitle>
+                            <span style="margin: 0 auto;">
+                              {{ frontendGameData.get(game.account.address.toBase58()).priceFeed.substr(0, 4) + '..' + frontendGameData.get(game.account.address.toBase58()).priceFeed.substr(frontendGameData.get(game.account.address.toBase58()).priceFeed.length - 4)}}
+                              <a style="text-decoration: none;" target="_blank" :href="`https://solscan.io/account/${frontendGameData.get(game.account.address.toBase58()).priceFeed}?cluser=${getWorkspace() !== null ? getWorkspace().cluster : ''}`"><v-tooltip activator="parent" location="bottom">Solscan</v-tooltip>&nbsp;<v-icon size="xsmall">mdi-open-in-new</v-icon></a>
+                            </span>
+                          </v-card-subtitle>
+                          <v-card-text>
+                            <span style="margin: 0 auto;">Time Remaining: 
+                              {{ 
+                                Math.max(0, Math.floor((frontendGameData.get(game.account.address.toBase58()).timeRemaining) / 60)) + ':' 
+                                + ((frontendGameData.get(game.account.address.toBase58()).timeRemaining) % 60 >= 10 ? ((frontendGameData.get(game.account.address.toBase58()).timeRemaining) % 60) : '0' + Math.max(0, (frontendGameData.get(game.account.address.toBase58()).timeRemaining) % 60)) }}
+                            </span>
+                            <br>
+                            <span style="margin: 0 auto;">Game Volume: {{ 
+                              bnToNumber(game.account.totalVolume.add(U64MAX.mul(game.account.totalVolumeRollover)), getVaultFromGame(game).account.tokenDecimals).toFixed(2)
+                            }} {{ frontendGameData.get(game.account.address.toBase58()).mint !== null ? '' + frontendGameData.get(game.account.address.toBase58()).mint.symbol + '' : '' }}</span>
+                            <br>
+                            <span style="margin: 0 auto;">Current Round: {{ game.currentRound.account.roundNumber }}</span>
+                            <br>
+                            <span style="margin: 0 auto;">Times Cranked: {{ game.currentRound.account.totalCranks }}</span>
+                            <br>
+                            <span style="margin: 0 auto;">Total Crankers: {{ game.currentRound.account.totalUniqueCrankers }}</span>
+                            <br>
+                            <br>
+                            <span style="margin: 0 auto;">
+                              Staked Up: {{ 
+                                bnToNumber(game.currentRound.account.totalUpAmount, getVaultFromGame(game).account.tokenDecimals).toFixed(2)
+                              }} {{ frontendGameData.get(game.account.address.toBase58()).mint !== null ? '' + frontendGameData.get(game.account.address.toBase58()).mint.symbol + '' : '' }}
+                            </span>
+                            <br>
+                            <span style="margin: 0 auto;">
+                              Staked Down: {{ 
+                                bnToNumber(game.currentRound.account.totalDownAmount, getVaultFromGame(game).account.tokenDecimals).toFixed(2)
+                              }} {{ frontendGameData.get(game.account.address.toBase58()).mint !== null ? '' + frontendGameData.get(game.account.address.toBase58()).mint.symbol + '' : '' }}
+                            </span>
+                            <br>
+                            <br>
+                            <span style="margin: 0 auto;">
+                              Fee Collected: {{ 
+                                bnToNumber(game.currentRound.account.totalFeeCollected, getVaultFromGame(game).account.tokenDecimals).toFixed(2)
+                              }} {{ frontendGameData.get(game.account.address.toBase58()).mint !== null ? '' + frontendGameData.get(game.account.address.toBase58()).mint.symbol + '' : '' }}
+                            </span>
+                            <br>
+                            <span style="margin: 0 auto;">
+                              Paid to Cranks: {{ 
+                                bnToNumber(game.currentRound.account.totalAmountPaidToCranks, getVaultFromGame(game).account.tokenDecimals).toFixed(2)
+                              }} {{ frontendGameData.get(game.account.address.toBase58()).mint !== null ? '' + frontendGameData.get(game.account.address.toBase58()).mint.symbol + '' : '' }}
+                            </span>
+                          </v-card-text>
+                        </v-col>
+                      </v-row>
                   </v-btn>
                   <v-expand-transition>
                     <div style="max-width: 300px; transition: all .3s;" v-if="game !== undefined && game.currentRound !== undefined && game.currentRound !== null && frontendGameData.get(game.account.address.toBase58()).prediction.show">
@@ -2097,6 +2114,9 @@ export default defineComponent({
                       <thead>
                         <tr>
                           <th>
+                            Round Number
+                          </th>
+                          <th>
                             Duration 
                           </th>
                           <th>
@@ -2120,9 +2140,19 @@ export default defineComponent({
                         </tr>
                       </thead>
                       <tbody>
-                        <tr v-for="historyItem in histories.get(selectedGameHistory).roundHistory.account.rounds.filter(round => !round.recordId.eq(new anchor.BN(0))).sort((a: RoundHistoryItem, b: RoundHistoryItem) => (b.recordId.sub(a.recordId)).toNumber())">
-                          <td>
-                              {{historyItem.roundTimeDifference.toNumber()}}
+                        <tr
+                          :class="`roundHistoryItem ${historyItem.roundWinningDirection === 1 ? 'up' : 'down'}`"
+                          
+                          v-for="historyItem in histories.get(selectedGameHistory).roundHistory.account.rounds.filter(round => {
+                              //@ts-ignore
+                              return !round.recordId.eq(new anchor.BN(0)) && (roundHistorySelectedRound !== null ? (round.address !== undefined ? round.address!.toBase58() === roundHistorySelectedRound : true) : true) 
+                            }).sort((a: RoundHistoryItem, b: RoundHistoryItem) => (b.recordId.sub(a.recordId)).toNumber())"
+                        >
+                            <td>
+                              {{historyItem.roundNumber}}
+                            </td>
+                            <td>
+                              {{ Math.floor(historyItem.roundTimeDifference.toNumber() / 60) + ':' + (historyItem.roundTimeDifference.toNumber() % 60 >= 10 ? historyItem.roundTimeDifference.toNumber() % 60 : "0" + historyItem.roundTimeDifference.toNumber() % 60)}}
                             </td>
                             <td>
                               {{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.convertOraclePriceToNumber(historyItem.roundStartPrice, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)).toFixed(2) }}
@@ -2166,15 +2196,32 @@ export default defineComponent({
                           <th>
                             Amount
                           </th>
+                          <th>
+                            Round
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr v-for="historyItem in histories.get(selectedGameHistory).userPredictionHistory.account.userPredictions.filter(userPrediction => !userPrediction.recordId.eq(new anchor.BN(0))).sort((a: UserPredictionHistoryItem, b: UserPredictionHistoryItem) => (a.recordId.sub(b.recordId)).toNumber())">
+                        <tr :class="`userPredictionHistoryItem ${historyItem.upOrDown === 1 ? 'up' : 'down'}`" 
+                          v-for="historyItem in histories.get(selectedGameHistory).userPredictionHistory.account.userPredictions.filter(userPrediction => !userPrediction.recordId.eq(new anchor.BN(0))).sort((a: UserPredictionHistoryItem, b: UserPredictionHistoryItem) => (a.recordId.sub(b.recordId)).toNumber())">
                           <td>
-                            {{UpOrDown[historyItem.upOrDown]}}
+                            {{ UpOrDown[historyItem.upOrDown] }}
                           </td>
                           <td>
-                           {{ bnQuoteAssetToNumberFromGame(historyItem.amount, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }} {{ getGameQuoteSymbol(computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }}
+                            {{ bnQuoteAssetToNumberFromGame(historyItem.amount, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }} {{ getGameQuoteSymbol(computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }}
+                          </td>
+                          <td>
+                            <a @click.stop="(e) => {
+                              e.preventDefault();
+                              roundHistorySelectedRound = historyItem.round.toBase58()
+                              //@ts-ignore
+                            }">{{ histories.get(selectedGameHistory).roundHistory.account.rounds.find(h =>  {
+                              //@ts-ignore
+                              return (h.address !== undefined ? h.address!.toBase58() === historyItem.round.toBase58() : false)
+                            }) !== undefined ? histories.get(selectedGameHistory).roundHistory.account.rounds.find(h => {
+                              //@ts-ignore
+                              return (h.address !== undefined ? h.address!.toBase58() === historyItem.round.toBase58() : false)
+                            }).roundNumber : historyItem.round.toBase58() }}</a>
                           </td>
                         </tr>
                       </tbody>
@@ -2192,6 +2239,22 @@ export default defineComponent({
 </template>
 
 <style>
+
+.roundHistoryItem.up {
+  background-color: rgba(76,175,80,0.1);
+}
+
+.roundHistoryItem.down {
+  background-color: rgba(207,102,121,0.1);
+}
+
+.userPredictionHistoryItem.up {
+  background-color: rgba(76,175,80,0.1);
+}
+
+.userPredictionHistoryItem.down {
+  background-color: rgba(207,102,121,0.1);
+}
 
 .price-difference {
   border-radius: 1em;

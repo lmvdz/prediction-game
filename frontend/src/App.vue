@@ -21,7 +21,7 @@ import { WalletMultiButton } from 'solana-wallets-vue'
     <!-- </v-navigation-drawer> -->
 
     <div class="app-wallet-button">
-      <wallet-multi-button dark/>
+      <wallet-multi-button dark />
     </div>
 
 

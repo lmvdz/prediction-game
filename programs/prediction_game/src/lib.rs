@@ -17,7 +17,7 @@ pub mod prediction_game {
     use super::*;
     
 
-    pub fn init_game_instruction(ctx: Context<InitializeGame>, oracle: u8, base_symbol: String, fee_bps: u16, crank_bps: u16, round_length: i64) -> Result<()> {
+    pub fn init_game_instruction(ctx: Context<InitializeGame>, oracle: u8, base_symbol: [u8; 16], fee_bps: u16, crank_bps: u16, round_length: i64) -> Result<()> {
         instructions::game::init_game(ctx, oracle, base_symbol, fee_bps, crank_bps, round_length)
     }
 
@@ -33,12 +33,12 @@ pub mod prediction_game {
         instructions::round::init_first_round(ctx)
     }
 
-    pub fn init_second_round_instruction(ctx: Context<InitSecondRound>) -> Result<()> {
-        instructions::round::init_second_round(ctx)
+    pub fn init_second_round_instruction(ctx: Context<InitSecondRound>, next_round_number: [u8; 4]) -> Result<()> {
+        instructions::round::init_second_round(ctx, next_round_number)
     }
 
-    pub fn init_next_round_and_close_previous_instruction(ctx: Context<InitNextRoundAndClosePrevious>) -> Result<()> {
-        instructions::round::init_next_round_and_close_previous(ctx)
+    pub fn init_next_round_and_close_previous_instruction(ctx: Context<InitNextRoundAndClosePrevious>, next_round_number: [u8; 4]) -> Result<()> {
+        instructions::round::init_next_round_and_close_previous(ctx, next_round_number)
     }
 
     pub fn update_game_instruction<'info>(ctx: Context<'_, '_, '_, 'info, UpdateGame<'info>>) -> Result<()> {

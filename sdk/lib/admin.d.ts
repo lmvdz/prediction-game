@@ -1,8 +1,8 @@
 import { Cluster, PublicKey } from "@solana/web3.js";
 import { Connection, Keypair } from "@solana/web3.js";
 import * as anchor from "@project-serum/anchor";
-import { Oracle } from "./accounts/game";
 import { Mint } from "@solana/spl-token";
+import { Oracle } from './types';
 export declare const gameSeeds: Array<GameSeed>;
 export declare type GameSeed = {
     baseSymbol: string;

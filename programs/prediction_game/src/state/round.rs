@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-#[account]
+#[account(zero_copy)]
 #[derive(Default)]
 #[repr(packed)]
 pub struct Round {
@@ -28,7 +28,7 @@ pub struct Round {
     pub round_current_price: i128,
     pub round_end_price: i128,
     pub round_price_difference: i128,
-    pub round_price_decimals: u8,
+    pub round_price_decimals: i128,
 
     pub round_winning_direction: u8,
 

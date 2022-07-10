@@ -70,8 +70,11 @@ class ProgramAddresses {
     async getVaultPubkey(tokenMint) {
         return await web3_js_1.PublicKey.findProgramAddress([Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), this.owner.toBuffer(), tokenMint.toBuffer(), Buffer.from(anchor.utils.bytes.utf8.encode('vault'))], this.program.programId);
     }
+    roundToBuffer(roundNumber) {
+        return new anchor.BN(roundNumber).toArrayLike(Buffer, 'be', 4);
+    }
     async getRoundPubkey(gamePubkey, roundNumber) {
-        const roundNumberBuffer = new anchor.BN(roundNumber).toArrayLike(Buffer, 'be', 4);
+        const roundNumberBuffer = this.roundToBuffer(roundNumber);
         return await web3_js_1.PublicKey.findProgramAddress([
             Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)),
             gamePubkey.toBuffer(),

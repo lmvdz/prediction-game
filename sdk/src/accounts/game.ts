@@ -12,6 +12,7 @@ import { ProgramAccount } from "@project-serum/anchor"
 import UserPrediction, { UserPredictionAccount } from "./userPrediction"
 import UserPredictionHistory, { UserPredictionHistoryAccount } from "./userPredictionHistory"
 import RoundHistory, { RoundHistoryAccount } from "./roundHistory"
+import { Oracle } from "../types"
 
 export type GameAccount = {
 
@@ -20,7 +21,7 @@ export type GameAccount = {
 
     tokenDecimal: number
 
-    baseSymbol: string | String,
+    baseSymbol: number[],
 
     roundNumber: number
     currentRound: PublicKey
@@ -45,13 +46,6 @@ export type GameAccount = {
     roundHistory: PublicKey,
 
     padding01: PublicKey[]
-}
-
-export enum Oracle {
-    Undefined = 0,
-    Chainlink = 1,
-    Pyth = 2,
-    Switchboard = 3
 }
 
 export default class Game implements DataUpdatable<GameAccount> {
@@ -104,6 +98,18 @@ export default class Game implements DataUpdatable<GameAccount> {
         await this.userPredictionHistory.updateData(await fetchAccountRetry<UserPredictionHistoryAccount>(workspace, 'userPredictionHistory', (this.account.userPredictionHistory)));
         await this.roundHistory.updateData(await fetchAccountRetry<RoundHistoryAccount>(workspace, 'roundHistory', (this.account.roundHistory)));
         return this;
+    }
+
+    public baseSymbolAsString() : string {
+        return String.fromCharCode(...this.account.baseSymbol.filter(x => x !== 0))
+    }
+
+    public static stringToNumberArray(str: string) : number[] {
+        let strAsNumberArray = Array(16).fill(0) as number[];
+        str.substring(0, str.length > 16 ? 16 : str.length).split('').map((c) => c.charCodeAt(0)).forEach((x, index) => {
+            strAsNumberArray[index] = x;
+        })
+        return strAsNumberArray;
     }
 
     public async collectFeeInstruction(workspace: Workspace, crank: Crank): Promise<TransactionInstruction> {
@@ -343,9 +349,9 @@ export default class Game implements DataUpdatable<GameAccount> {
         const [gamePubkey, _gamePubkeyBump] = await workspace.programAddresses.getGamePubkey(vault, priceProgram, priceFeed);
 
         // console.log(baseSymbol, vaultPubkeyBump, feeVaultPubkeyBump)
-
+        
         return new Promise((resolve, reject) => {
-            workspace.program.methods.initGameInstruction(oracle, baseSymbol, feeBps, crankBps, roundLength).accounts({
+            workspace.program.methods.initGameInstruction(oracle, this.stringToNumberArray(baseSymbol), feeBps, crankBps, roundLength).accounts({
                 owner: workspace.owner,
                 game: gamePubkey,
                 vault: vault.account.address,
@@ -383,7 +389,7 @@ export default class Game implements DataUpdatable<GameAccount> {
         const userPredictionHistory = anchor.web3.Keypair.generate();
 
         return new Promise((resolve, reject) => {
-            workspace.program.methods.initGameInstruction(oracle, baseSymbol, feeBps, crankBps, roundLength).accounts({
+            workspace.program.methods.initGameInstruction(oracle, this.stringToNumberArray(baseSymbol), feeBps, crankBps, roundLength).accounts({
                 owner: workspace.owner,
                 game: gamePubkey,
                 vault: vault.account.address,
@@ -460,6 +466,14 @@ export default class Game implements DataUpdatable<GameAccount> {
                 priceFeed: this.account.priceFeed,
                 systemProgram: SystemProgram.programId
             }).transaction().then(tx => {
+                // workspace.program.provider.connection.getLatestBlockhash().then(blockhashResponse => {
+                //     tx.recentBlockhash = blockhashResponse.blockhash;
+                //     tx.feePayer = workspace.owner;
+                //     workspace.program.provider.connection.simulateTransaction(tx.compileMessage()).then(updateSimulation => {
+                //         console.log(updateSimulation.value.logs);
+                //     })
+                // })
+                
                 workspace.sendTransaction(tx).then(txSignature => {
                     confirmTxRetry(workspace, txSignature).then(() => {
                         resolve(this)

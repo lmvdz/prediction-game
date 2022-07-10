@@ -23,7 +23,7 @@ export declare type RoundAccount = {
     roundCurrentPrice: anchor.BN;
     roundEndPrice: anchor.BN;
     roundPriceDifference: anchor.BN;
-    roundPriceDecimals: number;
+    roundPriceDecimals: anchor.BN;
     roundWinningDirection: number;
     totalFeeCollected: anchor.BN;
     totalUpAmount: anchor.BN;

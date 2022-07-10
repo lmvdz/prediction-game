@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.IDL = void 0;
 exports.IDL = {
-    "version": "1.0.7",
+    "version": "1.0.8",
     "name": "prediction_game",
     "instructions": [
         {
@@ -46,7 +46,12 @@ exports.IDL = {
                 },
                 {
                     "name": "baseSymbol",
-                    "type": "string"
+                    "type": {
+                        "array": [
+                            "u8",
+                            16
+                        ]
+                    }
                 },
                 {
                     "name": "feeBps",
@@ -248,7 +253,17 @@ exports.IDL = {
                     "isSigner": false
                 }
             ],
-            "args": []
+            "args": [
+                {
+                    "name": "nextRoundNumber",
+                    "type": {
+                        "array": [
+                            "u8",
+                            4
+                        ]
+                    }
+                }
+            ]
         },
         {
             "name": "initNextRoundAndClosePreviousInstruction",
@@ -309,7 +324,17 @@ exports.IDL = {
                     "isSigner": false
                 }
             ],
-            "args": []
+            "args": [
+                {
+                    "name": "nextRoundNumber",
+                    "type": {
+                        "array": [
+                            "u8",
+                            4
+                        ]
+                    }
+                }
+            ]
         },
         {
             "name": "updateGameInstruction",
@@ -434,7 +459,7 @@ exports.IDL = {
                 },
                 {
                     "name": "game",
-                    "isMut": true,
+                    "isMut": false,
                     "isSigner": false
                 },
                 {
@@ -812,11 +837,6 @@ exports.IDL = {
                     "isSigner": true
                 },
                 {
-                    "name": "game",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
                     "name": "crank",
                     "isMut": true,
                     "isSigner": false
@@ -960,11 +980,6 @@ exports.IDL = {
                     "name": "signer",
                     "isMut": true,
                     "isSigner": true
-                },
-                {
-                    "name": "game",
-                    "isMut": false,
-                    "isSigner": false
                 },
                 {
                     "name": "round",
@@ -1206,7 +1221,12 @@ exports.IDL = {
                     },
                     {
                         "name": "baseSymbol",
-                        "type": "string"
+                        "type": {
+                            "array": [
+                                "u8",
+                                16
+                            ]
+                        }
                     },
                     {
                         "name": "roundNumber",
@@ -1421,7 +1441,7 @@ exports.IDL = {
                     },
                     {
                         "name": "roundPriceDecimals",
-                        "type": "u8"
+                        "type": "i128"
                     },
                     {
                         "name": "roundWinningDirection",
@@ -1653,6 +1673,10 @@ exports.IDL = {
                         "type": "u128"
                     },
                     {
+                        "name": "address",
+                        "type": "publicKey"
+                    },
+                    {
                         "name": "roundNumber",
                         "type": "u32"
                     },
@@ -1686,7 +1710,7 @@ exports.IDL = {
                     },
                     {
                         "name": "roundPriceDecimals",
-                        "type": "u8"
+                        "type": "i128"
                     },
                     {
                         "name": "roundWinningDirection",

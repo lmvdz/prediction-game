@@ -43,8 +43,8 @@ pub enum UpOrDown {
     Down = 2
 }
 
-#[account]
-#[derive(Default, Copy)]
+#[account(zero_copy)]
+#[derive(Default)]
 #[repr(packed)]
 pub struct UserPrediction {
 

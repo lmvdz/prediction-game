@@ -85,8 +85,12 @@ export class ProgramAddresses<T extends anchor.Idl> {
     )
   }
 
+  roundToBuffer(roundNumber: anchor.BN) : Buffer {
+    return new anchor.BN(roundNumber).toArrayLike(Buffer, 'be', 4);
+  }
+
  async getRoundPubkey(gamePubkey: PublicKey, roundNumber: anchor.BN) : Promise<[PublicKey, number]> {
-    const roundNumberBuffer = new anchor.BN(roundNumber).toArrayLike(Buffer, 'be', 4);
+    const roundNumberBuffer = this.roundToBuffer(roundNumber);
     return  await PublicKey.findProgramAddress(
         [
           Buffer.from(anchor.utils.bytes.utf8.encode(this.program.idl.version)), 

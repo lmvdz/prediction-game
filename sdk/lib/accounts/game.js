@@ -26,7 +26,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Oracle = void 0;
 const anchor = __importStar(require("@project-serum/anchor"));
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
@@ -35,13 +34,6 @@ const round_1 = __importDefault(require("../accounts/round"));
 const index_1 = require("../util/index");
 const userPredictionHistory_1 = __importDefault(require("./userPredictionHistory"));
 const roundHistory_1 = __importDefault(require("./roundHistory"));
-var Oracle;
-(function (Oracle) {
-    Oracle[Oracle["Undefined"] = 0] = "Undefined";
-    Oracle[Oracle["Chainlink"] = 1] = "Chainlink";
-    Oracle[Oracle["Pyth"] = 2] = "Pyth";
-    Oracle[Oracle["Switchboard"] = 3] = "Switchboard";
-})(Oracle = exports.Oracle || (exports.Oracle = {}));
 class Game {
     constructor(account) {
         this.account = account;
@@ -76,6 +68,16 @@ class Game {
         await this.userPredictionHistory.updateData(await (0, index_1.fetchAccountRetry)(workspace, 'userPredictionHistory', (this.account.userPredictionHistory)));
         await this.roundHistory.updateData(await (0, index_1.fetchAccountRetry)(workspace, 'roundHistory', (this.account.roundHistory)));
         return this;
+    }
+    baseSymbolAsString() {
+        return String.fromCharCode(...this.account.baseSymbol.filter(x => x !== 0));
+    }
+    static stringToNumberArray(str) {
+        let strAsNumberArray = Array(16).fill(0);
+        str.substring(0, str.length > 16 ? 16 : str.length).split('').map((c) => c.charCodeAt(0)).forEach((x, index) => {
+            strAsNumberArray[index] = x;
+        });
+        return strAsNumberArray;
     }
     async collectFeeInstruction(workspace, crank) {
         return await workspace.program.methods.collectFeeInstruction().accounts({
@@ -299,7 +301,7 @@ class Game {
         const [gamePubkey, _gamePubkeyBump] = await workspace.programAddresses.getGamePubkey(vault, priceProgram, priceFeed);
         // console.log(baseSymbol, vaultPubkeyBump, feeVaultPubkeyBump)
         return new Promise((resolve, reject) => {
-            workspace.program.methods.initGameInstruction(oracle, baseSymbol, feeBps, crankBps, roundLength).accounts({
+            workspace.program.methods.initGameInstruction(oracle, this.stringToNumberArray(baseSymbol), feeBps, crankBps, roundLength).accounts({
                 owner: workspace.owner,
                 game: gamePubkey,
                 vault: vault.account.address,
@@ -330,7 +332,7 @@ class Game {
         const roundHistory = anchor.web3.Keypair.generate();
         const userPredictionHistory = anchor.web3.Keypair.generate();
         return new Promise((resolve, reject) => {
-            workspace.program.methods.initGameInstruction(oracle, baseSymbol, feeBps, crankBps, roundLength).accounts({
+            workspace.program.methods.initGameInstruction(oracle, this.stringToNumberArray(baseSymbol), feeBps, crankBps, roundLength).accounts({
                 owner: workspace.owner,
                 game: gamePubkey,
                 vault: vault.account.address,
@@ -398,6 +400,13 @@ class Game {
                 priceFeed: this.account.priceFeed,
                 systemProgram: web3_js_1.SystemProgram.programId
             }).transaction().then(tx => {
+                // workspace.program.provider.connection.getLatestBlockhash().then(blockhashResponse => {
+                //     tx.recentBlockhash = blockhashResponse.blockhash;
+                //     tx.feePayer = workspace.owner;
+                //     workspace.program.provider.connection.simulateTransaction(tx.compileMessage()).then(updateSimulation => {
+                //         console.log(updateSimulation.value.logs);
+                //     })
+                // })
                 workspace.sendTransaction(tx).then(txSignature => {
                     (0, index_1.confirmTxRetry)(workspace, txSignature).then(() => {
                         resolve(this);

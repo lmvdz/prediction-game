@@ -25,4 +25,4 @@ programs/prediction_game/src/state/history/round.rs:
 programs/prediction_game/src/state/history/user_prediction.rs:
 programs/prediction_game/src/errors.rs:
 
-# env-dep:CARGO_PKG_VERSION=1.0.7
+# env-dep:CARGO_PKG_VERSION=1.0.8

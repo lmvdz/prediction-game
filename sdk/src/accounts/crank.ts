@@ -108,7 +108,6 @@ export default class Crank implements DataUpdatable<CrankAccount> {
         return await workspace.program.methods.adminCloseCrankAccountInstruction().accounts({
             signer: workspace.owner,
             crank: this.account.address,
-            game: this.account.game,
             receiver: workspace.owner
         }).instruction()
     }
@@ -124,6 +123,7 @@ export default class Crank implements DataUpdatable<CrankAccount> {
                     let txSignature = await workspace.sendTransaction(tx)
                     await confirmTxRetry(workspace, txSignature);
                 } catch (error) {
+                    console.error(error);
                     reject(error);
                 }
                 try {

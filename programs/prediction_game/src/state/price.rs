@@ -45,7 +45,7 @@ impl std::fmt::Display for Decimal {
     }
 }
 
-pub fn get_price<'info>(oracle: u8, price_program: &AccountInfo<'info>, price_feed: &AccountInfo<'info>) -> Result<(i128, u8)> {
+pub fn get_price<'info>(oracle: u8, price_program: &AccountInfo<'info>, price_feed: &AccountInfo<'info>) -> Result<(i128, i128)> {
     
     let oracle_from_u8 = Oracle::from(oracle);
 
@@ -61,16 +61,16 @@ pub fn get_price<'info>(oracle: u8, price_program: &AccountInfo<'info>, price_fe
                 price_feed.to_account_info(),
             )?;
     
-            (Decimal::new(round.answer, u32::from(decimals)).value, decimals)
+            (Decimal::new(round.answer, u32::from(decimals)).value, decimals as i128)
         },
         Oracle::Pyth => {
             let price_feed_result = load_price_feed_from_account_info(price_feed).unwrap();
             let current_price = price_feed_result.get_current_price().unwrap();
-            ( current_price.price.into(), current_price.expo.try_into().unwrap())
+            ( current_price.price.into(), current_price.expo  as i128)
         },
         Oracle::Switchboard => {
             let switchboard_decimal = AggregatorAccountData::new(price_feed)?.get_result()?;
-            ( switchboard_decimal.mantissa, switchboard_decimal.scale.try_into().unwrap())
+            ( switchboard_decimal.mantissa, switchboard_decimal.scale as i128)
         },
         Oracle::Undefined => (0, 0)
     };

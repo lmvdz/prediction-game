@@ -1,5 +1,5 @@
 export type PredictionGame = {
-  "version": "1.0.7",
+  "version": "1.0.8",
   "name": "prediction_game",
   "instructions": [
     {
@@ -43,7 +43,12 @@ export type PredictionGame = {
         },
         {
           "name": "baseSymbol",
-          "type": "string"
+          "type": {
+            "array": [
+              "u8",
+              16
+            ]
+          }
         },
         {
           "name": "feeBps",
@@ -245,7 +250,17 @@ export type PredictionGame = {
           "isSigner": false
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "nextRoundNumber",
+          "type": {
+            "array": [
+              "u8",
+              4
+            ]
+          }
+        }
+      ]
     },
     {
       "name": "initNextRoundAndClosePreviousInstruction",
@@ -306,7 +321,17 @@ export type PredictionGame = {
           "isSigner": false
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "nextRoundNumber",
+          "type": {
+            "array": [
+              "u8",
+              4
+            ]
+          }
+        }
+      ]
     },
     {
       "name": "updateGameInstruction",
@@ -431,7 +456,7 @@ export type PredictionGame = {
         },
         {
           "name": "game",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -809,11 +834,6 @@ export type PredictionGame = {
           "isSigner": true
         },
         {
-          "name": "game",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "crank",
           "isMut": true,
           "isSigner": false
@@ -957,11 +977,6 @@ export type PredictionGame = {
           "name": "signer",
           "isMut": true,
           "isSigner": true
-        },
-        {
-          "name": "game",
-          "isMut": false,
-          "isSigner": false
         },
         {
           "name": "round",
@@ -1203,7 +1218,12 @@ export type PredictionGame = {
           },
           {
             "name": "baseSymbol",
-            "type": "string"
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
           },
           {
             "name": "roundNumber",
@@ -1418,7 +1438,7 @@ export type PredictionGame = {
           },
           {
             "name": "roundPriceDecimals",
-            "type": "u8"
+            "type": "i128"
           },
           {
             "name": "roundWinningDirection",
@@ -1650,6 +1670,10 @@ export type PredictionGame = {
             "type": "u128"
           },
           {
+            "name": "address",
+            "type": "publicKey"
+          },
+          {
             "name": "roundNumber",
             "type": "u32"
           },
@@ -1683,7 +1707,7 @@ export type PredictionGame = {
           },
           {
             "name": "roundPriceDecimals",
-            "type": "u8"
+            "type": "i128"
           },
           {
             "name": "roundWinningDirection",
@@ -2332,7 +2356,7 @@ export type PredictionGame = {
 };
 
 export const IDL: PredictionGame = {
-  "version": "1.0.7",
+  "version": "1.0.8",
   "name": "prediction_game",
   "instructions": [
     {
@@ -2376,7 +2400,12 @@ export const IDL: PredictionGame = {
         },
         {
           "name": "baseSymbol",
-          "type": "string"
+          "type": {
+            "array": [
+              "u8",
+              16
+            ]
+          }
         },
         {
           "name": "feeBps",
@@ -2578,7 +2607,17 @@ export const IDL: PredictionGame = {
           "isSigner": false
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "nextRoundNumber",
+          "type": {
+            "array": [
+              "u8",
+              4
+            ]
+          }
+        }
+      ]
     },
     {
       "name": "initNextRoundAndClosePreviousInstruction",
@@ -2639,7 +2678,17 @@ export const IDL: PredictionGame = {
           "isSigner": false
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "nextRoundNumber",
+          "type": {
+            "array": [
+              "u8",
+              4
+            ]
+          }
+        }
+      ]
     },
     {
       "name": "updateGameInstruction",
@@ -2764,7 +2813,7 @@ export const IDL: PredictionGame = {
         },
         {
           "name": "game",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -3142,11 +3191,6 @@ export const IDL: PredictionGame = {
           "isSigner": true
         },
         {
-          "name": "game",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "crank",
           "isMut": true,
           "isSigner": false
@@ -3290,11 +3334,6 @@ export const IDL: PredictionGame = {
           "name": "signer",
           "isMut": true,
           "isSigner": true
-        },
-        {
-          "name": "game",
-          "isMut": false,
-          "isSigner": false
         },
         {
           "name": "round",
@@ -3536,7 +3575,12 @@ export const IDL: PredictionGame = {
           },
           {
             "name": "baseSymbol",
-            "type": "string"
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
           },
           {
             "name": "roundNumber",
@@ -3751,7 +3795,7 @@ export const IDL: PredictionGame = {
           },
           {
             "name": "roundPriceDecimals",
-            "type": "u8"
+            "type": "i128"
           },
           {
             "name": "roundWinningDirection",
@@ -3983,6 +4027,10 @@ export const IDL: PredictionGame = {
             "type": "u128"
           },
           {
+            "name": "address",
+            "type": "publicKey"
+          },
+          {
             "name": "roundNumber",
             "type": "u32"
           },
@@ -4016,7 +4064,7 @@ export const IDL: PredictionGame = {
           },
           {
             "name": "roundPriceDecimals",
-            "type": "u8"
+            "type": "i128"
           },
           {
             "name": "roundWinningDirection",

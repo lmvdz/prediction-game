@@ -8,11 +8,12 @@ import Crank from "./crank";
 import Vault from "./vault";
 import UserPredictionHistory from "./userPredictionHistory";
 import RoundHistory from "./roundHistory";
+import { Oracle } from "../types";
 export declare type GameAccount = {
     owner: PublicKey;
     address: PublicKey;
     tokenDecimal: number;
-    baseSymbol: string | String;
+    baseSymbol: number[];
     roundNumber: number;
     currentRound: PublicKey;
     previousRound: PublicKey;
@@ -30,12 +31,6 @@ export declare type GameAccount = {
     roundHistory: PublicKey;
     padding01: PublicKey[];
 };
-export declare enum Oracle {
-    Undefined = 0,
-    Chainlink = 1,
-    Pyth = 2,
-    Switchboard = 3
-}
 export default class Game implements DataUpdatable<GameAccount> {
     account: GameAccount;
     userPredictionHistory: UserPredictionHistory;
@@ -50,6 +45,8 @@ export default class Game implements DataUpdatable<GameAccount> {
     updateGameData(workspace: Workspace): Promise<Game>;
     updateRoundData(workspace: Workspace): Promise<Game>;
     updateHistory(workspace: Workspace): Promise<Game>;
+    baseSymbolAsString(): string;
+    static stringToNumberArray(str: string): number[];
     collectFeeInstruction(workspace: Workspace, crank: Crank): Promise<TransactionInstruction>;
     collectFee(workspace: Workspace, crank: Crank): Promise<Game>;
     withdrawFeeInstruction(workspace: Workspace, vault: Vault, toTokenAccount: Account | PublicKey): Promise<TransactionInstruction>;

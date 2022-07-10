@@ -34,11 +34,21 @@ pub fn init_user(ctx: Context<InitUser>) -> Result<()> {
 }
 
 pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, amount: u64) -> Result<()> {
-    let current_round = &mut ctx.accounts.current_round;
-    let game = &mut ctx.accounts.game;
+    let current_round_key = ctx.accounts.current_round.to_account_info().key();
+    let mut current_round = ctx.accounts.current_round.load_mut()?;
+    let game_key = ctx.accounts.game.to_account_info().key();
+    let game = ctx.accounts.game.load()?;
+    let user_prediction_history_key = ctx.accounts.user_prediction_history.to_account_info().key();
     let mut user_prediction_history = ctx.accounts.user_prediction_history.load_mut()?;
+    
     let user = &mut ctx.accounts.user;
     let mut user_claimable = ctx.accounts.user_claimable.load_mut()?;
+
+
+    require_keys_eq!(game.user_prediction_history, user_prediction_history_key);
+    require_keys_eq!(game_key, current_round.game, ErrorCode::RoundGameKeyNotEqual);
+    require!(!current_round.finished, ErrorCode::RoundAlreadyFinished);
+    require!(current_round.round_predictions_allowed, ErrorCode::RoundPredictionsNotAllowed);
 
     require!(amount.saturating_div(10_u64.pow(game.token_decimal.into())) > 1, ErrorCode::MinimumPredictionAmountNotMet);
 
@@ -48,14 +58,15 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
 
     require!(up_or_down == 1 || up_or_down == 2, ErrorCode::InvalidUserPredictionDirection);
 
-    let user_prediction = &mut ctx.accounts.user_prediction;
-    let user_prediction_pubkey = user_prediction.key();
+    let user_prediction_pubkey = ctx.accounts.user_prediction.to_account_info().key();
+    let mut user_prediction = ctx.accounts.user_prediction.load_init()?;
+
     user_prediction.owner = ctx.accounts.signer.key();
     user_prediction.address = user_prediction_pubkey;
     user_prediction.user = user.key();
     user_prediction.user_claimable = user.user_claimable.key();
-    user_prediction.game = game.key();
-    user_prediction.round = current_round.key();
+    user_prediction.game = game_key;
+    user_prediction.round = current_round_key;
     user_prediction.up_or_down = up_or_down;
     user_prediction.amount = amount;
     user_prediction.settled = false;
@@ -90,12 +101,12 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
     current_round.total_predictions += 1;
 
     // deposit or use unclaimed
-    let deposit_amount = if user_claim.amount.gt(&user_prediction.amount) || user_claim.amount.eq(&user_prediction.amount) {
+    let deposit_amount = if {user_claim.amount}.gt(&{user_prediction.amount}) || {user_claim.amount}.eq(&{user_prediction.amount}) {
         
         user_claim.amount = user_claim.amount.saturating_sub(user_prediction.amount);
         0_u64
 
-    } else if user_claim.amount.gt(&0_u64) {
+    } else if {user_claim.amount}.gt(&0_u64) {
 
         let user_prediction_remaining_amount = user_prediction.amount.saturating_sub(user_claim.amount);
         user_claim.amount = user_claim.amount.saturating_sub(user_prediction.amount);
@@ -107,7 +118,7 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
 
     };
 
-    if user_claim.amount.eq(&0) && !user_claim.mint.eq(&Pubkey::default()) && !user_claim.vault.eq(&Pubkey::default()) {
+    if {user_claim.amount}.eq(&0) && !user_claim.mint.eq(&Pubkey::default()) && !user_claim.vault.eq(&Pubkey::default()) {
         user_claim.mint = Pubkey::default();
         user_claim.vault = Pubkey::default();
     }
@@ -166,7 +177,7 @@ pub fn user_claim_all<'info>(ctx: Context<'_, '_, '_, 'info, UserClaimAll<'info>
 
             // require that the user claim has an amount to claim
         
-            require!(user_claim.amount.gt(&0) && user_claim.mint.eq(&vault.token_mint.key()), ErrorCode::InsufficientClaimableAmount);
+            require!({user_claim.amount}.gt(&0) && user_claim.mint.eq(&vault.token_mint.key()), ErrorCode::InsufficientClaimableAmount);
 
             
             let vault_ata_account_info = accounts[index+1].to_account_info().clone();
@@ -219,7 +230,7 @@ pub fn user_claim(ctx: Context<UserClaim>, amount: u64) -> Result<()> {
 
     let user_claim = &mut user_claimable.claims[user_claim_position];
 
-    require!(user_claim.amount.gt(&0) && user_claim.mint.eq(&vault.token_mint.key()), ErrorCode::InsufficientClaimableAmount);
+    require!({user_claim.amount}.gt(&0) && user_claim.mint.eq(&vault.token_mint.key()), ErrorCode::InsufficientClaimableAmount);
 
     
     let vault_ata = &mut ctx.accounts.vault_ata;
@@ -386,9 +397,9 @@ pub struct InitUserPrediction<'info> {
     pub signer: Signer<'info>,
 
     #[account()]
-    pub game: Box<Account<'info, Game>>,
+    pub game: AccountLoader<'info, Game>,
 
-    #[account(mut, constraint = game.user_prediction_history == user_prediction_history.key())]
+    #[account(mut)]
     pub user_prediction_history: AccountLoader<'info, UserPredictionHistory>,
 
     #[account(
@@ -403,13 +414,8 @@ pub struct InitUserPrediction<'info> {
     )]
     pub user_claimable: AccountLoader<'info, UserClaimable>,
 
-    #[account(
-        mut,
-        constraint = game.key() == current_round.game @ ErrorCode::RoundGameKeyNotEqual,
-        constraint = !current_round.finished @ ErrorCode::RoundAlreadyFinished,
-        constraint = current_round.round_predictions_allowed @ ErrorCode::RoundPredictionsNotAllowed
-    )]
-    pub current_round: Box<Account<'info, Round>>,
+    #[account(mut)]
+    pub current_round: AccountLoader<'info, Round>,
 
     
     #[account(
@@ -419,17 +425,17 @@ pub struct InitUserPrediction<'info> {
             signer.key().as_ref(), 
             game.key().as_ref(), 
             current_round.key().as_ref(), 
-            &[current_round.round_number.to_be_bytes()[0]], 
-            &[current_round.round_number.to_be_bytes()[1]],
-            &[current_round.round_number.to_be_bytes()[2]], 
-            &[current_round.round_number.to_be_bytes()[3]],
+            &[current_round.load_mut()?.round_number.to_be_bytes()[0]], 
+            &[current_round.load_mut()?.round_number.to_be_bytes()[1]],
+            &[current_round.load_mut()?.round_number.to_be_bytes()[2]], 
+            &[current_round.load_mut()?.round_number.to_be_bytes()[3]],
             b"user_prediction"
         ],
         bump, 
         payer = signer,
         space = std::mem::size_of::<UserPrediction>() + 8
     )]
-    pub user_prediction: Box<Account<'info, UserPrediction>>,
+    pub user_prediction: AccountLoader<'info, UserPrediction>,
 
     #[account(
         constraint = vault.vault_ata == vault_ata.key()
@@ -468,13 +474,13 @@ pub struct CloseUserPrediction<'info> {
     #[account(
         mut, 
         close = user_prediction_close_receiver,
-        constraint = user_prediction.settled @ ErrorCode::UserPredictionNotSettled
+        constraint = user_prediction.load_mut()?.settled @ ErrorCode::UserPredictionNotSettled
     )]
-    pub user_prediction: Box<Account<'info, UserPrediction>>,
+    pub user_prediction: AccountLoader<'info, UserPrediction>,
 
     #[account(
         mut,
-        constraint = user_prediction.owner == user_prediction_close_receiver.key() @ ErrorCode::UserOwnerNotReceiver
+        constraint = user_prediction.load_mut()?.owner == user_prediction_close_receiver.key() @ ErrorCode::UserOwnerNotReceiver
     )]
     pub user_prediction_close_receiver: SystemAccount<'info>
 }
@@ -484,18 +490,18 @@ pub struct AdminCloseUserPrediction<'info> {
     #[account()]
     pub signer: Signer<'info>,
 
-    #[account(constraint = game.owner == signer.key())]
-    pub game: Box<Account<'info, Game>>,
+    #[account(constraint = game.load_mut()?.owner == signer.key())]
+    pub game: AccountLoader<'info, Game>,
 
     #[account(
         mut, 
         close = user_prediction_close_receiver
     )]
-    pub user_prediction: Box<Account<'info, UserPrediction>>,
+    pub user_prediction: AccountLoader<'info, UserPrediction>,
 
     #[account(
         mut,
-        constraint = user_prediction.owner == user_prediction_close_receiver.key() @ ErrorCode::UserOwnerNotReceiver
+        constraint = user_prediction.load_mut()?.owner == user_prediction_close_receiver.key() @ ErrorCode::UserOwnerNotReceiver
     )]
     pub user_prediction_close_receiver: SystemAccount<'info>
 }

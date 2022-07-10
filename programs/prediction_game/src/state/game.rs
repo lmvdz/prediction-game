@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 
-#[account]
+#[account(zero_copy)]
 #[derive(Default)]
 #[repr(packed)]
 pub struct Game {
@@ -11,7 +11,7 @@ pub struct Game {
 
     pub token_decimal: u8,
 
-    pub base_symbol: String,
+    pub base_symbol: [u8; 16],
 
     pub round_number: u32,
     pub current_round: Pubkey,

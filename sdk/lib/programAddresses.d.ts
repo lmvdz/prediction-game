@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { PublicKey } from "@solana/web3.js";
 import * as anchor from '@project-serum/anchor';
 import Game from "./accounts/game";
@@ -17,6 +18,7 @@ export declare class ProgramAddresses<T extends anchor.Idl> {
     getVaultATAPubkey(vaultPubkey: PublicKey): Promise<[PublicKey, number]>;
     getVaultATAAuthorityPubkey(vaultAta: PublicKey): Promise<[PublicKey, number]>;
     getVaultPubkey(tokenMint: PublicKey): Promise<[PublicKey, number]>;
+    roundToBuffer(roundNumber: anchor.BN): Buffer;
     getRoundPubkey(gamePubkey: PublicKey, roundNumber: anchor.BN): Promise<[PublicKey, number]>;
     getUserPredictionPubkey(game: Game, round: Round, user: User | PublicKey): Promise<[PublicKey, number]>;
     getUserPubkey(userOwner: PublicKey): Promise<[PublicKey, number]>;

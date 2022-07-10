@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-#[account]
+#[account(zero_copy)]
 #[derive(Default)]
 #[repr(packed)]
 pub struct Crank {

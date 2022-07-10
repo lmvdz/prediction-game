@@ -7,10 +7,12 @@ use crate::errors::ErrorCode;
 
 pub fn init_crank(ctx: Context<InitCrank>) -> Result<()> {
     
-    let crank = &mut ctx.accounts.crank;
+    let mut crank = ctx.accounts.crank.load_init()?;
+    let crank_key = ctx.accounts.crank.to_account_info().key();
+
     let user = &ctx.accounts.user;
 
-    crank.address = crank.key();
+    crank.address = crank_key;
     crank.owner = ctx.accounts.owner.key();
     crank.user = user.key();
     crank.user_claimable = user.user_claimable.key();
@@ -32,9 +34,9 @@ pub struct CloseCrankAccount<'info> {
 
     #[account(mut, 
         close = receiver,
-        constraint = signer.key() == crank.owner @ ErrorCode::SignerNotOwner
+        constraint = signer.key() == crank.load_mut()?.owner @ ErrorCode::SignerNotOwner
     )]
-    pub crank: Box<Account<'info, Crank>>,
+    pub crank: AccountLoader<'info, Crank>,
 
     #[account(mut)]
     pub receiver: SystemAccount<'info>,
@@ -47,15 +49,12 @@ pub struct AdminCloseCrankAccount<'info> {
     #[account()]
     pub signer: Signer<'info>,
 
-    #[account(constraint = game.owner == signer.key())]
-    pub game: Box<Account<'info, Game>>,
-
     #[account(mut, 
         close = receiver
     )]
-    pub crank: Box<Account<'info, Crank>>,
+    pub crank: AccountLoader<'info, Crank>,
 
-    #[account(mut, constraint = receiver.key() == crank.owner)]
+    #[account(mut)]
     pub receiver: SystemAccount<'info>,
 
 }
@@ -66,7 +65,7 @@ pub struct InitCrank<'info> {
     pub owner: Signer<'info>,
 
     #[account()]
-    pub game: Box<Account<'info, Game>>,
+    pub game: AccountLoader<'info, Game>,
     
     #[account(
         constraint = user.owner == owner.key()  @ ErrorCode::SignerNotOwner
@@ -80,7 +79,7 @@ pub struct InitCrank<'info> {
         payer = owner,
         space = std::mem::size_of::<Crank>() + 8
     )]
-    pub crank: Box<Account<'info, Crank>>, 
+    pub crank: AccountLoader<'info, Crank>, 
 
     // required for Account
     pub system_program: Program<'info, System>,

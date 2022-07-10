@@ -1,5 +1,5 @@
 export declare type PredictionGame = {
-    "version": "1.0.7";
+    "version": "1.0.8";
     "name": "prediction_game";
     "instructions": [
         {
@@ -43,7 +43,12 @@ export declare type PredictionGame = {
                 },
                 {
                     "name": "baseSymbol";
-                    "type": "string";
+                    "type": {
+                        "array": [
+                            "u8",
+                            16
+                        ];
+                    };
                 },
                 {
                     "name": "feeBps";
@@ -245,7 +250,17 @@ export declare type PredictionGame = {
                     "isSigner": false;
                 }
             ];
-            "args": [];
+            "args": [
+                {
+                    "name": "nextRoundNumber";
+                    "type": {
+                        "array": [
+                            "u8",
+                            4
+                        ];
+                    };
+                }
+            ];
         },
         {
             "name": "initNextRoundAndClosePreviousInstruction";
@@ -306,7 +321,17 @@ export declare type PredictionGame = {
                     "isSigner": false;
                 }
             ];
-            "args": [];
+            "args": [
+                {
+                    "name": "nextRoundNumber";
+                    "type": {
+                        "array": [
+                            "u8",
+                            4
+                        ];
+                    };
+                }
+            ];
         },
         {
             "name": "updateGameInstruction";
@@ -431,7 +456,7 @@ export declare type PredictionGame = {
                 },
                 {
                     "name": "game";
-                    "isMut": true;
+                    "isMut": false;
                     "isSigner": false;
                 },
                 {
@@ -809,11 +834,6 @@ export declare type PredictionGame = {
                     "isSigner": true;
                 },
                 {
-                    "name": "game";
-                    "isMut": false;
-                    "isSigner": false;
-                },
-                {
                     "name": "crank";
                     "isMut": true;
                     "isSigner": false;
@@ -957,11 +977,6 @@ export declare type PredictionGame = {
                     "name": "signer";
                     "isMut": true;
                     "isSigner": true;
-                },
-                {
-                    "name": "game";
-                    "isMut": false;
-                    "isSigner": false;
                 },
                 {
                     "name": "round";
@@ -1203,7 +1218,12 @@ export declare type PredictionGame = {
                     },
                     {
                         "name": "baseSymbol";
-                        "type": "string";
+                        "type": {
+                            "array": [
+                                "u8",
+                                16
+                            ];
+                        };
                     },
                     {
                         "name": "roundNumber";
@@ -1418,7 +1438,7 @@ export declare type PredictionGame = {
                     },
                     {
                         "name": "roundPriceDecimals";
-                        "type": "u8";
+                        "type": "i128";
                     },
                     {
                         "name": "roundWinningDirection";
@@ -1650,6 +1670,10 @@ export declare type PredictionGame = {
                         "type": "u128";
                     },
                     {
+                        "name": "address";
+                        "type": "publicKey";
+                    },
+                    {
                         "name": "roundNumber";
                         "type": "u32";
                     },
@@ -1683,7 +1707,7 @@ export declare type PredictionGame = {
                     },
                     {
                         "name": "roundPriceDecimals";
-                        "type": "u8";
+                        "type": "i128";
                     },
                     {
                         "name": "roundWinningDirection";

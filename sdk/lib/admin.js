@@ -31,10 +31,11 @@ const web3_js_1 = require("@solana/web3.js");
 const web3_js_2 = require("@solana/web3.js");
 const nodewallet_1 = __importDefault(require("@project-serum/anchor/dist/cjs/nodewallet"));
 const anchor = __importStar(require("@project-serum/anchor"));
-const game_1 = __importStar(require("./accounts/game"));
+const game_1 = __importDefault(require("./accounts/game"));
 const spl_token_1 = require("@solana/spl-token");
 const util_1 = require("./util");
 const workspace_1 = require("./workspace");
+const types_1 = require("./types");
 const vault_1 = __importDefault(require("./accounts/vault"));
 const userPrediction_1 = __importDefault(require("./accounts/userPrediction"));
 const crank_1 = __importDefault(require("./accounts/crank"));
@@ -46,24 +47,24 @@ const roundHistory_1 = __importDefault(require("./accounts/roundHistory"));
 exports.gameSeeds = [
     {
         baseSymbol: "SOL",
-        priceProgram: new web3_js_1.PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"),
-        priceFeed: new web3_js_1.PublicKey("HgTtcbcmp5BeThax5AU8vg4VwK79qAvAKKFMs8txMLW6"),
+        priceProgram: new web3_js_1.PublicKey("gSbePebfvPy7tRqimPoVecS2UsBvYv46ynrzWocc92s"),
+        priceFeed: new web3_js_1.PublicKey("J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix"),
         roundLength: new anchor.BN(300),
-        oracle: game_1.Oracle.Chainlink
+        oracle: types_1.Oracle.Pyth
     },
     {
         baseSymbol: "BTC",
-        priceProgram: new web3_js_1.PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"),
-        priceFeed: new web3_js_1.PublicKey("CzZQBrJCLqjXRfMjRN3fhbxur2QYHUzkpaRwkWsiPqbz"),
+        priceProgram: new web3_js_1.PublicKey("2TfB33aLaneQb5TNVwyDz3jSZXS6jdW2ARw1Dgf84XCG"),
+        priceFeed: new web3_js_1.PublicKey("8SXvChNYFhRq4EZuZvnhjrB3jJRQCv4k3P4W6hesH3Ee"),
         roundLength: new anchor.BN(300),
-        oracle: game_1.Oracle.Chainlink
+        oracle: types_1.Oracle.Switchboard
     },
     {
         baseSymbol: "ETH",
         priceProgram: new web3_js_1.PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"),
         priceFeed: new web3_js_1.PublicKey("2ypeVyYnZaW2TNYXXTaZq9YhYvnqcjCiifW1C6n8b7Go"),
         roundLength: new anchor.BN(300),
-        oracle: game_1.Oracle.Chainlink
+        oracle: types_1.Oracle.Chainlink
     }
 ];
 async function createFakeMint(connection, owner, keypair, mintDecimals = 6) {
@@ -184,7 +185,12 @@ async function closeAllCranks(owner, connection, cluster) {
     await Promise.allSettled((await workspace.program.account.crank.all()).map(async (crankAccount) => {
         console.log('crank', crankAccount.publicKey.toBase58());
         let crank = new crank_1.default(crankAccount.account);
-        return await crank.adminCloseCrankAccount(workspace);
+        try {
+            return await crank.adminCloseCrankAccount(workspace);
+        }
+        catch (error) {
+            console.error(error);
+        }
     }));
 }
 exports.closeAllCranks = closeAllCranks;
@@ -240,7 +246,7 @@ async function init(owner, connection, cluster, mint) {
     (await Promise.all(exports.gameSeeds.map(async (gameSeed) => {
         return await initFromGameSeed(workspace, gameSeed, mint.address);
     }))).forEach(([vault, game]) => {
-        console.log(game.account.baseSymbol + ' loaded.');
+        console.log(game.baseSymbolAsString() + ' loaded.');
     });
 }
 exports.init = init;

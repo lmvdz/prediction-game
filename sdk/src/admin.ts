@@ -2,10 +2,11 @@ import { Cluster, PublicKey } from "@solana/web3.js";
 import { Connection, Keypair } from "@solana/web3.js";
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
 import * as anchor from "@project-serum/anchor"
-import Game, { GameAccount, Oracle } from "./accounts/game";
+import Game, { GameAccount } from "./accounts/game";
 import { createMint, getMint, Mint } from "@solana/spl-token";
 import { fetchAccountRetry } from "./util";
 import { Workspace } from "./workspace";
+import { Oracle } from './types'
 import Vault, { VaultAccount } from "./accounts/vault";
 import UserPrediction, { UserPredictionAccount } from "./accounts/userPrediction";
 import Crank, { CrankAccount } from "./accounts/crank";
@@ -18,22 +19,22 @@ import RoundHistory, { RoundHistoryAccount } from "./accounts/roundHistory";
 export const gameSeeds: Array<GameSeed> = [ 
     { 
         baseSymbol: "SOL", 
-        priceProgram: new PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"), 
-        priceFeed: new PublicKey("HgTtcbcmp5BeThax5AU8vg4VwK79qAvAKKFMs8txMLW6"),
+        priceProgram: new PublicKey("gSbePebfvPy7tRqimPoVecS2UsBvYv46ynrzWocc92s"), // pyth oracle program devnet
+        priceFeed: new PublicKey("J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix"), // SOL pyth price feed devnet
         roundLength: new anchor.BN(300),
-        oracle: Oracle.Chainlink
+        oracle: Oracle.Pyth
     }, 
     {
         baseSymbol: "BTC", 
-        priceProgram: new PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"), 
-        priceFeed: new PublicKey("CzZQBrJCLqjXRfMjRN3fhbxur2QYHUzkpaRwkWsiPqbz"),
+        priceProgram: new PublicKey("2TfB33aLaneQb5TNVwyDz3jSZXS6jdW2ARw1Dgf84XCG"),  // BTC switchboard program devnet
+        priceFeed: new PublicKey("8SXvChNYFhRq4EZuZvnhjrB3jJRQCv4k3P4W6hesH3Ee"), // BTC switchboard price feed devnet
         roundLength: new anchor.BN(300),
-        oracle: Oracle.Chainlink
+        oracle: Oracle.Switchboard
     }, 
     {
         baseSymbol: "ETH", 
-        priceProgram: new PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"), 
-        priceFeed: new PublicKey("2ypeVyYnZaW2TNYXXTaZq9YhYvnqcjCiifW1C6n8b7Go"),
+        priceProgram: new PublicKey("HEvSKofvBgfaexv23kMabbYqxasxU3mQ4ibBMEmJWHny"),  // ETH chainlink program devnet
+        priceFeed: new PublicKey("2ypeVyYnZaW2TNYXXTaZq9YhYvnqcjCiifW1C6n8b7Go"), // ETH chainlink price feed devnet
         roundLength: new anchor.BN(300),
         oracle: Oracle.Chainlink
     }
@@ -187,7 +188,12 @@ export async function closeAllCranks(owner: Keypair, connection: Connection, clu
     await Promise.allSettled( (await workspace.program.account.crank.all()).map(async crankAccount => {
         console.log('crank', crankAccount.publicKey.toBase58());
         let crank = new Crank(crankAccount.account as unknown as CrankAccount);
-        return await crank.adminCloseCrankAccount(workspace)
+        try {
+            return await crank.adminCloseCrankAccount(workspace)
+        } catch (error) {
+            console.error(error)
+        }
+        
     }));
 }
 
@@ -251,7 +257,7 @@ export async function init(owner: Keypair, connection: Connection, cluster: Clus
     (await Promise.all(gameSeeds.map(async (gameSeed : GameSeed) => {
         return await initFromGameSeed(workspace, gameSeed, mint.address);
     }))).forEach(([vault, game]) => {
-        console.log(game.account.baseSymbol + ' loaded.');
+        console.log(game.baseSymbolAsString() + ' loaded.');
     })
 
 }
