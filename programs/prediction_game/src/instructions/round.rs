@@ -84,7 +84,7 @@ fn init_round_shared<'info>(
     let current_round_key = current_round_loader.to_account_info().key();
     let game_key = game_loader.to_account_info().key();
 
-    let mut next_round = next_round_loader.load_mut()?;
+    let mut next_round = next_round_loader.load_init()?;
     let current_round = current_round_loader.load_mut()?;
     let mut game = game_loader.load_mut()?;
 
