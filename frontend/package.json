@@ -1,7 +1,8 @@
 {
-  "name": "my-beta-app",
+  "name": "sol-predict",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "serve": "vite preview",
     "build": "vue-tsc --noEmit && vite build",
@@ -11,6 +12,7 @@
   "dependencies": {
     "@mdi/font": "5.9.55",
     "@project-serum/anchor": "^0.25.0-beta.1",
+    "@solana-mobile/wallet-adapter-mobile": "^0.0.1-alpha.0",
     "@solana/spl-token": "^0.2.0",
     "@solana/spl-token-registry": "^0.2.4534",
     "@solana/wallet-adapter-wallets": "^0.16.1",

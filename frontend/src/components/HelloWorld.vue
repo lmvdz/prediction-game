@@ -48,24 +48,23 @@ type TxStatus = {
 }
 
 
-// let user = ref(null as User);
+// user specific
 let userAddress = ref(null as PublicKey);
 let computedUser = computed(() => getUser());
 let userClaimableAddress = ref(null as PublicKey);
 let computedClaimable = computed(() => getUserClaimable());
-let games = ref(new Set<string>());
-let histories = ref(new Map<string, { roundHistory: RoundHistory, userPredictionHistory: UserPredictionHistory }>)
-let computedGames = computed(() => [...games.value.values()].map(gamePubkey => getGame(gamePubkey)));
-let rounds = ref(new Set<string>());
-let computedRounds = computed(() => [...rounds.value.values()].map(roundPubkey => getRound(roundPubkey)));
-let vaults = ref(new Set<string>());
-let computedVaults = computed(() => [...vaults.value.values()].map(vaultPubkey => getVault(vaultPubkey) || null));
 let userPredictions = ref(new Set<string>());
 let computedUserPredictions = computed(() => [...userPredictions.value.values()].map(userPredictionPubkey => getUserPrediction(userPredictionPubkey) || null))
 let tokenAccounts = ref(new Set<string>());
 let associateTokenAccountAddresses = ref(new Map<string, string>());
 let computedTokenAccounts = computed(() => [...tokenAccounts.value.values()].map(tokenAccountPubkey => getTokenAccount(tokenAccountPubkey) || null))
 let frontendGameData = ref(new Map<string, FrontendGameData>());
+
+// generic
+let games = ref(new Map<string, Game>());
+let histories = ref(new Map<string, { roundHistory: RoundHistory, userPredictionHistory: UserPredictionHistory }>)
+let vaults = ref(new Map<string, Vault>());
+
 
 let wallet = ref(null as WalletStore); 
 let walletBalance = ref(null as number);
@@ -595,13 +594,13 @@ async function initFrontendGameData (game: Game) {
 
 async function loadTokenAccounts() : Promise<void> {
 
-  await Promise.all(computedVaults.value.map(async vault => {
+  await Promise.all([...vaults.value.values()].map(async vault => {
     if (!associateTokenAccountAddresses.value.has(vault.account.tokenMint.toBase58())) {
       associateTokenAccountAddresses.value.set(vault.account.tokenMint.toBase58(), (await getAssociatedTokenAddress(vault.account.tokenMint, getWorkspace().owner)).toBase58())
     }
   }))
 
-  await Promise.allSettled(computedGames.value.map(async game => {
+  await Promise.allSettled([...games.value.values()].map(async game => {
     let mint = getTokenMint(game);
     let address = new PublicKey(associateTokenAccountAddresses.value.get(mint.toBase58())); 
     // console.log(address.toBase58());
@@ -651,59 +650,6 @@ async function loadUser() : Promise<void> {
   }
 }
 
-async function loadGameHistories() : Promise<void> {
-  // console.log(wallet.value.publicKey.value.toBase58())
-  try {
-    if (computedGames.value !== null) {
-      computedGames.value.forEach(game => {
-        let gameUserPredictionHistoryPubkey = game.account.userPredictionHistory;
-        if (!paf.value.accounts.has(gameUserPredictionHistoryPubkey.toBase58())) {
-          //@ts-ignore
-          paf.value.addProgram<PredictionGame>('userPredictionHistory', gameUserPredictionHistoryPubkey.toBase58(), getWorkspace().program, async (data: UserPredictionHistoryAccount) => {
-            let userPredictionHistory = new UserPredictionHistory(data);
-            if (!histories.value.has(game.account.address.toBase58())) {
-              histories.value.set(game.account.address.toBase58(), { roundHistory: null, userPredictionHistory });
-            } else {
-              histories.value.set(game.account.address.toBase58(), { ...histories.value.get(game.account.address.toBase58()), userPredictionHistory });
-            }
-            
-          }, (error) => {
-            console.error(error);
-            paf.value.accounts.delete(gameUserPredictionHistoryPubkey.toBase58())
-          });
-        }
-        let gameRoundHistoryPubkey = game.account.roundHistory;
-        if (!paf.value.accounts.has(gameRoundHistoryPubkey.toBase58())) {
-          //@ts-ignore
-          paf.value.addProgram<PredictionGame>('roundHistory', gameRoundHistoryPubkey.toBase58(), getWorkspace().program, async (data: RoundHistoryAccount) => {
-            let roundHistory = new RoundHistory(data);
-            if (!histories.value.has(game.account.address.toBase58())) {
-              histories.value.set(game.account.address.toBase58(), { roundHistory, userPredictionHistory: null });
-            } else {
-              histories.value.set(game.account.address.toBase58(), { ...histories.value.get(game.account.address.toBase58()), roundHistory });
-            }
-          }, (error) => {
-            console.error(error);
-            paf.value.accounts.delete(gameRoundHistoryPubkey.toBase58())
-          });
-        }
-      })
-    }
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-function unloadGameHistories(game: Game) {
-  if (game.roundHistory !== null)
-  paf.value.accounts.delete(game.account.roundHistory.toBase58())
-  game.roundHistory = null;
-
-  if (game.userPredictionHistory !== null)
-  paf.value.accounts.delete(game.account.userPredictionHistory.toBase58())
-  game.userPredictionHistory = null;
-}
-
 async function loadUserClaimable() : Promise<void> {
   // console.log(wallet.value.publicKey.value.toBase58())
   if (wallet.value.connected) {
@@ -734,94 +680,108 @@ function unloadUserClaimable() {
   userClaimableAddress.value = null;
 }
 
-async function loadRounds() {
-  return await Promise.allSettled(((await Promise.all((await (getWorkspace()).program.account.round.all()).map(async (roundProgramAccount) => (new Round(
-    roundProgramAccount.account as unknown as RoundAccount
-  ))))) as Array<Round>).map(async round => {
-    let roundAddress = round.account.address.toBase58()
-    if (!rounds.value.has(roundAddress)) {
-      rounds.value.add(roundAddress);
+
+function reviver(key, value) {
+  if(typeof value === 'object' && value !== null) {
+    if (value.dataType === 'Map') {
+      return new Map(value.value);
     }
-
-    if (!paf.value.accounts.has(roundAddress)) {
-      //@ts-ignore
-      paf.value.addProgram<PredictionGame>('round', roundAddress, getWorkspace().program, async (data: RoundAccount) => {
-        if (frontendGameData.value.get(data.game.toBase58()) !== undefined) {
-          // round time difference updater
-
-          if (frontendGameData.value.get(data.game.toBase58()).roundTimeUpdateInterval) {
-            clearInterval(frontendGameData.value.get(data.game.toBase58()).roundTimeUpdateInterval)
-          }
-
-          frontendGameData.value.get(data.game.toBase58()).roundTimeUpdateInterval = setInterval(() => {
-            frontendGameData.value.get(data.game.toBase58()).timeRemaining = Math.max(0, data.roundLength - (Math.round((new Date()).getTime() / 1000) - data.roundStartTime.toNumber()))
-          }, 500)
-
-        
-          // round no update received timer
-
-          frontendGameData.value.get(data.game.toBase58()).noUpdateReceieved = false;
-          if (frontendGameData.value.get(data.game.toBase58()).noUpdateReceievedTimeout) {
-            clearTimeout(frontendGameData.value.get(data.game.toBase58()).noUpdateReceievedTimeout)
-          }
-          frontendGameData.value.get(data.game.toBase58()).noUpdateReceievedTimeout = setTimeout(() => {
-            frontendGameData.value.get(data.game.toBase58()).noUpdateReceieved = true;
-          }, 30 * 1000)
-        }      
-       }, (error) => {
-        paf.value.accounts.delete(roundAddress)
-        rounds.value.delete(roundAddress)
-      }, round.account)
-    }
-
-    return;
-  }))
+  }
+  return value;
 }
 
-async function loadGames() {
-  return await Promise.allSettled(((await Promise.all((await (getWorkspace()).program.account.game.all()).map(async (gameProgramAccount) => (new Game(
-    gameProgramAccount.account as unknown as GameAccount
-  ))))) as Array<Game>).map(async newgame => {
+async function loadGameHistoriesFromDB() {
+  let res = await fetch(`https://api.solpredict.io/${getHost() !== 'localhost' ? getHost().split('.')[0] : 'devnet'}/history`);
+  let data = JSON.parse(await res.json(), reviver) as Map<string, { roundHistory: RoundHistoryAccount, userPredictionHistory: UserPredictionHistoryAccount }>;
+  data.forEach(async ({ roundHistory, userPredictionHistory }) => {
 
-    let newGameAddress = newgame.account.address.toBase58();
-
-    if (!games.value.has(newGameAddress)) {
-      games.value.add(newGameAddress);
+    let game = [...games.value.values()].find(g => g.account.address.toBase58() === roundHistory.account.game.toBase58() && g.account.address.toBase58() === userPredictionHistory.account.game.toBase58())
+    if (game) {
+      game.roundHistory = new RoundHistory(roundHistory);
+      game.userPredictionHistory = new UserPredictionHistory(userPredictionHistory);
     }
-
-    if (!paf.value.accounts.has(newGameAddress)) {
-      //@ts-ignore
-      paf.value.addProgram<PredictionGame>('game', newGameAddress, getWorkspace().program, async (data: GameAccount) => {
-        await initFrontendGameData(getGame(data.address.toBase58()));
-       }, (error) => {
-        paf.value.accounts.delete(newGameAddress)
-        games.value.delete(newGameAddress)
-      }, newgame.account)
-    }
-    return;
-  }))
+  });
 }
 
-async function loadVaults() {
-    return await Promise.allSettled(((await Promise.all((await (getWorkspace()).program.account.vault.all()).map(async (vaultProgramAccount: ProgramAccount<VaultAccount>) => (new Vault(
-      vaultProgramAccount.account
-    ))))) as Array<Vault>).map(async (vault: Vault) => {
-      let vaultAddress = vault.account.address.toBase58();
-      if (!vaults.value.has(vaultAddress)) {
-        vaults.value.add(vaultAddress);
+async function loadRoundsFromDB() {
+  let res = await fetch(`https://api.solpredict.io/${getHost() !== 'localhost' ? getHost().split('.')[0] : 'devnet'}/round`);
+  let data = await res.json();
+  data.forEach(async (vJSON: string) => {
+    let roundAccount = JSON.parse(vJSON) as RoundAccount
+    let round = new Round(roundAccount)
+    let game = [...games.value.values()].find(g => g.account.address.toBase58() === round.account.game.toBase58())
+    if (game) {
+      if (game.account.currentRound.toBase58() === round.account.address.toBase58()) {
+        game.currentRound = round;
+      } else if (game.account.previousRound.toBase58() === round.account.address.toBase58()) {
+        game.previousRound = round;
       }
-        
-      if (!paf.value.accounts.has(vaultAddress)) {
-        //@ts-ignore
-        paf.value.addProgram<PredictionGame>('vault', vaultAddress, getWorkspace().program, async (data: VaultAccount) => {
-        }, (error) => {
-          paf.value.accounts.delete(vaultAddress)
-          vaults.value.delete(vaultAddress)
-        }, vault.account)
-      }
-      return;
-    }));
+    }
+  });
 }
+
+async function loadGamesFromDB() {
+  let res = await fetch(`https://api.solpredict.io/${getHost() !== 'localhost' ? getHost().split('.')[0] : 'devnet'}/game`);
+  let data = await res.json();
+  let gameAccountKeys = new Set<string>();
+  data.forEach(async (vJSON: string) => {
+    let gameAccount = JSON.parse(vJSON) as GameAccount
+    let gameAccountAddress = gameAccount.address.toBase58();
+    gameAccountKeys.add(gameAccountAddress)
+    if (!games.value.has(gameAccountAddress)) {
+      games.value.set(gameAccountAddress, new Game(gameAccount));
+    } else {
+      await games.value.get(gameAccountAddress).updateData(gameAccount);
+    }
+  });
+  [...games.value.keys()].forEach(key => {
+    if (!gameAccountKeys.has(key)) {
+      games.value.delete(key);
+    }
+  })
+}
+
+async function loadVaultsFromDB() {
+  let res = await fetch(`https://api.solpredict.io/${getHost() !== 'localhost' ? getHost().split('.')[0] : 'devnet'}/vault`);
+  let data = await res.json();
+  let vaultAccountKeys = new Set<string>();
+  data.forEach(async (vJSON: string) => {
+    let vaultAccount = JSON.parse(vJSON) as VaultAccount
+    let vaultAccountAddress = vaultAccount.address.toBase58();
+    vaultAccountKeys.add(vaultAccountAddress)
+    if (!vaults.value.has(vaultAccountAddress)) {
+      vaults.value.set(vaultAccountAddress, new Vault(vaultAccount));
+    } else {
+      await vaults.value.get(vaultAccountAddress).updateData(vaultAccount);
+    }
+  });
+  [...vaults.value.keys()].forEach(key => {
+    if (!vaultAccountKeys.has(key)) {
+      vaults.value.delete(key);
+    }
+  })
+}
+
+// async function loadVaults() {
+//     return await Promise.allSettled(((await Promise.all((await (getWorkspace()).program.account.vault.all()).map(async (vaultProgramAccount: ProgramAccount<VaultAccount>) => (new Vault(
+//       vaultProgramAccount.account
+//     ))))) as Array<Vault>).map(async (vault: Vault) => {
+//       let vaultAddress = vault.account.address.toBase58();
+//       if (!vaults.value.has(vaultAddress)) {
+//         vaults.value.add(vaultAddress);
+//       }
+        
+//       if (!paf.value.accounts.has(vaultAddress)) {
+//         //@ts-ignore
+//         paf.value.addProgram<PredictionGame>('vault', vaultAddress, getWorkspace().program, async (data: VaultAccount) => {
+//         }, (error) => {
+//           paf.value.accounts.delete(vaultAddress)
+//           vaults.value.delete(vaultAddress)
+//         }, vault.account)
+//       }
+//       return;
+//     }));
+// }
 
 async function loadPredictions() {
   if (wallet.value !== null && wallet.value.connected && wallet.value.publicKey !== undefined && wallet.value.publicKey !== null) {
@@ -847,10 +807,10 @@ async function loadPredictions() {
 }
 
 async function loadGeneric() {
-  await loadVaults(),
-  await loadRounds(),
-  await loadGames(),
-  await loadGameHistories()
+  await loadVaultsFromDB(),
+  await loadRoundsFromDB(),
+  await loadGamesFromDB(),
+  await loadGameHistoriesFromDB()
 }
 
 async function loadUserSpecific() {
@@ -920,7 +880,7 @@ function getHost() {
 
 function hasSomeClaimable() : boolean {
   if (computedClaimable.value !== null && computedClaimable.value.account !== undefined && computedClaimable.value.account.claims.length > 0) {
-    let claim = computedClaimable.value.account.claims.find(claim => claim !== undefined && claim.amount.gt(new anchor.BN(0)) && claim.mint.toBase58() !== PublicKey.default.toBase58() && computedVaults.value.some(v => v.account.address.toBase58() === claim.vault.toBase58()));
+    let claim = computedClaimable.value.account.claims.find(claim => claim !== undefined && claim.amount.gt(new anchor.BN(0)) && claim.mint.toBase58() !== PublicKey.default.toBase58() && [...vaults.value.values()].some(v => v.account.address.toBase58() === claim.vault.toBase58()));
     if (claim !== undefined) {
       return true;
     }
@@ -933,9 +893,9 @@ function hasSomeClaimable() : boolean {
 function getClaimableForGame(game: Game) : Claim {
   if (computedClaimable.value !== null && computedClaimable.value.account !== undefined) {
     // console.log(computedClaimable.value)
-    if (computedVaults.value !== null && computedVaults.value !== undefined) {
-      // console.log(computedVaults.value)
-      let vault = computedVaults.value.find(v => v.account.address.toBase58() === game.account.vault.toBase58());
+    if ([...vaults.value.values()] !== null && [...vaults.value.values()] !== undefined) {
+      // console.log([...vaults.value.values()])
+      let vault = [...vaults.value.values()].find(v => v.account.address.toBase58() === game.account.vault.toBase58());
       if (vault !== undefined) {
         return computedClaimable.value.account.claims.find(claim => claim !== undefined && claim.mint.toBase58() === vault.account.tokenMint.toBase58() && claim.vault.toBase58() === vault.account.address.toBase58());
       }
@@ -960,8 +920,8 @@ function getWalletBalanceForGameAsNumber(game: Game) : number {
 }
 
 function getTokenInfoForGame(game: Game) : TokenInfo {
-  if (computedVaults.value !== null && computedVaults.value !== undefined) {
-    let vault = computedVaults.value.find(v => v.account.address.toBase58() === game.account.vault.toBase58());
+  if ([...vaults.value.values()] !== null && [...vaults.value.values()] !== undefined) {
+    let vault = [...vaults.value.values()].find(v => v.account.address.toBase58() === game.account.vault.toBase58());
     if (vault !== null && vault !== undefined) {
       return tokenList.value.find(t => t.address === vault.account.tokenMint.toBase58())
     }
@@ -1067,11 +1027,11 @@ function getTotalAvailableBalanceForGameAsNumber(game: Game)  : number {
 let getTotalAvailableBalancesByToken = computed(() : Map<string, { total: anchor.BN, claimable: anchor.BN, wallet: anchor.BN }> => {
   let gameTokenSet = new Set<string>();
   let map = new Map<string, { total: anchor.BN, claimable: anchor.BN, wallet: anchor.BN }>();
-  if (computedGames.value === null) return map;
-  computedGames.value.map(game => {
+  if ([...games.value.values()] === null) return map;
+  [...games.value.values()].map(game => {
     let tokenMint = getTokenMint(game);
     gameTokenSet.add(tokenMint.toBase58())
-    // return computedVaults.value.find(v => v.account.address.toBase58() === game.account.vault.toBase58())
+    // return [...vaults.value.values()].find(v => v.account.address.toBase58() === game.account.vault.toBase58())
   })
   gameTokenSet.forEach(token => {
     let tokenAccountAmount = new anchor.BN(0)
@@ -1087,7 +1047,7 @@ let getTotalAvailableBalancesByToken = computed(() : Map<string, { total: anchor
   })
   if (computedClaimable.value !== null && computedClaimable.value.account !== undefined) {
     computedClaimable.value.account.claims.forEach(claim => {
-      if (claim.mint.toBase58() !== PublicKey.default.toBase58() && computedVaults.value.some(v => v.account.address.toBase58() === claim.vault.toBase58())) {
+      if (claim.mint.toBase58() !== PublicKey.default.toBase58() && [...vaults.value.values()].some(v => v.account.address.toBase58() === claim.vault.toBase58())) {
         let mapValue = map.get(claim.mint.toBase58());
         let total = mapValue.total;
         total = total.add(claim.amount)
@@ -1110,9 +1070,9 @@ function getTokenSymbolFromMintAddress(address: string) : string {
 
 let getTotalAvailableBalancesByTokenAsNumbers = computed(() : Map<string, { mint: string, total: number, claimable: number, wallet: number }>  => {
   let map = new Map<string, { mint: string, total: number, claimable: number, wallet: number }>();
-  if (computedVaults.value === null) return map;
+  if ([...vaults.value.values()] === null) return map;
   [...getTotalAvailableBalancesByToken.value.entries()].forEach(([key, value]) => {
-    let vault = computedVaults.value.find(v => v.account.tokenMint.toBase58() === key)
+    let vault = [...vaults.value.values()].find(v => v.account.tokenMint.toBase58() === key)
     map.set(getTokenSymbolFromMintAddress(key), 
       { 
         mint: key,
@@ -1177,7 +1137,7 @@ async function userClaimAll(mint = null) {
       }
     }
 
-    let ixs = await (computedUser.value as User).userClaimAllInstruction(getWorkspace(), computedClaimable.value, computedVaults.value.filter(v => computedGames.value.some(g => g.account.vault.toBase58() === v.account.address.toBase58())), computedTokenAccounts.value, mint);
+    let ixs = await (computedUser.value as User).userClaimAllInstruction(getWorkspace(), computedClaimable.value, [...vaults.value.values()].filter(v => [...games.value.values()].some(g => g.account.vault.toBase58() === v.account.address.toBase58())), computedTokenAccounts.value, mint);
     let tx = new Transaction().add(...ixs);
 
     let closeUserPredictionInstructions = await Promise.all<TransactionInstruction>([...computedUserPredictions.value.values()].filter((prediction: UserPrediction) => prediction !== undefined && prediction !== null && prediction.account.settled).map(async (prediction: UserPrediction) : Promise<TransactionInstruction> => {
@@ -1344,7 +1304,7 @@ export default defineComponent({
         <v-fade-transition leave-absolute hide-on-leave>
           <v-col v-if="!showAccountInfo" :cols="wallet !== null && wallet.connected && useDisplay().width.value > 720 ? 7 : 12">
             <v-row justify="center" class="text-center">
-              <v-col align-self="center" class="text-center v-col-auto" v-for="(game, gameIndex) in computedGames" :key="'game-'+game.account.address.toBase58()">
+              <v-col align-self="center" class="text-center v-col-auto" v-for="(game, gameIndex) in [...games.values()]" :key="'game-'+game.account.address.toBase58()">
                 <v-card
                   flat
                   :min-width="300"
@@ -1980,15 +1940,15 @@ export default defineComponent({
                       </tr>
                       <tr v-for="(prediction, predictionIndex) in computedUserPredictions.filter(prediction => prediction !== undefined && prediction !== null && !prediction.account.settled)" :key="'prediction-'+predictionIndex">
                         <td>
-                          {{ computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58()).account.baseSymbol  }}
+                          {{ [...games.values()].find(g => g.account.address.toBase58() === prediction.account.game.toBase58()).account.baseSymbol  }}
                         </td>
                         <td>
                           {{ UpOrDown[prediction.account.upOrDown] }}
                         </td>
                         <td>
-                          {{ bnQuoteAssetToNumberFromGame(prediction.account.amount, computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58())) }}
+                          {{ bnQuoteAssetToNumberFromGame(prediction.account.amount, [...games.values()].find(g => g.account.address.toBase58() === prediction.account.game.toBase58())) }}
                         </td>
-                        <td> {{ computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58()).currentRound.convertOraclePriceToNumber(computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58()).currentRound.account.roundPriceDifference, computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58()).currentRound.account.roundPriceDifferenceDecimals, computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58())) > 0 ? prediction.account.upOrDown === UpOrDown.Up : false }}</td>
+                        <td> {{ [...games.values()].find(g => g.account.address.toBase58() === prediction.account.game.toBase58()).currentRound.convertOraclePriceToNumber([...games.values()].find(g => g.account.address.toBase58() === prediction.account.game.toBase58()).currentRound.account.roundPriceDifference, [...games.values()].find(g => g.account.address.toBase58() === prediction.account.game.toBase58()).currentRound.account.roundPriceDifferenceDecimals, [...games.values()].find(g => g.account.address.toBase58() === prediction.account.game.toBase58())) > 0 ? prediction.account.upOrDown === UpOrDown.Up : false }}</td>
                       </tr>
                     </table>
                   </v-card-text>
@@ -2075,7 +2035,7 @@ export default defineComponent({
               <v-container fluid>
                 <v-row align="center">
                   <v-col cols="12" sm="6" class="d-flex">
-                    <v-select style="margin: 0;" label="Asset" :items="computedGames.filter(g => g !== undefined && g.account !== undefined).map(g => {
+                    <v-select style="margin: 0;" label="Asset" :items="[...games.values()].filter(g => g !== undefined && g.account !== undefined).map(g => {
                       return {
                         'title': g.account.baseSymbol,
                         'value': g.account.address.toBase58()
@@ -2107,7 +2067,7 @@ export default defineComponent({
                   histories.get(selectedGameHistory).roundHistory !== null
                 ">
                   <v-card-title>Round History</v-card-title>
-                  <v-card-subtitle>{{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).account.baseSymbol }}</v-card-subtitle>
+                  <v-card-subtitle>{{ [...games.values()].find(g => g.account.address.toBase58() === selectedGameHistory).account.baseSymbol }}</v-card-subtitle>
                   <v-card-text>
                     <v-table
                     >
@@ -2155,22 +2115,22 @@ export default defineComponent({
                               {{ Math.floor(historyItem.roundTimeDifference.toNumber() / 60) + ':' + (historyItem.roundTimeDifference.toNumber() % 60 >= 10 ? historyItem.roundTimeDifference.toNumber() % 60 : "0" + historyItem.roundTimeDifference.toNumber() % 60)}}
                             </td>
                             <td>
-                              {{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.convertOraclePriceToNumber(historyItem.roundStartPrice, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.account.roundStartPriceDecimals, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)).toFixed(2) }}
+                              {{ [...games.values()].find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.convertOraclePriceToNumber(historyItem.roundStartPrice, [...games.values()].find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.account.roundStartPriceDecimals, [...games.values()].find(g => g.account.address.toBase58() === selectedGameHistory)).toFixed(2) }}
                             </td>
                             <td>
-                              {{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.convertOraclePriceToNumber(historyItem.roundPriceDifference, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.account.roundPriceDifferenceDecimals, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)).toFixed(2) }}
+                              {{ [...games.values()].find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.convertOraclePriceToNumber(historyItem.roundPriceDifference, [...games.values()].find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.account.roundPriceDifferenceDecimals, [...games.values()].find(g => g.account.address.toBase58() === selectedGameHistory)).toFixed(2) }}
                             </td>
                             <td>
                               {{historyItem.totalPredictions}}
                             </td>
                             <td>
-                              {{ bnQuoteAssetToNumberFromGame(historyItem.totalUpAmount, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }} {{ getGameQuoteSymbol(computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }}
+                              {{ bnQuoteAssetToNumberFromGame(historyItem.totalUpAmount, [...games.values()].find(g => g.account.address.toBase58() === selectedGameHistory)) }} {{ getGameQuoteSymbol([...games.values()].find(g => g.account.address.toBase58() === selectedGameHistory)) }}
                             </td>
                             <td>
-                              {{ bnQuoteAssetToNumberFromGame(historyItem.totalDownAmount, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }} {{ getGameQuoteSymbol(computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }}
+                              {{ bnQuoteAssetToNumberFromGame(historyItem.totalDownAmount, [...games.values()].find(g => g.account.address.toBase58() === selectedGameHistory)) }} {{ getGameQuoteSymbol([...games.values()].find(g => g.account.address.toBase58() === selectedGameHistory)) }}
                             </td>
                             <td>
-                              {{ bnQuoteAssetToNumberFromGame(historyItem.totalFeeCollected, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }} {{ getGameQuoteSymbol(computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }}
+                              {{ bnQuoteAssetToNumberFromGame(historyItem.totalFeeCollected, [...games.values()].find(g => g.account.address.toBase58() === selectedGameHistory)) }} {{ getGameQuoteSymbol([...games.values()].find(g => g.account.address.toBase58() === selectedGameHistory)) }}
                             </td>
                         </tr>
                       </tbody>
@@ -2184,7 +2144,7 @@ export default defineComponent({
                   histories.get(selectedGameHistory).userPredictionHistory !== null
                 ">
                   <v-card-title>User Prediction History</v-card-title>
-                  <v-card-subtitle>{{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).account.baseSymbol }}</v-card-subtitle>
+                  <v-card-subtitle>{{ [...games.values()].find(g => g.account.address.toBase58() === selectedGameHistory).account.baseSymbol }}</v-card-subtitle>
                   <v-card-text>
                     <v-table
                     >
@@ -2208,7 +2168,7 @@ export default defineComponent({
                             {{ UpOrDown[historyItem.upOrDown] }}
                           </td>
                           <td>
-                            {{ bnQuoteAssetToNumberFromGame(historyItem.amount, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }} {{ getGameQuoteSymbol(computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)) }}
+                            {{ bnQuoteAssetToNumberFromGame(historyItem.amount, [...games.values()].find(g => g.account.address.toBase58() === selectedGameHistory)) }} {{ getGameQuoteSymbol([...games.values()].find(g => g.account.address.toBase58() === selectedGameHistory)) }}
                           </td>
                           <td>
                             <a @click.stop="(e) => {

@@ -18,6 +18,8 @@ export type  UserPredictionHistoryItem = {
 export type UserPredictionHistoryAccount = {
 
     head: anchor.BN,
+    game: PublicKey,
+    address: PublicKey,
     userPredictions: UserPredictionHistoryItem[]
 
 }

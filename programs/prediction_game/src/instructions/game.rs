@@ -444,8 +444,14 @@ pub fn init_game_history(ctx: Context<InitGameHistory>) -> Result<()> {
     require_keys_eq!(game.user_prediction_history, Pubkey::default());
     require_keys_eq!(game.owner, ctx.accounts.owner.to_account_info().key());
 
-    ctx.accounts.round_history.load_init()?;
-    ctx.accounts.user_prediction_history.load_init()?;
+    let mut round_history = ctx.accounts.round_history.load_init()?;
+    let mut user_prediction_history = ctx.accounts.user_prediction_history.load_init()?;
+    
+    round_history.address = ctx.accounts.round_history.to_account_info().key();
+    user_prediction_history.address = ctx.accounts.user_prediction_history.to_account_info().key();
+
+    round_history.game = game.address;
+    user_prediction_history.game = game.address;
 
     game.round_history = ctx.accounts.round_history.to_account_info().key();
     game.user_prediction_history = ctx.accounts.user_prediction_history.to_account_info().key();

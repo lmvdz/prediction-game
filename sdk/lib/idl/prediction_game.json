@@ -1307,6 +1307,14 @@
                         "type": "u64"
                     },
                     {
+                        "name": "address",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "game",
+                        "type": "publicKey"
+                    },
+                    {
                         "name": "rounds",
                         "type": {
                             "array": [
@@ -1328,6 +1336,14 @@
                     {
                         "name": "head",
                         "type": "u64"
+                    },
+                    {
+                        "name": "address",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "game",
+                        "type": "publicKey"
                     },
                     {
                         "name": "userPredictions",

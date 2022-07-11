@@ -4,6 +4,8 @@ use anchor_lang::prelude::*;
 #[repr(packed)]
 pub struct UserPredictionHistory {
     pub head: u64,
+    pub address: Pubkey,
+    pub game: Pubkey,
     pub user_predictions: [UserPredictionHistoryItem; 1024]
 }
 

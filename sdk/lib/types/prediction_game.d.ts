@@ -1307,6 +1307,14 @@ export declare type PredictionGame = {
                         "type": "u64";
                     },
                     {
+                        "name": "address";
+                        "type": "publicKey";
+                    },
+                    {
+                        "name": "game";
+                        "type": "publicKey";
+                    },
+                    {
                         "name": "rounds";
                         "type": {
                             "array": [
@@ -1328,6 +1336,14 @@ export declare type PredictionGame = {
                     {
                         "name": "head";
                         "type": "u64";
+                    },
+                    {
+                        "name": "address";
+                        "type": "publicKey";
+                    },
+                    {
+                        "name": "game";
+                        "type": "publicKey";
                     },
                     {
                         "name": "userPredictions";

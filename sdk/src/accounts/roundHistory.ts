@@ -32,6 +32,8 @@ export type  RoundHistoryItem = {
 export type RoundHistoryAccount = {
 
     head: anchor.BN,
+    game: PublicKey,
+    address: PublicKey,
     rounds: RoundHistoryItem[]
 
 }

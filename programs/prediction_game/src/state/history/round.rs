@@ -4,6 +4,8 @@ use anchor_lang::prelude::*;
 #[repr(packed)]
 pub struct RoundHistory {
     pub head: u64,
+    pub address: Pubkey,
+    pub game: Pubkey,
     pub rounds: [RoundHistoryItem; 1024]
 }
 

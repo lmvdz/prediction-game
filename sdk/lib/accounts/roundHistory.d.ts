@@ -27,6 +27,8 @@ export declare type RoundHistoryItem = {
 };
 export declare type RoundHistoryAccount = {
     head: anchor.BN;
+    game: PublicKey;
+    address: PublicKey;
     rounds: RoundHistoryItem[];
 };
 export default class RoundHistory implements DataUpdatable<RoundHistoryAccount> {

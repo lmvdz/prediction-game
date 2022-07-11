@@ -12,6 +12,8 @@ export declare type UserPredictionHistoryItem = {
 };
 export declare type UserPredictionHistoryAccount = {
     head: anchor.BN;
+    game: PublicKey;
+    address: PublicKey;
     userPredictions: UserPredictionHistoryItem[];
 };
 export default class UserPredictionHistory implements DataUpdatable<UserPredictionHistoryAccount> {

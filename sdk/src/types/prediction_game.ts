@@ -1307,6 +1307,14 @@ export type PredictionGame = {
             "type": "u64"
           },
           {
+            "name": "address",
+            "type": "publicKey"
+          },
+          {
+            "name": "game",
+            "type": "publicKey"
+          },
+          {
             "name": "rounds",
             "type": {
               "array": [
@@ -1328,6 +1336,14 @@ export type PredictionGame = {
           {
             "name": "head",
             "type": "u64"
+          },
+          {
+            "name": "address",
+            "type": "publicKey"
+          },
+          {
+            "name": "game",
+            "type": "publicKey"
           },
           {
             "name": "userPredictions",
@@ -3688,6 +3704,14 @@ export const IDL: PredictionGame = {
             "type": "u64"
           },
           {
+            "name": "address",
+            "type": "publicKey"
+          },
+          {
+            "name": "game",
+            "type": "publicKey"
+          },
+          {
             "name": "rounds",
             "type": {
               "array": [
@@ -3709,6 +3733,14 @@ export const IDL: PredictionGame = {
           {
             "name": "head",
             "type": "u64"
+          },
+          {
+            "name": "address",
+            "type": "publicKey"
+          },
+          {
+            "name": "game",
+            "type": "publicKey"
           },
           {
             "name": "userPredictions",

@@ -1310,6 +1310,14 @@ exports.IDL = {
                         "type": "u64"
                     },
                     {
+                        "name": "address",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "game",
+                        "type": "publicKey"
+                    },
+                    {
                         "name": "rounds",
                         "type": {
                             "array": [
@@ -1331,6 +1339,14 @@ exports.IDL = {
                     {
                         "name": "head",
                         "type": "u64"
+                    },
+                    {
+                        "name": "address",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "game",
+                        "type": "publicKey"
                     },
                     {
                         "name": "userPredictions",
