@@ -241,7 +241,7 @@ function replacer(key, value) {
 
 
 database.get('/:cluster/history', (req, res) => {
-    res.send(JSON.stringify(histories[req.params.cluster], replacer))
+    res.send(JSON.stringify(histories[req.params.cluster].values()))
 })
 
 database.get('/:cluster/vault', (req, res) => {
