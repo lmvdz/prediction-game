@@ -208,14 +208,23 @@ database.use(bodyParser.json());
 
 database.get('/:cluster/game', (req, res) => {
     res.send([...games[req.params.cluster].values()].map(pub => {
-        return JSON.stringify(paf[req.params.cluster].accounts.get(pub).data)
-    }))
+        let account = paf[req.params.cluster].accounts.get(pub);
+        if (account !== undefined)
+            return JSON.stringify(paf[req.params.cluster].accounts.get(pub).data)
+        else 
+            return undefined
+    }).filter(g => g !== undefined))
 })
 
 database.get('/:cluster/round', (req, res) => {
+    
     res.send([...rounds[req.params.cluster].values()].map(pub => {
-        return JSON.stringify(paf[req.params.cluster].accounts.get(pub).data)
-    }))
+        let account = paf[req.params.cluster].accounts.get(pub);
+        if (account !== undefined)
+            return JSON.stringify(paf[req.params.cluster].accounts.get(pub).data)
+        else 
+            return undefined
+    }).filter(r => r !== undefined))
 })
 
 
@@ -237,8 +246,12 @@ database.get('/:cluster/history', (req, res) => {
 
 database.get('/:cluster/vault', (req, res) => {
     res.send([...vaults[req.params.cluster].values()].map(pub => {
-        return JSON.stringify(paf[req.params.cluster].accounts.get(pub).data)
-    }))
+        let account = paf[req.params.cluster].accounts.get(pub);
+        if (account !== undefined)
+            return JSON.stringify(paf[req.params.cluster].accounts.get(pub).data)
+        else 
+            return undefined
+    }).filter(v => v !== undefined))
 })
 
 database.listen(4000, () => {console.log('database started on port 4000')});

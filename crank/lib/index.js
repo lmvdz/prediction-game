@@ -249,7 +249,7 @@ const updateLoop = (workspace, vault, game, crank) => {
         catch (error) {
             console.error(error);
         }
-    }, game.currentRound.account.finished ? 5 * 1000 : 10 * 1000);
+    }, game.currentRound.account.finished ? 10 * 1000 : 15 * 1000);
 };
 const crankLoop = async (workspace, vault, game) => {
     try {

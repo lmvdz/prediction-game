@@ -257,7 +257,7 @@ const updateLoop = (workspace: Workspace, vault: Vault, game: Game, crank: Crank
         
         
         
-    }, game.currentRound.account.finished ? 5 * 1000 : 10 * 1000)
+    }, game.currentRound.account.finished ? 10 * 1000 : 15 * 1000)
 }
 
 
