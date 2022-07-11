@@ -7,3 +7,5 @@ test-ledger
 target
 .env*
 .env.*
+server/frontend
+server/aggr
