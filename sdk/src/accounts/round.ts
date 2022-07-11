@@ -74,6 +74,59 @@ export default class Round implements DataUpdatable<RoundAccount> {
         return true;
     }
 
+    fromJSON<RoundAccount>(json: any): RoundAccount {
+        return {
+            owner: new PublicKey(json.owner),
+            game: new PublicKey(json.game),
+            address: new PublicKey(json.address),
+
+            roundNumber: json.roundNumber,
+            roundLength: json.roundLength,
+            
+            finished: json.finished,
+            invalid: json.invalid,
+            settled: json.settled,
+            feeCollected: json.feeCollected,
+            cranksPaid: json.cranksPaid,
+        
+            roundPredictionsAllowed: json.roundPredictionsAllowed,
+
+            roundStartTime: new anchor.BN(json.roundStartTime),
+            roundCurrentTime: new anchor.BN(json.roundCurrentTime),
+            roundTimeDifference: new anchor.BN(json.roundTimeDifference),
+
+            roundStartPrice: new anchor.BN(json.roundStartPrice),
+            roundStartPriceDecimals: new anchor.BN(json.roundStartPriceDecimals),
+            
+            roundCurrentPrice: new anchor.BN(json.roundCurrentPrice),
+            roundCurrentPriceDecimals: new anchor.BN(json.roundCurrentPriceDecimals),
+
+            roundEndPrice: new anchor.BN(json.roundEndPrice),
+            roundEndPriceDecimals: new anchor.BN(json.roundEndPriceDecimals),
+
+            roundPriceDifference: new anchor.BN(json.roundPriceDifference),
+            roundPriceDifferenceDecimals: new anchor.BN(json.roundPriceDifferenceDecimals),
+
+            roundWinningDirection: json.roundWinningDirection,
+
+            totalFeeCollected: new anchor.BN(json.totalFeeCollected),
+
+            totalUpAmount: new anchor.BN(json.totalUpAmount),
+            totalDownAmount: new anchor.BN(json.totalDownAmount),
+
+            totalAmountSettled: new anchor.BN(json.totalAmountSettled),
+            totalPredictionsSettled: json.totalPredictionsSettled,
+            totalPredictions: json.totalPredictions,
+
+            totalUniqueCrankers: json.totalUniqueCrankers,
+            totalCranks: json.totalCranks,
+            totalCranksPaid: json.totalCranksPaid,
+            totalAmountPaidToCranks: new anchor.BN(json.totalAmountPaidToCranks),
+
+            padding01: json.padding01.map((x: string) => new PublicKey(x)) as PublicKey[]
+        } as unknown as RoundAccount
+    }
+
     public convertOraclePriceToNumber(price: anchor.BN, decimals_: anchor.BN, game: Game) : number {
         try {
             let decimals = decimals_.abs();

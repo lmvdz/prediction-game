@@ -62,6 +62,41 @@ export default class Game implements DataUpdatable<GameAccount> {
         this.account = account;
     }
 
+    fromJSON<GameAccount>(json: any): GameAccount {
+        return {
+            owner: new PublicKey(json.owner),
+            address: new PublicKey(json.address),
+
+            tokenDecimal: json.tokenDecimal,
+
+            baseSymbol: json.baseSymbol,
+
+            roundNumber: json.roundNumber,
+            currentRound: new PublicKey(json.currentRound),
+            previousRound: new PublicKey(json.previousRound),
+            roundLength: json.roundLength,
+
+            vault: new PublicKey(json.vault),
+
+            unclaimedFees: new anchor.BN(json.unclaimedFees),
+
+            feeBps: json.feeBps,
+            crankBps: json.crankBps,
+
+            totalVolume: new anchor.BN(json.totalVolume),
+            totalVolumeRollover: new anchor.BN(json.totalVolumeRollover),
+            
+            priceProgram: new PublicKey(json.priceProgram),
+            priceFeed: new PublicKey(json.priceFeed),
+            oracle: json.oracle,
+
+            userPredictionHistory: new PublicKey(json.userPredictionHistory),
+            roundHistory: new PublicKey(json.roundHistory),
+
+            padding01: json.padding01.map((x: string) => new PublicKey(x)) as PublicKey[]
+        } as unknown as GameAccount
+    }
+
     public async updateData(data: GameAccount): Promise<boolean> {
         this.account = data;
         return true;
