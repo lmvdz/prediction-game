@@ -20,7 +20,7 @@
     "cryptocurrency-icons": "^0.18.0",
     "lightweight-charts": "^3.8.0",
     "pinia": "^2.0.14",
-    "polling-account-fetcher": "1.0.14",
+    "polling-account-fetcher": "^1.0.15",
     "roboto-fontface": "*",
     "sdk": "file:../sdk",
     "solana-wallets-vue": "^0.3.2",

@@ -144,7 +144,7 @@
   resolved "https://registry.yarnpkg.com/@pedrouid/environment/-/environment-1.0.1.tgz#858f0f8a057340e0b250398b75ead77d6f4342ec"
   integrity sha512-HaW78NszGzRZd9SeoI3JD11JqY+lubnaOx7Pewj5pfjqWXOEATpeKIFb9Z4t2WBUK2iryiXX3lzWwmYWgUL0Ug==
 
-"@project-serum/anchor@^0.25.0-beta.1":
+"@project-serum/anchor@0.25.0", "@project-serum/anchor@^0.25.0-beta.1":
   version "0.25.0"
   resolved "https://registry.yarnpkg.com/@project-serum/anchor/-/anchor-0.25.0.tgz#88ee4843336005cf5a64c80636ce626f0996f503"
   integrity sha512-E6A5Y/ijqpfMJ5psJvbw0kVTzLZFUcOFgs6eSM2M2iWE1lVRF18T6hWZVNl6zqZsoz98jgnNHtVGJMs+ds9A7A==
@@ -2484,12 +2484,12 @@ pkg-dir@^4.1.0:
   dependencies:
     find-up "^4.0.0"
 
-polling-account-fetcher@1.0.14:
-  version "1.0.14"
-  resolved "https://registry.yarnpkg.com/polling-account-fetcher/-/polling-account-fetcher-1.0.14.tgz#e0720031a17997f61bc23caae1d6a27c9e636471"
-  integrity sha512-1uxi+QYa/zw9bEph2+R2f3cYsWfUgiasEsKVDSoSiqJ6E9D/XBttfTJsLn1KWjvmfkrT2lXgwO50/Y9VDAUxbA==
+polling-account-fetcher@^1.0.15:
+  version "1.0.15"
+  resolved "https://registry.yarnpkg.com/polling-account-fetcher/-/polling-account-fetcher-1.0.15.tgz#38a0d5f67233be287e4a07c7a8be6df3fff186d7"
+  integrity sha512-Xaf86PwDPOUTzdjWpvbm2+2rACsbbTsQ8sCwteI1maf7imx4Lte4hI3Fm3W1khJrFdUmSim4Liad2DfuOj9nVA==
   dependencies:
-    "@project-serum/anchor" "^0.25.0-beta.1"
+    "@project-serum/anchor" "0.25.0"
     axios "^0.27.2"
 
 postcss@^8.1.10, postcss@^8.4.13:
