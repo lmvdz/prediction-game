@@ -17,6 +17,13 @@ import UserPredictionHistory, { UserPredictionHistoryAccount } from "./accounts/
 import RoundHistory, { RoundHistoryAccount } from "./accounts/roundHistory";
 
 export const gameSeeds: Array<GameSeed> = [ 
+    {
+        baseSymbol: "ATOM",
+        priceProgram: new PublicKey("gSbePebfvPy7tRqimPoVecS2UsBvYv46ynrzWocc92s"),
+        priceFeed: new PublicKey("7YAze8qFUMkBnyLVdKT4TFUUFui99EwS5gfRArMcrvFk"),
+        roundLength: new anchor.BN(300),
+        oracle: Oracle.Pyth
+    },
     { 
         baseSymbol: "SOL", 
         priceProgram: new PublicKey("gSbePebfvPy7tRqimPoVecS2UsBvYv46ynrzWocc92s"), // pyth oracle program devnet
