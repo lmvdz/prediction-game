@@ -26,16 +26,19 @@ let env = args[0]
 config({path: '.env.'+env})
 
 let devnetConnection = new Connection(process.env.DEVNET_ENDPOINT.toString());
-const devnetWorkspace = Workspace.load(devnetConnection, new anchor.Wallet(owner), 'devnet')
-
 let mainnetConnection = new Connection(process.env.MAINNET_ENDPOINT.toString());
-const mainnetWorkspace = Workspace.load(mainnetConnection, new anchor.Wallet(owner), 'mainnet-beta')
 
-const pafDevnet = new PollingAccountsFetcher(process.env.DEVNET_ENDPOINT.toString(), 1000, 5)
-pafDevnet.start();
+let workspace = {
+    devnet: Workspace.load(devnetConnection, new anchor.Wallet(owner), 'devnet'),
+    mainnet: Workspace.load(mainnetConnection, new anchor.Wallet(owner), 'mainnet-beta')
+}
 
-const pafMainnet = new PollingAccountsFetcher(process.env.MAINNET_ENDPOINT.toString(), 1000, 5)
-pafMainnet.start();
+let paf = {
+    devnet: new PollingAccountsFetcher(process.env.DEVNET_ENDPOINT.toString(), 1000, 5),
+    mainnet: new PollingAccountsFetcher(process.env.MAINNET_ENDPOINT.toString(), 1000, 5)
+}
+paf.devnet.start();
+paf.mainnet.start();
 
 let vaults = {
     devnet: new Set(),
@@ -187,8 +190,8 @@ const databaseUpdateLoop = () => {
         if (updateInterval) clearInterval(updateInterval)
         updateInterval = setInterval(async () => {
             await Promise.allSettled([
-                await loadGeneric(pafDevnet, devnetWorkspace, vaults.devnet, rounds.devnet, games.devnet, histories.devnet),
-                await loadGeneric(pafMainnet, mainnetWorkspace, vaults.mainnet, rounds.mainnet, games.mainnet, histories.mainnet)
+                await loadGeneric(paf.devnet, workspace.devnet, vaults.devnet, rounds.devnet, games.devnet, histories.devnet),
+                await loadGeneric(paf.mainnet, workspace.mainnet, vaults.mainnet, rounds.mainnet, games.mainnet, histories.mainnet)
             ]);
         }, 10 * 1000)
     } catch (error) {
@@ -205,13 +208,13 @@ database.use(bodyParser.json());
 
 database.get('/:cluster/game', (req, res) => {
     res.send([...games[req.params.cluster].values()].map(pub => {
-        return JSON.stringify(paf.accounts.get(pub).data)
+        return JSON.stringify(paf[req.params.cluster].accounts.get(pub).data)
     }))
 })
 
 database.get('/:cluster/round', (req, res) => {
     res.send([...rounds[req.params.cluster].values()].map(pub => {
-        return JSON.stringify(paf.accounts.get(pub).data)
+        return JSON.stringify(paf[req.params.cluster].accounts.get(pub).data)
     }))
 })
 
@@ -234,7 +237,7 @@ database.get('/:cluster/history', (req, res) => {
 
 database.get('/:cluster/vault', (req, res) => {
     res.send([...vaults[req.params.cluster].values()].map(pub => {
-        return JSON.stringify(paf.accounts.get(pub).data)
+        return JSON.stringify(paf[req.params.cluster].accounts.get(pub).data)
     }))
 })
 
