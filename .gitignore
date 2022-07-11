@@ -5,6 +5,7 @@
 node_modules
 test-ledger
 target
+aggr
 .env*
 .env.*
 server/frontend
