@@ -20,10 +20,13 @@ export declare type RoundAccount = {
     roundCurrentTime: anchor.BN;
     roundTimeDifference: anchor.BN;
     roundStartPrice: anchor.BN;
+    roundStartPriceDecimals: anchor.BN;
     roundCurrentPrice: anchor.BN;
+    roundCurrentPriceDecimals: anchor.BN;
     roundEndPrice: anchor.BN;
+    roundEndPriceDecimals: anchor.BN;
     roundPriceDifference: anchor.BN;
-    roundPriceDecimals: anchor.BN;
+    roundPriceDifferenceDecimals: anchor.BN;
     roundWinningDirection: number;
     totalFeeCollected: anchor.BN;
     totalUpAmount: anchor.BN;
@@ -41,7 +44,7 @@ export default class Round implements DataUpdatable<RoundAccount> {
     account: RoundAccount;
     constructor(account: RoundAccount);
     updateData(data: RoundAccount): Promise<boolean>;
-    convertOraclePriceToNumber(oraclePrice: anchor.BN, game: Game): number;
+    convertOraclePriceToNumber(price: anchor.BN, decimals_: anchor.BN, game: Game): number;
     static initializeFirst(workspace: Workspace, game: Game, crank: Crank): Promise<Game>;
     static initializeSecond(workspace: Workspace, game: Game, crank: Crank): Promise<Game>;
     static initializeNext(workspace: Workspace, game: Game, crank: Crank): Promise<Game>;

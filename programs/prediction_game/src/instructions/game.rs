@@ -431,7 +431,7 @@ pub fn update_game<'info>(mut ctx: Context<'_, '_, '_, 'info, UpdateGame<'info>>
     let price_feed = &ctx.accounts.price_feed;
     let oracle = ctx.accounts.game.load()?.oracle;
 
-    require!(current_round.update_round(oracle, price_program, price_feed).is_ok(), ErrorCode::FailedToUpdateRound);
+    require!(current_round.update_round(game, oracle,  price_program, price_feed).is_ok(), ErrorCode::FailedToUpdateRound);
 
     Ok(())
 }

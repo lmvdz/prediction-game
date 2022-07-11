@@ -35,13 +35,14 @@ class Round {
         this.account = data;
         return true;
     }
-    convertOraclePriceToNumber(oraclePrice, game) {
+    convertOraclePriceToNumber(price, decimals_, game) {
         try {
+            let decimals = decimals_.abs();
             if (game.account.oracle === types_1.Oracle.Chainlink) {
-                let scaled_val = oraclePrice.toString();
-                if (scaled_val.length <= (this.account.roundPriceDecimals.toNumber() * 8)) {
+                let scaled_val = price.toString();
+                if (scaled_val.length <= decimals.toNumber()) {
                     let zeros = "";
-                    for (let x = 0; x < (this.account.roundPriceDecimals.toNumber() * 8) - scaled_val.length; x++) {
+                    for (let x = 0; x < decimals.toNumber() - scaled_val.length; x++) {
                         zeros += "0";
                     }
                     let charArray = [...scaled_val];
@@ -51,15 +52,12 @@ class Round {
                 }
                 else {
                     let charArray = Array.from(scaled_val);
-                    charArray.splice(charArray.length - (this.account.roundPriceDecimals.toNumber() * 8), 0, ".");
+                    charArray.splice(charArray.length - decimals.toNumber(), 0, ".");
                     return parseFloat(charArray.join(""));
                 }
             }
-            else if (game.account.oracle === types_1.Oracle.Pyth) {
-                return parseFloat((oraclePrice.div((new anchor.BN(10)).pow(this.account.roundPriceDecimals.mul(new anchor.BN(-1)))).toNumber() + (oraclePrice.mod((new anchor.BN(10)).pow(this.account.roundPriceDecimals.mul(new anchor.BN(-1)))).toNumber() / (10 ** this.account.roundPriceDecimals.mul(new anchor.BN(-1)).toNumber()))).toFixed(2));
-            }
-            else if (game.account.oracle === types_1.Oracle.Switchboard) {
-                return parseFloat((oraclePrice.div((new anchor.BN(10)).pow(this.account.roundPriceDecimals)).toNumber() + (oraclePrice.mod((new anchor.BN(10)).pow(this.account.roundPriceDecimals)).toNumber() / (10 ** this.account.roundPriceDecimals.toNumber()))).toFixed(2));
+            else if (game.account.oracle === types_1.Oracle.Pyth || game.account.oracle === types_1.Oracle.Switchboard) {
+                return parseFloat((price.div((new anchor.BN(10)).pow(decimals)).toNumber() + (price.mod((new anchor.BN(10)).pow(decimals)).toNumber() / (10 ** decimals.toNumber()))).toFixed(2));
             }
         }
         catch (error) {

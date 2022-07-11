@@ -177,7 +177,7 @@ const settleOrInitNext = (workspace: Workspace, game: Game, crank: Crank) : Prom
 let loopCount = 0;
 
 const updateLoop = (workspace: Workspace, vault: Vault, game: Game, crank: Crank) => {
-    console.log('updateLoop', game.baseSymbolAsString())
+    // console.log('updateLoop', game.baseSymbolAsString())
     if (loopCount > (60 * 60)) {
         run();
         loopCount = 0;
@@ -197,9 +197,8 @@ const updateLoop = (workspace: Workspace, vault: Vault, game: Game, crank: Crank
         // })
         try {
             console.log(
-                game.currentRound.account.roundPriceDecimals.toNumber(),
-                game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundStartPrice, game),
-                game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game),
+                game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundStartPrice, game.currentRound.account.roundStartPriceDecimals, game),
+                game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game.currentRound.account.roundPriceDifferenceDecimals, game),
                 // vaultTokenAccountBalanaceResponse.value.uiAmount,
                 // feeVaultTokenAccountBalanaceResponse.value.uiAmount,
                 ((game.account.unclaimedFees.div(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() + ((game.account.unclaimedFees.mod(new anchor.BN(10).pow(new anchor.BN(vault.account.tokenDecimals)))).toNumber() / (10 ** vault.account.tokenDecimals))),
@@ -218,16 +217,16 @@ const updateLoop = (workspace: Workspace, vault: Vault, game: Game, crank: Crank
             );
             // get the latest vault data (debug purposes)
             vault.updateVaultData(workspace).then((vault: Vault) => {
-                console.log('updatedVaultData', game.baseSymbolAsString())
+                // console.log('updatedVaultData', game.baseSymbolAsString())
                 // update the game state (required)
                 game.updateGame(workspace, crank).then((game: Game) => {
-                    console.log('updatedGame', game.baseSymbolAsString())
+                    // console.log('updatedGame', game.baseSymbolAsString())
                     // fetch latest game data (required)
                     game.updateGameData(workspace).then((game: Game) => {
-                        console.log('updatedGameData', game.baseSymbolAsString())
+                        // console.log('updatedGameData', game.baseSymbolAsString())
                         // fetch latest round data (required)
                         game.updateRoundData(workspace).then((game: Game) => {
-                            console.log('updatedRoundData', game.baseSymbolAsString())
+                            // console.log('updatedRoundData', game.baseSymbolAsString())
                             // finished round logic (required)
                             settleOrInitNext(workspace, game, crank).then((game: Game) => {
                                 updateLoop(workspace, vault, game, crank)

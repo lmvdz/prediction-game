@@ -23,6 +23,15 @@ pub enum Oracle {
     Switchboard = 3
 }
 
+pub fn oracle_value(oracle: Oracle) -> u8 {
+    match oracle {
+        Oracle::Chainlink => 1,
+        Oracle::Switchboard => 3,
+        Oracle::Pyth => 2,
+        Oracle::Undefined => 0
+    }
+}
+
 impl Decimal {
     pub fn new(value: i128, decimals: u32) -> Self {
         Decimal { value, decimals }
@@ -66,7 +75,7 @@ pub fn get_price<'info>(oracle: u8, price_program: &AccountInfo<'info>, price_fe
         Oracle::Pyth => {
             let price_feed_result = load_price_feed_from_account_info(price_feed).unwrap();
             let current_price = price_feed_result.get_current_price().unwrap();
-            ( current_price.price.into(), current_price.expo  as i128)
+            ( current_price.price.into(), current_price.expo as i128)
         },
         Oracle::Switchboard => {
             let switchboard_decimal = AggregatorAccountData::new(price_feed)?.get_result()?;

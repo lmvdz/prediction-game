@@ -1,10 +1,11 @@
-use std::cell::RefMut;
+use std::cell::{RefMut, Ref};
 
 use anchor_lang::prelude::*;
+use switchboard_v2::decimal::SwitchboardDecimal;
 
 use crate::errors::ErrorCode;
 
-use crate::state::{Round, Game, Crank, get_price, RoundHistory, RoundHistoryItem};
+use crate::state::{Round, Game, Crank, get_price, RoundHistory, RoundHistoryItem, Oracle, oracle_value};
 
 pub fn init_first_round(ctx: Context<InitFirstRound>) -> Result<()> {
     let round_key = ctx.accounts.round.to_account_info().key();
@@ -40,16 +41,19 @@ pub fn init_first_round(ctx: Context<InitFirstRound>) -> Result<()> {
     round.round_predictions_allowed = true;
 
     let (price, decimals) = get_price(oracle, price_program, price_feed).unwrap_or((0, 0)); // production & devnet
-    // let price = 0; // localnet
-
-    round.round_price_decimals = decimals; // production & devnet
-    // round.round_price_decimals = 1;
 
     round.round_start_price = price;
-    round.round_current_price = price;
-    round.round_price_difference = 0;
+    round.round_start_price_decimals = decimals;
 
-    
+    round.round_current_price = price;
+    round.round_current_price_decimals = decimals;
+
+    round.round_price_difference = 0;
+    round.round_price_difference_decimals = 0;
+
+    round.round_end_price = 0;
+    round.round_end_price_decimals = 0;
+
 
     round.finished = false;
     round.invalid = false;
@@ -139,13 +143,17 @@ fn init_round_shared<'info>(
 
     next_round.round_predictions_allowed = true;
 
-    let (price, _decimals) = get_price(game.oracle, price_program, price_feed).unwrap_or((0, 0));
+    let (price, decimals) = get_price(game.oracle, price_program, price_feed).unwrap_or((0, 0));
     // let price = 0;
 
     next_round.round_start_price = price;
+    next_round.round_start_price_decimals = decimals;
+
     next_round.round_current_price = price;
+    next_round.round_current_price_decimals = decimals;
+
     next_round.round_price_difference = 0;
-    next_round.round_price_decimals = 1;
+    next_round.round_price_difference_decimals = 0;
 
     next_round.finished = false;
     next_round.invalid = false;
@@ -153,7 +161,12 @@ fn init_round_shared<'info>(
     next_round.fee_collected = false;
     next_round.cranks_paid = false;
 
+    next_round.round_winning_direction = 0;
+
     next_round.total_fee_collected = 0;
+
+    next_round.total_up_amount = 0;
+    next_round.total_down_amount = 0;
 
     next_round.total_amount_settled = 0;
     next_round.total_predictions = 0;
@@ -175,10 +188,13 @@ fn init_round_shared<'info>(
         round_current_time: current_round.round_current_time,
         round_time_difference: current_round.round_time_difference,
         round_start_price: current_round.round_start_price,
+        round_start_price_decimals: current_round.round_start_price_decimals,
         round_current_price: current_round.round_current_price,
+        round_current_price_decimals: current_round.round_current_price_decimals,
         round_end_price: current_round.round_end_price,
+        round_end_price_decimals: current_round.round_end_price_decimals,
         round_price_difference: current_round.round_price_difference,
-        round_price_decimals: current_round.round_price_decimals,
+        round_price_difference_decimals: current_round.round_price_difference_decimals,
         round_winning_direction: current_round.round_winning_direction,
         total_fee_collected: current_round.total_fee_collected,
         total_up_amount: current_round.total_up_amount,
@@ -222,6 +238,7 @@ pub fn init_next_round_and_close_previous(ctx: Context<InitNextRoundAndClosePrev
 impl Round {
     pub fn update_round<'info>(
         &mut self, 
+        game: Ref<Game>,
         oracle: u8,
         price_program: &AccountInfo<'info>, 
         price_feed: &AccountInfo<'info>
@@ -239,17 +256,29 @@ impl Round {
             self.round_time_difference = self.round_current_time.checked_sub(self.round_start_time).unwrap_or(0);
             
             // update the round price
-            let (price, _decimals) = get_price(oracle, price_program, price_feed).unwrap_or((self.round_start_price, 0));  // production
+            let (price, decimals) = get_price(oracle, price_program, price_feed).unwrap_or((self.round_start_price, 0));  // production
             self.round_current_price = price;
+            self.round_current_price_decimals = decimals;
             // self.round_current_price += 1; // localnet testing
-            
+
             // calculate the difference in price or set to zero
-            self.round_price_difference = self.round_current_price.checked_sub(self.round_start_price).unwrap_or(0);
+            (self.round_price_difference, self.round_price_difference_decimals) = if game.oracle.eq(&oracle_value(Oracle::Switchboard)) {
+                let current_price: f64 = SwitchboardDecimal::new(self.round_current_price, self.round_current_price_decimals.unsigned_abs().try_into().unwrap()).try_into()?;
+                let start_price: f64 = SwitchboardDecimal::new(self.round_start_price, self.round_start_price_decimals.unsigned_abs().try_into().unwrap()).try_into()?;
+                let price_difference = SwitchboardDecimal::from_f64(current_price - start_price);
+                (price_difference.mantissa, price_difference.scale as i128)
+            } else {
+                (self.round_current_price.checked_sub(self.round_start_price).unwrap_or(0), self.round_current_price_decimals)
+            };
+            
+            
 
             // if self.round_time_difference > (2) { 
             if self.round_time_difference >= self.round_length { // for production
 
                 self.round_end_price = self.round_current_price;
+                self.round_end_price_decimals = self.round_current_price_decimals;
+                
                 self.finished = true;
 
                 self.round_winning_direction = if self.round_end_price > self.round_start_price {

@@ -1440,7 +1440,19 @@ exports.IDL = {
                         "type": "i128"
                     },
                     {
-                        "name": "roundPriceDecimals",
+                        "name": "roundStartPriceDecimals",
+                        "type": "i128"
+                    },
+                    {
+                        "name": "roundCurrentPriceDecimals",
+                        "type": "i128"
+                    },
+                    {
+                        "name": "roundEndPriceDecimals",
+                        "type": "i128"
+                    },
+                    {
+                        "name": "roundPriceDifferenceDecimals",
                         "type": "i128"
                     },
                     {
@@ -1697,7 +1709,15 @@ exports.IDL = {
                         "type": "i128"
                     },
                     {
+                        "name": "roundStartPriceDecimals",
+                        "type": "i128"
+                    },
+                    {
                         "name": "roundCurrentPrice",
+                        "type": "i128"
+                    },
+                    {
+                        "name": "roundCurrentPriceDecimals",
                         "type": "i128"
                     },
                     {
@@ -1705,11 +1725,15 @@ exports.IDL = {
                         "type": "i128"
                     },
                     {
+                        "name": "roundEndPriceDecimals",
+                        "type": "i128"
+                    },
+                    {
                         "name": "roundPriceDifference",
                         "type": "i128"
                     },
                     {
-                        "name": "roundPriceDecimals",
+                        "name": "roundPriceDifferenceDecimals",
                         "type": "i128"
                     },
                     {

@@ -1424,7 +1424,7 @@ export default defineComponent({
                         <v-icon color="white" class="information-icon">{{ 'mdi-alert' }}</v-icon>
                       </v-btn>
 
-                      <v-btn icon size="x-small" style="z-index: 1; margin: 0px !important;" variant="text" @click.stop="() => { aggrWorkspace = getProtocol()+'//'+getHost()+'/workspaces/'+game.account.baseSymbol.toLowerCase()+'.json'  }">
+                      <v-btn icon size="x-small" style="z-index: 1; margin: 0px !important;" variant="text" @click.stop="() => { aggrWorkspace = getProtocol()+'//'+getHost()+'/workspaces/'+game.baseSymbolAsString().toLowerCase()+'.json'  }">
                         <v-tooltip
                           activator="parent"
                           location="top"
@@ -1568,7 +1568,7 @@ export default defineComponent({
                                     <template v-slot:activator="{ props  }">
                                       <v-row>
                                         <v-col>
-                                          <CryptoIcon style="margin: 0 auto;" max-width="32px" :icon="game.account.baseSymbol.toLowerCase()"/>
+                                          <CryptoIcon style="margin: 0 auto;" max-width="32px" :icon="game.baseSymbolAsString().toLowerCase()"/>
                                         </v-col>
                                         <v-divider vertical></v-divider>
                                         <v-col>
@@ -1576,9 +1576,9 @@ export default defineComponent({
                                         </v-col>
                                       </v-row>
                                     </template>
-                                    <span>{{game.account.baseSymbol}} / {{ frontendGameData.get(game.account.address.toBase58()).mint.symbol }}</span>
+                                    <span>{{game.baseSymbolAsString()}} / {{ frontendGameData.get(game.account.address.toBase58()).mint.symbol }}</span>
                                   </v-tooltip>
-                                <!-- <p style="margin: 0 auto;">{{ game.account.baseSymbol }} / {{ frontendGameData.get(game.account.address.toBase58()).mint.symbol }}</p>  -->
+                                <!-- <p style="margin: 0 auto;">{{ game.baseSymbolAsString() }} / {{ frontendGameData.get(game.account.address.toBase58()).mint.symbol }}</p>  -->
                               </v-card-title>
                               <div style="margin-top: 1.05em;"></div>
                               <v-card-subtitle  v-if="frontendGameData.get(game.account.address.toBase58()).priceFeed !== null" class="text-center">
@@ -1606,26 +1606,26 @@ export default defineComponent({
                                     activator="parent"
                                     location="end"
                                   >Starting Price</v-tooltip>
-                                    $ {{  game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundStartPrice, game).toFixed(2) }}
+                                    $ {{  game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundStartPrice, game.currentRound.account.roundStartPriceDecimals, game).toFixed(2) }}
                                   </v-col>
                                 </v-row>
                                 <v-row style="margin: 1px;">
                                   <v-col style="margin: 0; padding: .5em 0; position: relative;" :class="`price-difference ${
-                                      game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) > 0 ? 'up' : game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) < 0 ? 'down' : 'tie'
+                                      game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game.currentRound.account.roundPriceDifferenceDecimals, game) > 0 ? 'up' : game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game.currentRound.account.roundPriceDifferenceDecimals, game) < 0 ? 'down' : 'tie'
                                     }`">
                                     <v-tooltip
                                       activator="parent"
                                       location="end"
                                     >Price Difference</v-tooltip>
                                     <div style="pointer-events: all !important; opacity: 50%; height: 32px; width: 32px; position: absolute; top: 0; left: -56px; bottom: 0; right: 0; margin: auto; z-index: 1005;">
-                                      <LottieAnimation :speed=".75" v-if="game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) > 0" :animationData="UpArrowAnimation" :height="32" :width="32" />
-                                      <LottieAnimation :speed=".75" v-else-if="game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) < 0" :animationData="DownArrowAnimation" :height="32" :width="32" />
+                                      <LottieAnimation :speed=".75" v-if="game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game.currentRound.account.roundPriceDifferenceDecimals, game) > 0" :animationData="UpArrowAnimation" :height="32" :width="32" />
+                                      <LottieAnimation :speed=".75" v-else-if="game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game.currentRound.account.roundPriceDifferenceDecimals, game) < 0" :animationData="DownArrowAnimation" :height="32" :width="32" />
                                       <LottieAnimation v-else :animation-data="CrabAnimation" :height="32" :width="32"/>
                                     
                                     </div>
                                     <span style="margin-left: 24px;">
                                       $ {{ 
-                                        game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game).toFixed(2)
+                                        game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game.currentRound.account.roundPriceDifferenceDecimals, game).toFixed(2)
                                       }}
                                     </span>
                                     
@@ -1646,26 +1646,26 @@ export default defineComponent({
                                   activator="parent"
                                   location="end"
                                 >Starting Price</v-tooltip>
-                                  $ {{  game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundStartPrice, game).toFixed(2) }}                      
+                                  $ {{  game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundStartPrice, game.currentRound.account.roundStartPriceDecimals, game).toFixed(2) }}                      
                               </v-col>
                             </v-row>
                             <v-row style="margin: 1px;">
                               <v-col style="margin: 0; padding: .5em 0; position: relative;" :class="`price-difference ${
-                                  game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) > 0 ? 'up' : game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) < 0 ? 'down' : 'tie'
+                                  game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game.currentRound.account.roundPriceDifferenceDecimals, game) > 0 ? 'up' : game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game.currentRound.account.roundPriceDifferenceDecimals, game) < 0 ? 'down' : 'tie'
                                 }`">
                                 <v-tooltip
                                   activator="parent"
                                   location="end"
                                 >Price Difference</v-tooltip>
                                 <div style="pointer-events: all !important; opacity: 50%; height: 32px; width: 32px; position: absolute; top: 0; left: -56px; bottom: 0; right: 0; margin: auto; z-index: 1005;">
-                                  <LottieAnimation :speed=".75" v-if="game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) > 0" :animationData="UpArrowAnimation" :height="32" :width="32" />
-                                  <LottieAnimation :speed=".75" v-else-if="game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game) < 0" :animationData="DownArrowAnimation" :height="32" :width="32" />
+                                  <LottieAnimation :speed=".75" v-if="game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game.currentRound.account.roundPriceDifferenceDecimals, game) > 0" :animationData="UpArrowAnimation" :height="32" :width="32" />
+                                  <LottieAnimation :speed=".75" v-else-if="game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game.currentRound.account.roundPriceDifferenceDecimals, game) < 0" :animationData="DownArrowAnimation" :height="32" :width="32" />
                                   <LottieAnimation v-else :animation-data="CrabAnimation" :height="32" :width="32"/>
                                 
                                 </div>
                                 <span style="margin-left: 24px;">
                                   $ {{ 
-                                    game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game).toFixed(2)
+                                    game.currentRound.convertOraclePriceToNumber(game.currentRound.account.roundPriceDifference, game.currentRound.account.roundPriceDifferenceDecimals, game).toFixed(2)
                                   }}
                                 </span>
                                 
@@ -1681,7 +1681,7 @@ export default defineComponent({
                             <v-spacer></v-spacer>
                             <v-row justify="center">
                               <v-col cols="4">
-                                <CryptoIcon style="margin: 0 auto;" max-width="32px" :icon="game.account.baseSymbol.toLowerCase()"/>
+                                <CryptoIcon style="margin: 0 auto;" max-width="32px" :icon="game.baseSymbolAsString().toLowerCase()"/>
                               </v-col>
                               <v-divider vertical></v-divider>
                               <v-col cols="4">
@@ -1689,7 +1689,7 @@ export default defineComponent({
                               </v-col>
                             </v-row>
                             <v-spacer></v-spacer>
-                            <!-- <p style="margin: 0 auto;">{{ game.account.baseSymbol }} / {{ frontendGameData.get(game.account.address.toBase58()).mint.symbol }}</p>  -->
+                            <!-- <p style="margin: 0 auto;">{{ game.baseSymbolAsString() }} / {{ frontendGameData.get(game.account.address.toBase58()).mint.symbol }}</p>  -->
                           </v-card-title>
                           <v-card-subtitle>
                             <span style="margin: 0 auto;">
@@ -1988,7 +1988,7 @@ export default defineComponent({
                         <td>
                           {{ bnQuoteAssetToNumberFromGame(prediction.account.amount, computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58())) }}
                         </td>
-                        <td> {{ computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58()).currentRound.convertOraclePriceToNumber(computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58()).currentRound.account.roundPriceDifference, computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58())) > 0 ? prediction.account.upOrDown === UpOrDown.Up : false }}</td>
+                        <td> {{ computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58()).currentRound.convertOraclePriceToNumber(computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58()).currentRound.account.roundPriceDifference, computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58()).currentRound.account.roundPriceDifferenceDecimals, computedGames.find(g => g.account.address.toBase58() === prediction.account.game.toBase58())) > 0 ? prediction.account.upOrDown === UpOrDown.Up : false }}</td>
                       </tr>
                     </table>
                   </v-card-text>
@@ -2155,10 +2155,10 @@ export default defineComponent({
                               {{ Math.floor(historyItem.roundTimeDifference.toNumber() / 60) + ':' + (historyItem.roundTimeDifference.toNumber() % 60 >= 10 ? historyItem.roundTimeDifference.toNumber() % 60 : "0" + historyItem.roundTimeDifference.toNumber() % 60)}}
                             </td>
                             <td>
-                              {{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.convertOraclePriceToNumber(historyItem.roundStartPrice, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)).toFixed(2) }}
+                              {{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.convertOraclePriceToNumber(historyItem.roundStartPrice, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.account.roundStartPriceDecimals, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)).toFixed(2) }}
                             </td>
                             <td>
-                              {{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.convertOraclePriceToNumber(historyItem.roundPriceDifference, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)).toFixed(2) }}
+                              {{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.convertOraclePriceToNumber(historyItem.roundPriceDifference, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.account.roundPriceDifferenceDecimals, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)).toFixed(2) }}
                             </td>
                             <td>
                               {{historyItem.totalPredictions}}
