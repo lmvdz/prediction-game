@@ -691,23 +691,24 @@ function reviver(key, value) {
 }
 
 async function loadGameHistoriesFromDB() {
-  let res = await fetch(`https://api.solpredict.io/${getHost() !== 'localhost' ? getHost().split('.')[0] : 'devnet'}/history`);
-  let data = JSON.parse(await res.json(), reviver) as Map<string, { roundHistory: RoundHistoryAccount, userPredictionHistory: UserPredictionHistoryAccount }>;
+  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/history`);
+  let data = JSON.parse(await res.json(), reviver) as Map<string, { roundHistory: any, userPredictionHistory: any }>;
   data.forEach(async ({ roundHistory, userPredictionHistory }) => {
-
-    let game = [...games.value.values()].find(g => g.account.address.toBase58() === roundHistory.account.game.toBase58() && g.account.address.toBase58() === userPredictionHistory.account.game.toBase58())
+    let roundHistoryAccount = RoundHistory.fromJSON(roundHistory);
+    let userPredictionHistoryAccount = UserPredictionHistory.fromJSON(userPredictionHistory);
+    let game = [...games.value.values()].find(g => g.account.address.toBase58() === roundHistoryAccount.account.game.toBase58() && g.account.address.toBase58() === userPredictionHistoryAccount.account.game.toBase58())
     if (game) {
-      game.roundHistory = new RoundHistory(roundHistory);
-      game.userPredictionHistory = new UserPredictionHistory(userPredictionHistory);
+      game.roundHistory = roundHistoryAccount;
+      game.userPredictionHistory = userPredictionHistoryAccount;
     }
   });
 }
 
 async function loadRoundsFromDB() {
-  let res = await fetch(`https://api.solpredict.io/${getHost() !== 'localhost' ? getHost().split('.')[0] : 'devnet'}/round`);
+  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/round`);
   let data = await res.json();
   data.forEach(async (vJSON: string) => {
-    let roundAccount = JSON.parse(vJSON) as RoundAccount
+    let roundAccount = RoundAccount.fromJSON(JSON.parse(vJSON))
     let round = new Round(roundAccount)
     let game = [...games.value.values()].find(g => g.account.address.toBase58() === round.account.game.toBase58())
     if (game) {
@@ -721,11 +722,11 @@ async function loadRoundsFromDB() {
 }
 
 async function loadGamesFromDB() {
-  let res = await fetch(`https://api.solpredict.io/${getHost() !== 'localhost' ? getHost().split('.')[0] : 'devnet'}/game`);
+  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/game`);
   let data = await res.json();
   let gameAccountKeys = new Set<string>();
   data.forEach(async (vJSON: string) => {
-    let gameAccount = JSON.parse(vJSON) as GameAccount
+    let gameAccount = GameAccount.fromJSON(JSON.parse(vJSON))
     let gameAccountAddress = gameAccount.address.toBase58();
     gameAccountKeys.add(gameAccountAddress)
     if (!games.value.has(gameAccountAddress)) {
@@ -742,11 +743,12 @@ async function loadGamesFromDB() {
 }
 
 async function loadVaultsFromDB() {
-  let res = await fetch(`https://api.solpredict.io/${getHost() !== 'localhost' ? getHost().split('.')[0] : 'devnet'}/vault`);
+  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/vault`);
   let data = await res.json();
   let vaultAccountKeys = new Set<string>();
   data.forEach(async (vJSON: string) => {
-    let vaultAccount = JSON.parse(vJSON) as VaultAccount
+    console.log(vJSON);
+    let vaultAccount = VaultAccount.fromJSON(JSON.parse(vJSON))
     let vaultAccountAddress = vaultAccount.address.toBase58();
     vaultAccountKeys.add(vaultAccountAddress)
     if (!vaults.value.has(vaultAccountAddress)) {

@@ -50,6 +50,41 @@ export default class RoundHistory implements DataUpdatable<RoundHistoryAccount> 
         return true;
     }
 
+    fromJSON2<RoundHistoryAccountItem>(json: any): RoundHistoryAccountItem {
+        return { 
+            recordId: new anchor.BN(json.recordId) ,
+            roundNumber: json.roundNumber,
+            roundStartTime: new anchor.BN(json.roundStartTime) ,
+            roundCurrentTime: new anchor.BN(json.roundCurrentTime) ,
+            roundTimeDifference: new anchor.BN(json.roundTimeDifference) ,
+            roundStartPrice: new anchor.BN(json.roundStartPrice) ,
+            roundCurrentPrice: new anchor.BN(json.roundCurrentPrice) ,
+            roundEndPrice: new anchor.BN(json.roundEndPrice) ,
+            roundPriceDifference: new anchor.BN(json.roundPriceDifference) ,
+            roundPriceDecimals: new anchor.BN(json.roundPriceDecimals) ,
+            roundWinningDirection: json.roundWinningDirection,
+            totalFeeCollected: new anchor.BN(json.totalFeeCollected) ,
+            totalUpAmount: new anchor.BN(json.totalUpAmount) ,
+            totalDownAmount: new anchor.BN(json.totalDownAmount) ,
+            totalAmountSettled: new anchor.BN(json.totalAmountSettled) ,
+            totalPredictionsSettled: json.totalPredictionsSettled,
+            totalPredictions: json.totalPredictions,
+            totalUniqueCrankers: json.totalUniqueCrankers,
+            totalCranks: json.totalCranks,
+            totalCranksPaid: json.totalCranksPaid,
+            totalAmountPaidToCranks: new anchor.BN(json.totalAmountPaidToCranks) 
+        } as unknown as RoundHistoryAccountItem
+    }
+
+    fromJSON<RoundHistoryAccount>(json: any): RoundHistoryAccount {
+        return { 
+            head: new anchor.BN(json.head),
+            game: new PublicKey(json.game),
+            address: new PublicKey(json.address),
+            rounds: json.rounds.map((x: any) => this.fromJSON2(JSON.parse(x)))
+        } as unknown as RoundHistoryAccount
+    }
+
 
     public static async adminCloseUserRoundHistoryInstruction(workspace: Workspace, roundHistory: PublicKey) : Promise<TransactionInstruction> {
         return await workspace.program.methods.adminCloseRoundHistoryInstruction().accounts({

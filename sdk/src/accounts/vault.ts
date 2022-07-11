@@ -2,8 +2,6 @@ import { PublicKey, PublicKeyData, SystemProgram, Transaction, TransactionInstru
 import { Workspace } from '../workspace'
 import { DataUpdatable } from "../dataUpdatable"
 import { fetchAccountRetry, confirmTxRetry } from "../util/index"
-import Game from './game';
-import User from './user';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 
 
@@ -38,6 +36,26 @@ export default class Vault implements DataUpdatable<VaultAccount> {
     public async updateData(data: VaultAccount): Promise<boolean> {
         this.account = data;
         return true;
+    }
+
+    fromJSON<VaultAccount>(json: any): VaultAccount {
+        return {
+            address: new PublicKey(json.address),
+            owner: new PublicKey(json.owner),
+
+            tokenMint: new PublicKey(json.tokenMint),
+            tokenDecimals: json.tokenDecimals,
+
+            feeVaultAta: new PublicKey(json.feeVaultAta),
+            feeVaultAtaAuthority: new PublicKey(json.feeVaultAtaAuthority),
+            feeVaultAtaAuthorityNonce: json.feeVaultAtaAuthorityNonce,
+
+            vaultAta: new PublicKey(json.vaultAta),
+            vaultAtaAuthority: new PublicKey(json.vaultAtaAuthority),
+            vaultAtaAuthorityNonce: json.vaultAtaAuthorityNonce,
+
+            padding01: json.padding01.map((x: string) => new PublicKey(x)) as PublicKey[]
+        } as unknown as VaultAccount
     }
 
     public async getUpdatedVaultData(workspace: Workspace) : Promise<VaultAccount> {

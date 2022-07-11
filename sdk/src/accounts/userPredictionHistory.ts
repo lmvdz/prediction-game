@@ -36,6 +36,25 @@ export default class UserPredictionHistory implements DataUpdatable<UserPredicti
         return true;
     }
 
+    fromJSON2<UserPredictionHistoryItem>(json: any): UserPredictionHistoryItem {
+        return { 
+            recordId: new anchor.BN(json.recordId),
+            address: new PublicKey(json.address),
+            game: new PublicKey(json.game),
+            round: new PublicKey(json.round),
+            upOrDown: json.upOrDown,
+            amount: new anchor.BN(json.amount)
+        } as unknown as UserPredictionHistoryItem
+    }
+
+    fromJSON<UserPredictionHistoryAccount>(json: any): UserPredictionHistoryAccount {
+        return { 
+            head: new anchor.BN(json.head),
+            game: new PublicKey(json.game),
+            address: new PublicKey(json.address),
+            userPredictions: json.userPredictions.map((x: any) => this.fromJSON<UserPredictionHistoryItem>(JSON.parse(x)))
+        } as unknown as UserPredictionHistoryAccount
+    }
 
     public static async adminCloseUserUserPredictionHistoryInstruction(workspace: Workspace, userPredictionHistory: PublicKey) : Promise<TransactionInstruction> {
         return await workspace.program.methods.adminCloseUserPredictionHistoryInstruction().accounts({
