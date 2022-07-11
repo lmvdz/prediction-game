@@ -78,13 +78,13 @@ export default class Game implements DataUpdatable<GameAccount> {
 
             vault: new PublicKey(json.vault),
 
-            unclaimedFees: new anchor.BN(json.unclaimedFees),
+            unclaimedFees: new anchor.BN(json.unclaimedFees, 16),
 
             feeBps: json.feeBps,
             crankBps: json.crankBps,
 
-            totalVolume: new anchor.BN(json.totalVolume),
-            totalVolumeRollover: new anchor.BN(json.totalVolumeRollover),
+            totalVolume: new anchor.BN(json.totalVolume, 16),
+            totalVolumeRollover: new anchor.BN(json.totalVolumeRollover, 16),
             
             priceProgram: new PublicKey(json.priceProgram),
             priceFeed: new PublicKey(json.priceFeed),

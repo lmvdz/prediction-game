@@ -36,17 +36,17 @@ class UserPredictionHistory {
     }
     static fromJSON2(json) {
         return {
-            recordId: new anchor.BN(json.recordId),
+            recordId: new anchor.BN(json.recordId, 16),
             address: new web3_js_1.PublicKey(json.address),
             game: new web3_js_1.PublicKey(json.game),
             round: new web3_js_1.PublicKey(json.round),
             upOrDown: json.upOrDown,
-            amount: new anchor.BN(json.amount)
+            amount: new anchor.BN(json.amount, 16)
         };
     }
     static fromJSON(json) {
         return {
-            head: new anchor.BN(json.head),
+            head: new anchor.BN(json.head, 16),
             game: new web3_js_1.PublicKey(json.game),
             address: new web3_js_1.PublicKey(json.address),
             userPredictions: json.userPredictions.map((x) => this.fromJSON(JSON.parse(x)))

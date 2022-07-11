@@ -38,18 +38,18 @@ export default class UserPredictionHistory implements DataUpdatable<UserPredicti
 
     public static fromJSON2<UserPredictionHistoryItem>(json: any): UserPredictionHistoryItem {
         return { 
-            recordId: new anchor.BN(json.recordId),
+            recordId: new anchor.BN(json.recordId, 16),
             address: new PublicKey(json.address),
             game: new PublicKey(json.game),
             round: new PublicKey(json.round),
             upOrDown: json.upOrDown,
-            amount: new anchor.BN(json.amount)
+            amount: new anchor.BN(json.amount, 16)
         } as unknown as UserPredictionHistoryItem
     }
 
     public static fromJSON<UserPredictionHistoryAccount>(json: any): UserPredictionHistoryAccount {
         return { 
-            head: new anchor.BN(json.head),
+            head: new anchor.BN(json.head, 16),
             game: new PublicKey(json.game),
             address: new PublicKey(json.address),
             userPredictions: json.userPredictions.map((x: any) => this.fromJSON<UserPredictionHistoryItem>(JSON.parse(x)))

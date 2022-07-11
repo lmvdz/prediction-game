@@ -2392,8 +2392,5 @@
       "name": "InvalidVaultAuthorityNonce",
       "msg": "The Vault ATA Authority Nonce did not match the one generated"
     }
-  ],
-  "metadata": {
-    "address": "7ZFRSUUEgeJUMMyf7DYsYKurHctSAZed8ECMazomo7x"
-  }
+  ]
 }

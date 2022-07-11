@@ -682,18 +682,11 @@ function unloadUserClaimable() {
 }
 
 
-function reviver(key, value) {
-  if(typeof value === 'object' && value !== null) {
-    if (value.dataType === 'Map') {
-      return new Map(value.value);
-    }
-  }
-  return value;
-}
 
 async function loadGameHistoriesFromDB() {
   let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/history`);
-  let data = JSON.parse(await res.json(), reviver) as Map<string, { roundHistory: any, userPredictionHistory: any }>;
+  let json = await res.json();
+  let data = JSON.parse(json)
   data.forEach(async ({ roundHistory, userPredictionHistory }) => {
     let roundHistoryAccount = RoundHistory.fromJSON<RoundHistoryAccount>(roundHistory);
     let userPredictionHistoryAccount = UserPredictionHistory.fromJSON<UserPredictionHistoryAccount>(userPredictionHistory);
@@ -709,43 +702,7 @@ async function loadRoundsFromDB() {
   let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/round`);
   let data = await res.json();
   data.forEach(async (vJSON: string) => {
-    let json = JSON.parse(vJSON);
-    console.log(json);
-    let owner = new PublicKey(json.owner);
-    let gamea = new PublicKey(json.game);
-    let address = new PublicKey(json.address);
-    let roundNumber = json.roundNumber;
-    let roundLength = json.roundLength;
-    let finished = json.finished;
-    let invalid = json.invalid;
-    let settled = json.settled;
-    let feeCollected = json.feeCollected;
-    let cranksPaid = json.cranksPaid;
-    let roundPredictionsAllowed = json.roundPredictionsAllowed;
-    let roundStartTime = new anchor.BN(json.roundStartTime);
-    let roundCurrentTime = new anchor.BN(json.roundCurrentTime);
-    let roundTimeDifference = new anchor.BN(json.roundTimeDifference);
-    let roundStartPrice = new anchor.BN(json.roundStartPrice);
-    let roundStartPriceDecimals = new anchor.BN(json.roundStartPriceDecimals);
-    let roundCurrentPrice = new anchor.BN(json.roundCurrentPrice);
-    let roundCurrentPriceDecimals = new anchor.BN(json.roundCurrentPriceDecimals);
-    let roundEndPrice = new anchor.BN(json.roundEndPrice);
-    let roundEndPriceDecimals = new anchor.BN(json.roundEndPriceDecimals);
-    let roundPriceDifference = new anchor.BN(json.roundPriceDifference);
-    let roundPriceDifferenceDecimals = new anchor.BN(json.roundPriceDifferenceDecimals);
-    let roundWinningDirection = json.roundWinningDirection;
-    let totalFeeCollected = new anchor.BN(json.totalFeeCollected);
-    let totalUpAmount = new anchor.BN(json.totalUpAmount);
-    let totalDownAmount = new anchor.BN(json.totalDownAmount);
-    let totalAmountSettled = new anchor.BN(json.totalAmountSettled);
-    let totalPredictionsSettled = json.totalPredictionsSettled;
-    let totalPredictions = json.totalPredictions;
-    let totalUniqueCrankers = json.totalUniqueCrankers;
-    let totalCranks = json.totalCranks;
-    let totalCranksPaid = json.totalCranksPaid;
-    let totalAmountPaidToCranks = new anchor.BN(json.totalAmountPaidToCranks);
-    let padding01 = json.padding01.map((x: string) => new PublicKey(x)) as PublicKey[];
-    let roundAccount = Round.fromJSON<RoundAccount>(json);
+    let roundAccount = Round.fromJSON<RoundAccount>(JSON.parse(vJSON));
     let round = new Round(roundAccount)
     let game = [...games.value.values()].find(g => g.account.address.toBase58() === round.account.game.toBase58())
     if (game) {

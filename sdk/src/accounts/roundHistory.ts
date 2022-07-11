@@ -52,27 +52,27 @@ export default class RoundHistory implements DataUpdatable<RoundHistoryAccount> 
 
     public static fromJSON2<RoundHistoryAccountItem>(json: any): RoundHistoryAccountItem {
         return { 
-            recordId: new anchor.BN(json.recordId) ,
+            recordId: new anchor.BN(json.recordId, 16) ,
             roundNumber: json.roundNumber,
-            roundStartTime: new anchor.BN(json.roundStartTime) ,
-            roundCurrentTime: new anchor.BN(json.roundCurrentTime) ,
-            roundTimeDifference: new anchor.BN(json.roundTimeDifference) ,
-            roundStartPrice: new anchor.BN(json.roundStartPrice) ,
-            roundCurrentPrice: new anchor.BN(json.roundCurrentPrice) ,
-            roundEndPrice: new anchor.BN(json.roundEndPrice) ,
-            roundPriceDifference: new anchor.BN(json.roundPriceDifference) ,
-            roundPriceDecimals: new anchor.BN(json.roundPriceDecimals) ,
+            roundStartTime: new anchor.BN(json.roundStartTime, 16) ,
+            roundCurrentTime: new anchor.BN(json.roundCurrentTime, 16) ,
+            roundTimeDifference: new anchor.BN(json.roundTimeDifference, 16) ,
+            roundStartPrice: new anchor.BN(json.roundStartPrice, 16) ,
+            roundCurrentPrice: new anchor.BN(json.roundCurrentPrice, 16) ,
+            roundEndPrice: new anchor.BN(json.roundEndPrice, 16) ,
+            roundPriceDifference: new anchor.BN(json.roundPriceDifference, 16) ,
+            roundPriceDecimals: new anchor.BN(json.roundPriceDecimals, 16) ,
             roundWinningDirection: json.roundWinningDirection,
-            totalFeeCollected: new anchor.BN(json.totalFeeCollected) ,
-            totalUpAmount: new anchor.BN(json.totalUpAmount) ,
-            totalDownAmount: new anchor.BN(json.totalDownAmount) ,
-            totalAmountSettled: new anchor.BN(json.totalAmountSettled) ,
+            totalFeeCollected: new anchor.BN(json.totalFeeCollected, 16) ,
+            totalUpAmount: new anchor.BN(json.totalUpAmount, 16) ,
+            totalDownAmount: new anchor.BN(json.totalDownAmount, 16) ,
+            totalAmountSettled: new anchor.BN(json.totalAmountSettled, 16) ,
             totalPredictionsSettled: json.totalPredictionsSettled,
             totalPredictions: json.totalPredictions,
             totalUniqueCrankers: json.totalUniqueCrankers,
             totalCranks: json.totalCranks,
             totalCranksPaid: json.totalCranksPaid,
-            totalAmountPaidToCranks: new anchor.BN(json.totalAmountPaidToCranks) 
+            totalAmountPaidToCranks: new anchor.BN(json.totalAmountPaidToCranks, 16) 
         } as unknown as RoundHistoryAccountItem
     }
 
