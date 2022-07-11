@@ -6,7 +6,8 @@ node_modules
 test-ledger
 target
 aggr
-lib
+sdk/lib
+crank/lib
 .env*
 .env.*
 server/frontend
