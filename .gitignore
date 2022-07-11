@@ -4,3 +4,6 @@
 **/*.rs.bk
 node_modules
 test-ledger
+target
+.env*
+.env.*

@@ -38,7 +38,7 @@ export default class Vault implements DataUpdatable<VaultAccount> {
         return true;
     }
 
-    fromJSON<VaultAccount>(json: any): VaultAccount {
+    public static fromJSON<VaultAccount>(json: any): VaultAccount {
         return {
             address: new PublicKey(json.address),
             owner: new PublicKey(json.owner),

@@ -24,6 +24,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const anchor = __importStar(require("@project-serum/anchor"));
+const web3_js_1 = require("@solana/web3.js");
 const constants_1 = require("../constants");
 const index_1 = require("../util/index");
 const types_1 = require("../types");
@@ -34,6 +35,78 @@ class Round {
     async updateData(data) {
         this.account = data;
         return true;
+    }
+    static fromJSON(json) {
+        let owner = new web3_js_1.PublicKey(json.owner);
+        let game = new web3_js_1.PublicKey(json.game);
+        let address = new web3_js_1.PublicKey(json.address);
+        let roundNumber = json.roundNumber;
+        let roundLength = json.roundLength;
+        let finished = json.finished;
+        let invalid = json.invalid;
+        let settled = json.settled;
+        let feeCollected = json.feeCollected;
+        let cranksPaid = json.cranksPaid;
+        let roundPredictionsAllowed = json.roundPredictionsAllowed;
+        let roundStartTime = new anchor.BN(json.roundStartTime);
+        let roundCurrentTime = new anchor.BN(json.roundCurrentTime);
+        let roundTimeDifference = new anchor.BN(json.roundTimeDifference);
+        let roundStartPrice = new anchor.BN(json.roundStartPrice);
+        let roundStartPriceDecimals = new anchor.BN(json.roundStartPriceDecimals);
+        let roundCurrentPrice = new anchor.BN(json.roundCurrentPrice);
+        let roundCurrentPriceDecimals = new anchor.BN(json.roundCurrentPriceDecimals);
+        let roundEndPrice = new anchor.BN(json.roundEndPrice);
+        let roundEndPriceDecimals = new anchor.BN(json.roundEndPriceDecimals);
+        let roundPriceDifference = new anchor.BN(json.roundPriceDifference);
+        let roundPriceDifferenceDecimals = new anchor.BN(json.roundPriceDifferenceDecimals);
+        let roundWinningDirection = json.roundWinningDirection;
+        let totalFeeCollected = new anchor.BN(json.totalFeeCollected);
+        let totalUpAmount = new anchor.BN(json.totalUpAmount);
+        let totalDownAmount = new anchor.BN(json.totalDownAmount);
+        let totalAmountSettled = new anchor.BN(json.totalAmountSettled);
+        let totalPredictionsSettled = json.totalPredictionsSettled;
+        let totalPredictions = json.totalPredictions;
+        let totalUniqueCrankers = json.totalUniqueCrankers;
+        let totalCranks = json.totalCranks;
+        let totalCranksPaid = json.totalCranksPaid;
+        let totalAmountPaidToCranks = new anchor.BN(json.totalAmountPaidToCranks);
+        let padding01 = json.padding01.map((x) => new web3_js_1.PublicKey(x));
+        return {
+            owner,
+            game,
+            address,
+            roundNumber,
+            roundLength,
+            finished,
+            invalid,
+            settled,
+            feeCollected,
+            cranksPaid,
+            roundPredictionsAllowed,
+            roundStartTime,
+            roundCurrentTime,
+            roundTimeDifference,
+            roundStartPrice,
+            roundStartPriceDecimals,
+            roundCurrentPrice,
+            roundCurrentPriceDecimals,
+            roundEndPrice,
+            roundEndPriceDecimals,
+            roundPriceDifference,
+            roundPriceDifferenceDecimals,
+            roundWinningDirection,
+            totalFeeCollected,
+            totalUpAmount,
+            totalDownAmount,
+            totalAmountSettled,
+            totalPredictionsSettled,
+            totalPredictions,
+            totalUniqueCrankers,
+            totalCranks,
+            totalCranksPaid,
+            totalAmountPaidToCranks,
+            padding01
+        };
     }
     convertOraclePriceToNumber(price, decimals_, game) {
         try {

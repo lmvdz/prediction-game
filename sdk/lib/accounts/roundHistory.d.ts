@@ -35,6 +35,8 @@ export default class RoundHistory implements DataUpdatable<RoundHistoryAccount> 
     account: RoundHistoryAccount;
     constructor(account: RoundHistoryAccount);
     updateData(data: RoundHistoryAccount): Promise<boolean>;
+    static fromJSON2<RoundHistoryAccountItem>(json: any): RoundHistoryAccountItem;
+    static fromJSON<RoundHistoryAccount>(json: any): RoundHistoryAccount;
     static adminCloseUserRoundHistoryInstruction(workspace: Workspace, roundHistory: PublicKey): Promise<TransactionInstruction>;
     static adminCloseUserRoundHistory(workspace: Workspace, roundHistory: PublicKey): Promise<boolean>;
 }

@@ -36,7 +36,7 @@ export default class UserPredictionHistory implements DataUpdatable<UserPredicti
         return true;
     }
 
-    fromJSON2<UserPredictionHistoryItem>(json: any): UserPredictionHistoryItem {
+    public static fromJSON2<UserPredictionHistoryItem>(json: any): UserPredictionHistoryItem {
         return { 
             recordId: new anchor.BN(json.recordId),
             address: new PublicKey(json.address),
@@ -47,7 +47,7 @@ export default class UserPredictionHistory implements DataUpdatable<UserPredicti
         } as unknown as UserPredictionHistoryItem
     }
 
-    fromJSON<UserPredictionHistoryAccount>(json: any): UserPredictionHistoryAccount {
+    public static fromJSON<UserPredictionHistoryAccount>(json: any): UserPredictionHistoryAccount {
         return { 
             head: new anchor.BN(json.head),
             game: new PublicKey(json.game),

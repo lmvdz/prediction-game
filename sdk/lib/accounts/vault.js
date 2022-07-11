@@ -11,6 +11,21 @@ class Vault {
         this.account = data;
         return true;
     }
+    static fromJSON(json) {
+        return {
+            address: new web3_js_1.PublicKey(json.address),
+            owner: new web3_js_1.PublicKey(json.owner),
+            tokenMint: new web3_js_1.PublicKey(json.tokenMint),
+            tokenDecimals: json.tokenDecimals,
+            feeVaultAta: new web3_js_1.PublicKey(json.feeVaultAta),
+            feeVaultAtaAuthority: new web3_js_1.PublicKey(json.feeVaultAtaAuthority),
+            feeVaultAtaAuthorityNonce: json.feeVaultAtaAuthorityNonce,
+            vaultAta: new web3_js_1.PublicKey(json.vaultAta),
+            vaultAtaAuthority: new web3_js_1.PublicKey(json.vaultAtaAuthority),
+            vaultAtaAuthorityNonce: json.vaultAtaAuthorityNonce,
+            padding01: json.padding01.map((x) => new web3_js_1.PublicKey(x))
+        };
+    }
     async getUpdatedVaultData(workspace) {
         return await (0, index_1.fetchAccountRetry)(workspace, 'vault', (this.account.address));
     }

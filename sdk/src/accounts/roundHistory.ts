@@ -50,7 +50,7 @@ export default class RoundHistory implements DataUpdatable<RoundHistoryAccount> 
         return true;
     }
 
-    fromJSON2<RoundHistoryAccountItem>(json: any): RoundHistoryAccountItem {
+    public static fromJSON2<RoundHistoryAccountItem>(json: any): RoundHistoryAccountItem {
         return { 
             recordId: new anchor.BN(json.recordId) ,
             roundNumber: json.roundNumber,
@@ -76,7 +76,7 @@ export default class RoundHistory implements DataUpdatable<RoundHistoryAccount> 
         } as unknown as RoundHistoryAccountItem
     }
 
-    fromJSON<RoundHistoryAccount>(json: any): RoundHistoryAccount {
+    public static fromJSON<RoundHistoryAccount>(json: any): RoundHistoryAccount {
         return { 
             head: new anchor.BN(json.head),
             game: new PublicKey(json.game),

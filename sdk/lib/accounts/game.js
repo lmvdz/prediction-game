@@ -38,6 +38,30 @@ class Game {
     constructor(account) {
         this.account = account;
     }
+    static fromJSON(json) {
+        return {
+            owner: new web3_js_1.PublicKey(json.owner),
+            address: new web3_js_1.PublicKey(json.address),
+            tokenDecimal: json.tokenDecimal,
+            baseSymbol: json.baseSymbol,
+            roundNumber: json.roundNumber,
+            currentRound: new web3_js_1.PublicKey(json.currentRound),
+            previousRound: new web3_js_1.PublicKey(json.previousRound),
+            roundLength: json.roundLength,
+            vault: new web3_js_1.PublicKey(json.vault),
+            unclaimedFees: new anchor.BN(json.unclaimedFees),
+            feeBps: json.feeBps,
+            crankBps: json.crankBps,
+            totalVolume: new anchor.BN(json.totalVolume),
+            totalVolumeRollover: new anchor.BN(json.totalVolumeRollover),
+            priceProgram: new web3_js_1.PublicKey(json.priceProgram),
+            priceFeed: new web3_js_1.PublicKey(json.priceFeed),
+            oracle: json.oracle,
+            userPredictionHistory: new web3_js_1.PublicKey(json.userPredictionHistory),
+            roundHistory: new web3_js_1.PublicKey(json.roundHistory),
+            padding01: json.padding01.map((x) => new web3_js_1.PublicKey(x))
+        };
+    }
     async updateData(data) {
         this.account = data;
         return true;

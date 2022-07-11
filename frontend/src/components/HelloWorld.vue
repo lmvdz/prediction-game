@@ -29,6 +29,7 @@ import * as anchor from '@project-serum/anchor'
 import axios from 'axios';
 import { useStore } from "../stores/store";
 import bs58 from 'bs58';
+import BN from 'bn.js';
 import UpArrowAnimation from '../lottie/65775-arrrow-moving-upward.json'
 import DownArrowAnimation from '../lottie/65777-graph-moving-downward.json'
 import CrabAnimation from '../lottie/101494-rebound-rock-water-creature-by-dave-chenell.json'
@@ -694,12 +695,12 @@ async function loadGameHistoriesFromDB() {
   let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/history`);
   let data = JSON.parse(await res.json(), reviver) as Map<string, { roundHistory: any, userPredictionHistory: any }>;
   data.forEach(async ({ roundHistory, userPredictionHistory }) => {
-    let roundHistoryAccount = RoundHistory.fromJSON(roundHistory);
-    let userPredictionHistoryAccount = UserPredictionHistory.fromJSON(userPredictionHistory);
-    let game = [...games.value.values()].find(g => g.account.address.toBase58() === roundHistoryAccount.account.game.toBase58() && g.account.address.toBase58() === userPredictionHistoryAccount.account.game.toBase58())
+    let roundHistoryAccount = RoundHistory.fromJSON<RoundHistoryAccount>(roundHistory);
+    let userPredictionHistoryAccount = UserPredictionHistory.fromJSON<UserPredictionHistoryAccount>(userPredictionHistory);
+    let game = [...games.value.values()].find(g => g.account.address.toBase58() === roundHistoryAccount.game.toBase58() && g.account.address.toBase58() === userPredictionHistoryAccount.game.toBase58())
     if (game) {
-      game.roundHistory = roundHistoryAccount;
-      game.userPredictionHistory = userPredictionHistoryAccount;
+      game.roundHistory = new RoundHistory(roundHistoryAccount);
+      game.userPredictionHistory = new UserPredictionHistory(userPredictionHistoryAccount);
     }
   });
 }
@@ -708,7 +709,43 @@ async function loadRoundsFromDB() {
   let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/round`);
   let data = await res.json();
   data.forEach(async (vJSON: string) => {
-    let roundAccount = RoundAccount.fromJSON(JSON.parse(vJSON))
+    let json = JSON.parse(vJSON);
+    console.log(json);
+    let owner = new PublicKey(json.owner);
+    let gamea = new PublicKey(json.game);
+    let address = new PublicKey(json.address);
+    let roundNumber = json.roundNumber;
+    let roundLength = json.roundLength;
+    let finished = json.finished;
+    let invalid = json.invalid;
+    let settled = json.settled;
+    let feeCollected = json.feeCollected;
+    let cranksPaid = json.cranksPaid;
+    let roundPredictionsAllowed = json.roundPredictionsAllowed;
+    let roundStartTime = new anchor.BN(json.roundStartTime);
+    let roundCurrentTime = new anchor.BN(json.roundCurrentTime);
+    let roundTimeDifference = new anchor.BN(json.roundTimeDifference);
+    let roundStartPrice = new anchor.BN(json.roundStartPrice);
+    let roundStartPriceDecimals = new anchor.BN(json.roundStartPriceDecimals);
+    let roundCurrentPrice = new anchor.BN(json.roundCurrentPrice);
+    let roundCurrentPriceDecimals = new anchor.BN(json.roundCurrentPriceDecimals);
+    let roundEndPrice = new anchor.BN(json.roundEndPrice);
+    let roundEndPriceDecimals = new anchor.BN(json.roundEndPriceDecimals);
+    let roundPriceDifference = new anchor.BN(json.roundPriceDifference);
+    let roundPriceDifferenceDecimals = new anchor.BN(json.roundPriceDifferenceDecimals);
+    let roundWinningDirection = json.roundWinningDirection;
+    let totalFeeCollected = new anchor.BN(json.totalFeeCollected);
+    let totalUpAmount = new anchor.BN(json.totalUpAmount);
+    let totalDownAmount = new anchor.BN(json.totalDownAmount);
+    let totalAmountSettled = new anchor.BN(json.totalAmountSettled);
+    let totalPredictionsSettled = json.totalPredictionsSettled;
+    let totalPredictions = json.totalPredictions;
+    let totalUniqueCrankers = json.totalUniqueCrankers;
+    let totalCranks = json.totalCranks;
+    let totalCranksPaid = json.totalCranksPaid;
+    let totalAmountPaidToCranks = new anchor.BN(json.totalAmountPaidToCranks);
+    let padding01 = json.padding01.map((x: string) => new PublicKey(x)) as PublicKey[];
+    let roundAccount = Round.fromJSON<RoundAccount>(json);
     let round = new Round(roundAccount)
     let game = [...games.value.values()].find(g => g.account.address.toBase58() === round.account.game.toBase58())
     if (game) {
@@ -726,7 +763,7 @@ async function loadGamesFromDB() {
   let data = await res.json();
   let gameAccountKeys = new Set<string>();
   data.forEach(async (vJSON: string) => {
-    let gameAccount = GameAccount.fromJSON(JSON.parse(vJSON))
+    let gameAccount = Game.fromJSON<GameAccount>(JSON.parse(vJSON))
     let gameAccountAddress = gameAccount.address.toBase58();
     gameAccountKeys.add(gameAccountAddress)
     if (!games.value.has(gameAccountAddress)) {
@@ -748,7 +785,8 @@ async function loadVaultsFromDB() {
   let vaultAccountKeys = new Set<string>();
   data.forEach(async (vJSON: string) => {
     console.log(vJSON);
-    let vaultAccount = VaultAccount.fromJSON(JSON.parse(vJSON))
+    let vaultAccount = Vault.fromJSON<VaultAccount>(JSON.parse(vJSON))
+    console.log(vaultAccount);
     let vaultAccountAddress = vaultAccount.address.toBase58();
     vaultAccountKeys.add(vaultAccountAddress)
     if (!vaults.value.has(vaultAccountAddress)) {

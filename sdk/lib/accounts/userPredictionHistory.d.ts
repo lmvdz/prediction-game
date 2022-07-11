@@ -20,6 +20,8 @@ export default class UserPredictionHistory implements DataUpdatable<UserPredicti
     account: UserPredictionHistoryAccount;
     constructor(account: UserPredictionHistoryAccount);
     updateData(data: UserPredictionHistoryAccount): Promise<boolean>;
+    static fromJSON2<UserPredictionHistoryItem>(json: any): UserPredictionHistoryItem;
+    static fromJSON<UserPredictionHistoryAccount>(json: any): UserPredictionHistoryAccount;
     static adminCloseUserUserPredictionHistoryInstruction(workspace: Workspace, userPredictionHistory: PublicKey): Promise<TransactionInstruction>;
     static adminCloseUserUserPredictionHistory(workspace: Workspace, userPredictionHistory: PublicKey): Promise<boolean>;
 }

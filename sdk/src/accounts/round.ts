@@ -74,57 +74,79 @@ export default class Round implements DataUpdatable<RoundAccount> {
         return true;
     }
 
-    fromJSON<RoundAccount>(json: any): RoundAccount {
-        return {
-            owner: new PublicKey(json.owner),
-            game: new PublicKey(json.game),
-            address: new PublicKey(json.address),
-
-            roundNumber: json.roundNumber,
-            roundLength: json.roundLength,
-            
-            finished: json.finished,
-            invalid: json.invalid,
-            settled: json.settled,
-            feeCollected: json.feeCollected,
-            cranksPaid: json.cranksPaid,
+    public static fromJSON<RoundAccount>(json: any): RoundAccount {
         
-            roundPredictionsAllowed: json.roundPredictionsAllowed,
+        let owner = new PublicKey(json.owner);
+        let game = new PublicKey(json.game);
+        let address = new PublicKey(json.address);
+        let roundNumber = json.roundNumber;
+        let roundLength = json.roundLength;
+        let finished = json.finished;
+        let invalid = json.invalid;
+        let settled = json.settled;
+        let feeCollected = json.feeCollected;
+        let cranksPaid = json.cranksPaid;
+        let roundPredictionsAllowed = json.roundPredictionsAllowed;
+        let roundStartTime = new anchor.BN(json.roundStartTime);
+        let roundCurrentTime = new anchor.BN(json.roundCurrentTime);
+        let roundTimeDifference = new anchor.BN(json.roundTimeDifference);
+        let roundStartPrice = new anchor.BN(json.roundStartPrice);
+        let roundStartPriceDecimals = new anchor.BN(json.roundStartPriceDecimals);
+        let roundCurrentPrice = new anchor.BN(json.roundCurrentPrice);
+        let roundCurrentPriceDecimals = new anchor.BN(json.roundCurrentPriceDecimals);
+        let roundEndPrice = new anchor.BN(json.roundEndPrice);
+        let roundEndPriceDecimals = new anchor.BN(json.roundEndPriceDecimals);
+        let roundPriceDifference = new anchor.BN(json.roundPriceDifference);
+        let roundPriceDifferenceDecimals = new anchor.BN(json.roundPriceDifferenceDecimals);
+        let roundWinningDirection = json.roundWinningDirection;
+        let totalFeeCollected = new anchor.BN(json.totalFeeCollected);
+        let totalUpAmount = new anchor.BN(json.totalUpAmount);
+        let totalDownAmount = new anchor.BN(json.totalDownAmount);
+        let totalAmountSettled = new anchor.BN(json.totalAmountSettled);
+        let totalPredictionsSettled = json.totalPredictionsSettled;
+        let totalPredictions = json.totalPredictions;
+        let totalUniqueCrankers = json.totalUniqueCrankers;
+        let totalCranks = json.totalCranks;
+        let totalCranksPaid = json.totalCranksPaid;
+        let totalAmountPaidToCranks = new anchor.BN(json.totalAmountPaidToCranks);
+        let padding01 = json.padding01.map((x: string) => new PublicKey(x)) as PublicKey[];
 
-            roundStartTime: new anchor.BN(json.roundStartTime),
-            roundCurrentTime: new anchor.BN(json.roundCurrentTime),
-            roundTimeDifference: new anchor.BN(json.roundTimeDifference),
-
-            roundStartPrice: new anchor.BN(json.roundStartPrice),
-            roundStartPriceDecimals: new anchor.BN(json.roundStartPriceDecimals),
-            
-            roundCurrentPrice: new anchor.BN(json.roundCurrentPrice),
-            roundCurrentPriceDecimals: new anchor.BN(json.roundCurrentPriceDecimals),
-
-            roundEndPrice: new anchor.BN(json.roundEndPrice),
-            roundEndPriceDecimals: new anchor.BN(json.roundEndPriceDecimals),
-
-            roundPriceDifference: new anchor.BN(json.roundPriceDifference),
-            roundPriceDifferenceDecimals: new anchor.BN(json.roundPriceDifferenceDecimals),
-
-            roundWinningDirection: json.roundWinningDirection,
-
-            totalFeeCollected: new anchor.BN(json.totalFeeCollected),
-
-            totalUpAmount: new anchor.BN(json.totalUpAmount),
-            totalDownAmount: new anchor.BN(json.totalDownAmount),
-
-            totalAmountSettled: new anchor.BN(json.totalAmountSettled),
-            totalPredictionsSettled: json.totalPredictionsSettled,
-            totalPredictions: json.totalPredictions,
-
-            totalUniqueCrankers: json.totalUniqueCrankers,
-            totalCranks: json.totalCranks,
-            totalCranksPaid: json.totalCranksPaid,
-            totalAmountPaidToCranks: new anchor.BN(json.totalAmountPaidToCranks),
-
-            padding01: json.padding01.map((x: string) => new PublicKey(x)) as PublicKey[]
-        } as unknown as RoundAccount
+        return {
+            owner,
+            game,
+            address,
+            roundNumber,
+            roundLength,
+            finished,
+            invalid,
+            settled,
+            feeCollected,
+            cranksPaid,
+            roundPredictionsAllowed,
+            roundStartTime,
+            roundCurrentTime,
+            roundTimeDifference,
+            roundStartPrice,
+            roundStartPriceDecimals,
+            roundCurrentPrice,
+            roundCurrentPriceDecimals,
+            roundEndPrice,
+            roundEndPriceDecimals,
+            roundPriceDifference,
+            roundPriceDifferenceDecimals,
+            roundWinningDirection,
+            totalFeeCollected,
+            totalUpAmount,
+            totalDownAmount,
+            totalAmountSettled,
+            totalPredictionsSettled,
+            totalPredictions,
+            totalUniqueCrankers,
+            totalCranks,
+            totalCranksPaid,
+            totalAmountPaidToCranks,
+            padding01
+        } as unknown as RoundAccount;
     }
 
     public convertOraclePriceToNumber(price: anchor.BN, decimals_: anchor.BN, game: Game) : number {

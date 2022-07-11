@@ -38,6 +38,7 @@ export default class Game implements DataUpdatable<GameAccount> {
     currentRound: Round;
     previousRound: Round;
     constructor(account: GameAccount);
+    static fromJSON<GameAccount>(json: any): GameAccount;
     updateData(data: GameAccount): Promise<boolean>;
     loadRoundData(workspace: Workspace): Promise<Game>;
     loadHistory(workspace: Workspace): Promise<Game>;

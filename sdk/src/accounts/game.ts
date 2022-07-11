@@ -62,7 +62,7 @@ export default class Game implements DataUpdatable<GameAccount> {
         this.account = account;
     }
 
-    fromJSON<GameAccount>(json: any): GameAccount {
+    public static fromJSON<GameAccount>(json: any): GameAccount {
         return {
             owner: new PublicKey(json.owner),
             address: new PublicKey(json.address),
