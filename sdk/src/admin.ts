@@ -18,8 +18,15 @@ import RoundHistory, { RoundHistoryAccount } from "./accounts/roundHistory";
 
 export const gameSeeds: Array<GameSeed> = [ 
     {
+        baseSymbol: "DOT",
+        priceProgram: new PublicKey("2TfB33aLaneQb5TNVwyDz3jSZXS6jdW2ARw1Dgf84XCG"), // switchboard program devnet
+        priceFeed: new PublicKey("B6bjqp6kL3qniMn9nuzHvjzRLiJvvVusugDXJXhYjNYz"), 
+        roundLength: new anchor.BN(300),
+        oracle: Oracle.Switchboard
+    },
+    {
         baseSymbol: "ATOM",
-        priceProgram: new PublicKey("gSbePebfvPy7tRqimPoVecS2UsBvYv46ynrzWocc92s"),
+        priceProgram: new PublicKey("gSbePebfvPy7tRqimPoVecS2UsBvYv46ynrzWocc92s"),  // pyth oracle program devnet
         priceFeed: new PublicKey("7YAze8qFUMkBnyLVdKT4TFUUFui99EwS5gfRArMcrvFk"),
         roundLength: new anchor.BN(300),
         oracle: Oracle.Pyth
@@ -33,7 +40,7 @@ export const gameSeeds: Array<GameSeed> = [
     }, 
     {
         baseSymbol: "BTC", 
-        priceProgram: new PublicKey("2TfB33aLaneQb5TNVwyDz3jSZXS6jdW2ARw1Dgf84XCG"),  // BTC switchboard program devnet
+        priceProgram: new PublicKey("2TfB33aLaneQb5TNVwyDz3jSZXS6jdW2ARw1Dgf84XCG"),  // switchboard program devnet
         priceFeed: new PublicKey("8SXvChNYFhRq4EZuZvnhjrB3jJRQCv4k3P4W6hesH3Ee"), // BTC switchboard price feed devnet
         roundLength: new anchor.BN(300),
         oracle: Oracle.Switchboard

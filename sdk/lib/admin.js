@@ -46,6 +46,20 @@ const userPredictionHistory_1 = __importDefault(require("./accounts/userPredicti
 const roundHistory_1 = __importDefault(require("./accounts/roundHistory"));
 exports.gameSeeds = [
     {
+        baseSymbol: "DOT",
+        priceProgram: new web3_js_1.PublicKey("2TfB33aLaneQb5TNVwyDz3jSZXS6jdW2ARw1Dgf84XCG"),
+        priceFeed: new web3_js_1.PublicKey("B6bjqp6kL3qniMn9nuzHvjzRLiJvvVusugDXJXhYjNYz"),
+        roundLength: new anchor.BN(300),
+        oracle: types_1.Oracle.Switchboard
+    },
+    {
+        baseSymbol: "ATOM",
+        priceProgram: new web3_js_1.PublicKey("gSbePebfvPy7tRqimPoVecS2UsBvYv46ynrzWocc92s"),
+        priceFeed: new web3_js_1.PublicKey("7YAze8qFUMkBnyLVdKT4TFUUFui99EwS5gfRArMcrvFk"),
+        roundLength: new anchor.BN(300),
+        oracle: types_1.Oracle.Pyth
+    },
+    {
         baseSymbol: "SOL",
         priceProgram: new web3_js_1.PublicKey("gSbePebfvPy7tRqimPoVecS2UsBvYv46ynrzWocc92s"),
         priceFeed: new web3_js_1.PublicKey("J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix"),

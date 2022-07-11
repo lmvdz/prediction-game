@@ -46,8 +46,8 @@ import { WalletMultiButton } from 'solana-wallets-vue'
 
     <v-footer app>
       <v-row>
-        <a class="hover-move-up-container" href="https://github.com/lmvdz" target="_blank">
-          <GithubLink href="https://github.com/lmvdz" :height="28" heightUnits="px" :width="28" widthUnits="px" class="hover-move-up github"/>
+        <a class="hover-move-up-container" href="https://github.com/lmvdz/prediction-game" target="_blank">
+          <GithubLink href="https://github.com/lmvdz/prediction-game" :height="28" heightUnits="px" :width="28" widthUnits="px" class="hover-move-up github"/>
         </a>
         
         <a class="hover-move-up-container" href="https://discord.gg/qfeVZQvCv3" target="_blank">
