@@ -1,2 +1,0 @@
-cargo:rustc-env=TYPENUM_BUILD_CONSTS=/home/lars/github/solana-prediction/target/bpfel-unknown-unknown/release/build/typenum-ead1e373bfe4339d/out/consts.rs
-cargo:rustc-env=TYPENUM_BUILD_OP=/home/lars/github/solana-prediction/target/bpfel-unknown-unknown/release/build/typenum-ead1e373bfe4339d/out/op.rs
