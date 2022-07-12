@@ -7,6 +7,7 @@ import { DataUpdatable } from "../dataUpdatable"
 
 export type  RoundHistoryItem = {
     recordId: anchor.BN,
+    address: PublicKey,
     roundNumber: number,
     roundStartTime: anchor.BN,
     roundCurrentTime: anchor.BN,
