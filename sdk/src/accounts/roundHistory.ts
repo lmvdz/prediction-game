@@ -78,10 +78,10 @@ export default class RoundHistory implements DataUpdatable<RoundHistoryAccount> 
 
     public static fromJSON<RoundHistoryAccount>(json: any): RoundHistoryAccount {
         return { 
-            head: new anchor.BN(json.head),
+            head: new anchor.BN(json.head, 16),
             game: new PublicKey(json.game),
             address: new PublicKey(json.address),
-            rounds: json.rounds.map((x: any) => this.fromJSON2(JSON.parse(x)))
+            rounds: json.rounds.map((x: any) => this.fromJSON2(x))
         } as unknown as RoundHistoryAccount
     }
 

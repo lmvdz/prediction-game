@@ -2,7 +2,6 @@
   "name": "sol-predict",
   "version": "0.0.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "serve": "vite preview",
     "build": "vue-tsc --noEmit && vite build",

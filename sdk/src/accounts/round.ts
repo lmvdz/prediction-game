@@ -16,7 +16,7 @@ export type RoundAccount = {
     address: PublicKey
 
     roundNumber: number
-    roundLength: number
+    roundLength: anchor.BN
     
     finished: boolean
     invalid: boolean
@@ -80,7 +80,7 @@ export default class Round implements DataUpdatable<RoundAccount> {
         let game = new PublicKey(json.game);
         let address = new PublicKey(json.address);
         let roundNumber = json.roundNumber;
-        let roundLength = json.roundLength;
+        let roundLength = new anchor.BN(json.roundLength, 16);
         let finished = json.finished;
         let invalid = json.invalid;
         let settled = json.settled;

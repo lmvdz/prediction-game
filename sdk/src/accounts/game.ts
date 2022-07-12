@@ -74,7 +74,7 @@ export default class Game implements DataUpdatable<GameAccount> {
             roundNumber: json.roundNumber,
             currentRound: new PublicKey(json.currentRound),
             previousRound: new PublicKey(json.previousRound),
-            roundLength: json.roundLength,
+            roundLength: new anchor.BN(json.roundLength, 16),
 
             vault: new PublicKey(json.vault),
 

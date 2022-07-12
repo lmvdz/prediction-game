@@ -52,7 +52,7 @@ export default class UserPredictionHistory implements DataUpdatable<UserPredicti
             head: new anchor.BN(json.head, 16),
             game: new PublicKey(json.game),
             address: new PublicKey(json.address),
-            userPredictions: json.userPredictions.map((x: any) => this.fromJSON<UserPredictionHistoryItem>(JSON.parse(x)))
+            userPredictions: json.userPredictions.map((x: any) => this.fromJSON2<UserPredictionHistoryItem>(x))
         } as unknown as UserPredictionHistoryAccount
     }
 
