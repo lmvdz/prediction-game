@@ -36,8 +36,10 @@ pub fn init_user(ctx: Context<InitUser>) -> Result<()> {
 pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, amount: u64) -> Result<()> {
     let current_round_key = ctx.accounts.current_round.to_account_info().key();
     let mut current_round = ctx.accounts.current_round.load_mut()?;
+
     let game_key = ctx.accounts.game.to_account_info().key();
     let game = ctx.accounts.game.load()?;
+    
     let user_prediction_history_key = ctx.accounts.user_prediction_history.to_account_info().key();
     let mut user_prediction_history = ctx.accounts.user_prediction_history.load_mut()?;
     

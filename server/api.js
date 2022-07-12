@@ -34,8 +34,8 @@ let workspace = {
 }
 
 let paf = {
-    devnet: new PollingAccountsFetcher(process.env.DEVNET_ENDPOINT.toString(), 1000, 5),
-    mainnet: new PollingAccountsFetcher(process.env.MAINNET_ENDPOINT.toString(), 1000, 5)
+    devnet: new PollingAccountsFetcher(process.env.DEVNET_ENDPOINT.toString(), 5000, 5),
+    mainnet: new PollingAccountsFetcher(process.env.MAINNET_ENDPOINT.toString(), 5000, 5)
 }
 paf.devnet.start();
 paf.mainnet.start();

@@ -1201,7 +1201,7 @@
     "@solana/web3.js" "^1.32.0"
     start-server-and-test "^1.14.0"
 
-"@solana/wallet-adapter-base@^0.9.3", "@solana/wallet-adapter-base@^0.9.8":
+"@solana/wallet-adapter-base@^0.9.5", "@solana/wallet-adapter-base@^0.9.8":
   version "0.9.8"
   resolved "https://registry.yarnpkg.com/@solana/wallet-adapter-base/-/wallet-adapter-base-0.9.8.tgz#7469d878d481a0004c29276f3f4d7fa09e3e7293"
   integrity sha512-SYbSGQuWih2N5zOtLO21cbEFt8G4PFWMhE/9qlAXjsXRjdGz+pU6NkNMzspvdAizCLUPuB9biKFjX82W0SZm3w==
@@ -1417,7 +1417,7 @@
     process "^0.11.10"
     stream-browserify "^3.0.0"
 
-"@solana/wallet-adapter-wallets@^0.16.1":
+"@solana/wallet-adapter-wallets@^0.16.7":
   version "0.16.7"
   resolved "https://registry.yarnpkg.com/@solana/wallet-adapter-wallets/-/wallet-adapter-wallets-0.16.7.tgz#3899a6ae590d5043a372c443b6f5c7b7bd924d25"
   integrity sha512-9S0GauC0f+4cGgVYFFTzWK9Sk6NlAfCIjUBwbDstV21p73rI/GIBfA2jp4U3XdxrCJrGbtgBYMjxlyNlsdgFPQ==
@@ -1452,7 +1452,7 @@
     "@solana/wallet-adapter-tokenpocket" "^0.4.6"
     "@solana/wallet-adapter-torus" "^0.11.13"
 
-"@solana/web3.js@^1.20.0", "@solana/web3.js@^1.32.0", "@solana/web3.js@^1.32.1", "@solana/web3.js@^1.36.0":
+"@solana/web3.js@^1.20.0", "@solana/web3.js@^1.32.0", "@solana/web3.js@^1.36.0":
   version "1.47.3"
   resolved "https://registry.yarnpkg.com/@solana/web3.js/-/web3.js-1.47.3.tgz#ec13f2cf4f9f54cc4fbd26d20be1e026c6e2279c"
   integrity sha512-TQJulaN/+b0xXq5EhQAYFwVyOORxSyVJn1EiXupClZm8DY7f9EeUG6vl0FzSAgwEAwXKsgK3sVs/3px2e7H7dQ==
@@ -2472,9 +2472,9 @@ camelcase@^6.0.0:
   integrity sha512-Gmy6FhYlCY7uOElZUSbxo2UCDH8owEk996gkbrpsgGtrJLM3J7jGxl9Ic7Qwwj4ivOE5AWZWRMecDdF7hqGjFA==
 
 caniuse-lite@^1.0.30001359:
-  version "1.0.30001364"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001364.tgz#1e118f0e933ed2b79f8d461796b8ce45398014a0"
-  integrity sha512-9O0xzV3wVyX0SlegIQ6knz+okhBB5pE0PC40MNdwcipjwpxoUEHL24uJ+gG42cgklPjfO5ZjZPme9FTSN3QT2Q==
+  version "1.0.30001365"
+  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001365.tgz#72c2c3863b1a545cfd3d9953535bd2ee17568158"
+  integrity sha512-VDQZ8OtpuIPMBA4YYvZXECtXbddMCUFJk1qu8Mqxfm/SZJNSr1cy4IuLCOL7RJ/YASrvJcYg1Zh+UEUQ5m6z8Q==
 
 chalk@^2.0.0:
   version "2.4.2"
@@ -6116,13 +6116,12 @@ socket.io-parser@~4.2.0:
     "@socket.io/component-emitter" "~3.1.0"
     debug "~4.3.1"
 
-solana-wallets-vue@^0.3.2:
-  version "0.3.2"
-  resolved "https://registry.yarnpkg.com/solana-wallets-vue/-/solana-wallets-vue-0.3.2.tgz#194ea89d585c59c1dff86bf7a016dcf3f329f0e5"
-  integrity sha512-JxWahglSoW87+egJqJFdKx3IMXE7UqeEGpeoZ2x/17H0HuRnf7cFGMHtIs/1Y/KzYXQhR/otVmkuD2nie3SABw==
+solana-wallets-vue@^0.4.1:
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/solana-wallets-vue/-/solana-wallets-vue-0.4.1.tgz#99076b402928e9ced99e1ebaf089870e17679f21"
+  integrity sha512-TRl3sg/4LGID/cd2liTauI1/kVFEK925HS8oprlz+8Pt4+HWfGviaoIUQd0QF9A6r+1R/uH3PWsAxC+9hUSGtA==
   dependencies:
-    "@solana/wallet-adapter-base" "^0.9.3"
-    "@solana/web3.js" "^1.32.1"
+    "@solana/wallet-adapter-base" "^0.9.5"
     vue "^3.2.25"
 
 source-map-js@^1.0.2:
@@ -6663,9 +6662,9 @@ vue-cli-plugin-vuetify@~2.5.1:
     shelljs "^0.8.3"
 
 vue-demi@*:
-  version "0.13.2"
-  resolved "https://registry.yarnpkg.com/vue-demi/-/vue-demi-0.13.2.tgz#f6081c2feb5b698549729a81683ce029b8da289e"
-  integrity sha512-41ukrclEbMddAyP7PvxMSYqnOSzPV6r7GNnyTSKSCNTaz19GehxmTiXyP9kwHSUv2+Dr6hHqiUiF7L1VAw2KdQ==
+  version "0.13.3"
+  resolved "https://registry.yarnpkg.com/vue-demi/-/vue-demi-0.13.3.tgz#6f761ecf72c6a6858407b22c0a8bfc24a26d2915"
+  integrity sha512-t0WemjxNSrrQPP1N5Aido5oLdpHdTh9Z4QS+iIHMeG7318N5FF6y1zb48umb5Wh0Tq68fCM0vH2RrYioA7l1eg==
 
 vue-router@4:
   version "4.1.2"

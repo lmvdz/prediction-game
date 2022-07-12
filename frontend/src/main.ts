@@ -19,8 +19,8 @@ const walletOptions = {
     new SolanaMobileWalletAdapter({
       appIdentity: {
           name: 'SolPredict',
-          uri: window.location.protocol + '//' + window.location.host,
           icon: './assets/logo.svg',
+          uri: window.location.href,
       },
       authorizationResultCache: createDefaultAuthorizationResultCache(),
     }),

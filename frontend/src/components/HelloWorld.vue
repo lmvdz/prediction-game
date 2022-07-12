@@ -68,7 +68,7 @@ let rounds = ref(new Map<string, Round>());
 let computedRounds = computed(() => [...rounds.value.values()])
 let histories = ref(new Map<string, { roundHistory: RoundHistory, userPredictionHistory: UserPredictionHistory }>)
 let vaults = ref(new Map<string, Vault>());
-let computedVaults = computed(() => computedVaults)
+let computedVaults = computed(() => [...vaults.value.values()])
 
 
 let wallet = ref(null as WalletStore); 
@@ -607,7 +607,7 @@ async function initFrontendGameData (game: Game) {
 
 async function loadTokenAccounts() : Promise<void> {
 
-  await Promise.all(computedVaults.map(async vault => {
+  await Promise.all(computedVaults.value.map(async vault => {
     if (!associateTokenAccountAddresses.value.has(vault.account.tokenMint.toBase58())) {
       associateTokenAccountAddresses.value.set(vault.account.tokenMint.toBase58(), (await getAssociatedTokenAddress(vault.account.tokenMint, getWorkspace().owner)).toBase58())
     }
@@ -891,7 +891,7 @@ function getHost() {
 
 function hasSomeClaimable() : boolean {
   if (computedClaimable.value !== null && computedClaimable.value.account !== undefined && computedClaimable.value.account.claims.length > 0) {
-    let claim = computedClaimable.value.account.claims.find(claim => claim !== undefined && claim.amount.gt(new anchor.BN(0)) && claim.mint.toBase58() !== PublicKey.default.toBase58() && computedVaults.some(v => v.account.address.toBase58() === claim.vault.toBase58()));
+    let claim = computedClaimable.value.account.claims.find(claim => claim !== undefined && claim.amount.gt(new anchor.BN(0)) && claim.mint.toBase58() !== PublicKey.default.toBase58() && computedVaults.value.some(v => v.account.address.toBase58() === claim.vault.toBase58()));
     if (claim !== undefined) {
       return true;
     }
@@ -906,7 +906,7 @@ function getClaimableForGame(game: Game) : Claim {
     // console.log(computedClaimable.value)
     if (computedVaults !== null && computedVaults !== undefined) {
       // console.log(computedVaults)
-      let vault = computedVaults.find(v => v.account.address.toBase58() === game.account.vault.toBase58());
+      let vault = computedVaults.value.find(v => v.account.address.toBase58() === game.account.vault.toBase58());
       if (vault !== undefined) {
         return computedClaimable.value.account.claims.find(claim => claim !== undefined && claim.mint.toBase58() === vault.account.tokenMint.toBase58() && claim.vault.toBase58() === vault.account.address.toBase58());
       }
@@ -932,7 +932,7 @@ function getWalletBalanceForGameAsNumber(game: Game) : number {
 
 function getTokenInfoForGame(game: Game) : TokenInfo {
   if (computedVaults !== null && computedVaults !== undefined) {
-    let vault = computedVaults.find(v => v.account.address.toBase58() === game.account.vault.toBase58());
+    let vault = computedVaults.value.find(v => v.account.address.toBase58() === game.account.vault.toBase58());
     if (vault !== null && vault !== undefined) {
       return tokenList.value.find(t => t.address === vault.account.tokenMint.toBase58())
     }
@@ -1058,7 +1058,7 @@ let getTotalAvailableBalancesByToken = computed(() : Map<string, { total: anchor
   })
   if (computedClaimable.value !== null && computedClaimable.value.account !== undefined) {
     computedClaimable.value.account.claims.forEach(claim => {
-      if (claim.mint.toBase58() !== PublicKey.default.toBase58() && computedVaults.some(v => v.account.address.toBase58() === claim.vault.toBase58())) {
+      if (claim.mint.toBase58() !== PublicKey.default.toBase58() && computedVaults.value.some(v => v.account.address.toBase58() === claim.vault.toBase58())) {
         let mapValue = map.get(claim.mint.toBase58());
         let total = mapValue.total;
         total = total.add(claim.amount)
@@ -1083,7 +1083,7 @@ let getTotalAvailableBalancesByTokenAsNumbers = computed(() : Map<string, { mint
   let map = new Map<string, { mint: string, total: number, claimable: number, wallet: number }>();
   if (computedVaults === null) return map;
   [...getTotalAvailableBalancesByToken.value.entries()].forEach(([key, value]) => {
-    let vault = computedVaults.find(v => v.account.tokenMint.toBase58() === key)
+    let vault = computedVaults.value.find(v => v.account.tokenMint.toBase58() === key)
     map.set(getTokenSymbolFromMintAddress(key), 
       { 
         mint: key,
@@ -1148,7 +1148,7 @@ async function userClaimAll(mint = null) {
       }
     }
 
-    let ixs = await (computedUser.value as User).userClaimAllInstruction(getWorkspace(), computedClaimable.value, computedVaults.filter(v => computedGames.value.some(g => g.account.vault.toBase58() === v.account.address.toBase58())), computedTokenAccounts.value, mint);
+    let ixs = await (computedUser.value as User).userClaimAllInstruction(getWorkspace(), computedClaimable.value, computedVaults.value.filter(v => computedGames.value.some(g => g.account.vault.toBase58() === v.account.address.toBase58())), computedTokenAccounts.value, mint);
     let tx = new Transaction().add(...ixs);
 
     let closeUserPredictionInstructions = await Promise.all<TransactionInstruction>([...computedUserPredictions.value.values()].filter((prediction: UserPrediction) => prediction !== undefined && prediction !== null && prediction.account.settled).map(async (prediction: UserPrediction) : Promise<TransactionInstruction> => {
