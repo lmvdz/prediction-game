@@ -26,7 +26,7 @@ export type GameAccount = {
     roundNumber: number
     currentRound: PublicKey
     previousRound: PublicKey
-    roundLength: number
+    roundLength: anchor.BN
 
     vault: PublicKey
 

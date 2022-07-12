@@ -577,7 +577,7 @@ async function initFrontendGameData (game: Game) {
       needsToLoad: true,
       noUpdateReceieved: false,
       noUpdateReceievedTimeout: null,
-      timeRemaining: game.account.roundLength,
+      timeRemaining: game.account.roundLength.toNumber(),
       roundTimeUpdateInterval: null
     })
     try {
@@ -698,6 +698,7 @@ function unloadUserClaimable() {
 async function loadGameHistoriesFromDB() {
   let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/history`);
   let json = await res.json();
+  if (Array.isArray(json))
   json.filter(j => j !== undefined).forEach(async ({ roundHistory, userPredictionHistory }) => {
     let roundHistoryAccount = RoundHistory.fromJSON<RoundHistoryAccount>(roundHistory);
     let userPredictionHistoryAccount = UserPredictionHistory.fromJSON<UserPredictionHistoryAccount>(userPredictionHistory);
