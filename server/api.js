@@ -228,18 +228,6 @@ database.get('/:cluster/round', (req, res) => {
 })
 
 
-function replacer(key, value) {
-    if(value instanceof Map) {
-        return {
-            dataType: 'Map',
-            value: Array.from(value.entries()), // or with spread: value: [...value]
-        };
-    } else {
-        return value;
-    }
-}
-
-
 database.get('/:cluster/history', (req, res) => {
     res.send(JSON.stringify(histories[req.params.cluster].values()))
 })
