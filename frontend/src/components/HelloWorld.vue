@@ -706,6 +706,7 @@ async function loadGameHistoriesFromDB() {
     if (game) {
       game.roundHistory = new RoundHistory(roundHistoryAccount);
       game.userPredictionHistory = new UserPredictionHistory(userPredictionHistoryAccount);
+      histories.value.set(game.account.address.toBase58(), { roundHistory: game.roundHistory, userPredictionHistory: game.userPredictionHistory })
     }
   });
 }
@@ -1290,11 +1291,11 @@ export default defineComponent({
 
     </div>
 
-    <v-btn-group :style="`position: fixed; top: 0px; left: 0px; margin-left: ${useDisplay().width.value < 720 ? '15%;' : 'auto'}; right: 0px; width: 8em; margin-right: auto; margin-top: .5em; z-index: 1020;`">
+    <v-btn-group :style="`position: fixed; top: 0px; left: 0px; margin-left: ${useDisplay().width.value < 1000 ? '1em' : 'auto'}; right: 0px; width: 10em; margin-right: auto; margin-top: .5em; z-index: 1020;`">
       <v-btn icon="mdi-help" variant="plain"  :color="showHelp ? 'success' : 'grey'" @click="() => { showHelp = !showHelp; }"></v-btn>
       <v-btn icon="mdi-chart-box" variant="plain"  :color="showChart ? 'success' : 'grey'" @click="() => { showChart = !showChart; }"></v-btn>
       <v-btn icon="mdi-history" variant="plain" :color="showHistory ? 'success' : 'grey'" @click="() => { showHistory = !showHistory; }"></v-btn>
-      <v-btn icon="mdi-account" variant="plain" v-if=" useDisplay().width.value < 720"  :color="showAccountInfo ? 'success' : 'grey'" @click="() => { showAccountInfo = !showAccountInfo; }"></v-btn>
+      <v-btn icon="mdi-account" variant="plain" v-if="wallet !== null && wallet.connected && !wallet.connecting && useDisplay().width.value < 1000"  :color="showAccountInfo ? 'success' : 'grey'" @click="() => { showAccountInfo = !showAccountInfo; }"></v-btn>
     </v-btn-group>
 
     
@@ -1306,14 +1307,14 @@ export default defineComponent({
         <p>Users can speculate which direction the price of the tracked asset will go.</p>
         <p>Support for Pyth/Switchboard/Chainlink oracles. (Devnet using Chainlink)</p>
         <br>
-        <v-img :width="useDisplay().width.value < 720 ? '100vw' :'50vw'" style="margin: 0 auto;" :src="helpUrl"></v-img>
+        <v-img :width="useDisplay().width.value < 1000 ? '100vw' :'50vw'" style="margin: 0 auto;" :src="helpUrl"></v-img>
       </v-sheet>
     </v-dialog>
 
     <v-fade-transition leave-absolute hide-on-leave>
-      <v-row v-show="((!showChart && !showAccountInfo) || (useDisplay().width.value <= 720 && showAccountInfo))" :justify="`${useDisplay().width.value > 720 ? 'start' : 'center' }`" class="text-center">
+      <v-row v-show="((!showChart && !showAccountInfo) || (useDisplay().width.value <= 1000 && showAccountInfo))" :justify="`${useDisplay().width.value > 1000 ? 'start' : 'center' }`" class="text-center">
         <v-fade-transition leave-absolute hide-on-leave>
-          <v-col v-if="!showAccountInfo" :cols="wallet !== null && wallet.connected && useDisplay().width.value > 720 ? 7 : 12">
+          <v-col v-if="!showAccountInfo" :cols="wallet !== null && wallet.connected && useDisplay().width.value > 1000 ? 7 : 12">
             <v-row justify="center" class="text-center">
               <v-col align-self="center" class="text-center v-col-auto" v-for="(game, gameIndex) in computedGames" :key="'game-'+game.account.address.toBase58()">
                 <v-card
@@ -1914,7 +1915,7 @@ export default defineComponent({
           </v-col>
         </v-fade-transition>
         <v-fade-transition leave-absolute hide-on-leave>
-          <v-col v-if="wallet !== null && wallet.connected && !wallet.connecting && (useDisplay().width.value > 720 || showAccountInfo)" :cols="useDisplay().width.value > 720 ? 5 : 12" align-self="center" class="text-center" >
+          <v-col v-if="wallet !== null && wallet.connected && !wallet.connecting && (useDisplay().width.value > 1000 || showAccountInfo)" :cols="useDisplay().width.value > 1000 ? 5 : 12" align-self="center" class="text-center" >
             <v-row justify="center" class="text-center">
               <v-card variant="outlined" >
                 <v-card-title>
@@ -2021,9 +2022,9 @@ export default defineComponent({
       </v-row>
     </v-fade-transition>
     <v-fade-transition leave-absolute hide-on-leave>
-      <v-row v-show="useDisplay().width.value > 720 ? useDisplay().height.value >= 1280 ? true : showChart : showChart">
+      <v-row v-show="useDisplay().width.value > 1000 ? useDisplay().height.value >= 1280 ? true : showChart : showChart">
         <v-col :cols="wallet !== null && wallet.connected && !showChart ? 7 : 12" :style="`padding: 8px; transition: all .3s; margin-top: ${showAccountInfo ? '1em' : '0'};`">
-          <div :style="`resize: vertical; border-radius: .25em; width: 100%; height: ${useDisplay().width.value > 720 && useDisplay().height.value >= 1280 ? useDisplay().height.value - (useDisplay().height.value * 0.25) + 'px' : useDisplay().height.value - (useDisplay().height.value * 0.25) + 'px'}; overflow: hidden;`">
+          <div :style="`resize: vertical; border-radius: .25em; width: 100%; height: ${useDisplay().width.value > 1000 && useDisplay().height.value >= 1280 ? useDisplay().height.value - (useDisplay().height.value * 0.25) + 'px' : useDisplay().height.value - (useDisplay().height.value * 0.25) + 'px'}; overflow: hidden;`">
             <iframe id="aggr" 
               :src="`${'https://aggr.solpredict.io'}?workspace-url=${aggrWorkspace}`" 
               frameborder="0" style=" border-radius: .25em; width: 100%; height: 100%;"
@@ -2039,7 +2040,7 @@ export default defineComponent({
       </v-row>
     </v-fade-transition>
     <v-fade-transition leave-absolute hide-on-leave>
-      <v-row v-show="useDisplay().width.value > 720 ? useDisplay().height.value >= 1280 ? true : showHistory : showHistory">
+      <v-row v-show="useDisplay().width.value > 1000 ? useDisplay().height.value >= 1280 ? true : showHistory : showHistory">
         <v-col :cols="wallet !== null && wallet.connected && !showHistory ? 7 : 12" :style="`padding: 8px; transition: all .3s; margin-bottom: ${showAccountInfo ? '1em' : '0'}; margin-top: ${showChart ? '1em' : '1em'};`">
           <v-card style="height: 100%;">
             <v-card-title>
@@ -2048,7 +2049,7 @@ export default defineComponent({
                   <v-col cols="12" sm="6" class="d-flex">
                     <v-select style="margin: 0;" label="Asset" :items="computedGames.filter(g => g !== undefined && g.account !== undefined).map(g => {
                       return {
-                        'title': g.account.baseSymbol,
+                        'title': g.baseSymbolAsString(),
                         'value': g.account.address.toBase58()
                       }
                     })" v-model="selectedGameHistory"></v-select>
@@ -2078,7 +2079,7 @@ export default defineComponent({
                   histories.get(selectedGameHistory).roundHistory !== null
                 ">
                   <v-card-title>Round History</v-card-title>
-                  <v-card-subtitle>{{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).account.baseSymbol }}</v-card-subtitle>
+                  <v-card-subtitle>{{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).baseSymbolAsString() }}</v-card-subtitle>
                   <v-card-text>
                     <v-table
                     >
@@ -2111,11 +2112,11 @@ export default defineComponent({
                         </tr>
                       </thead>
                       <tbody>
+                        
                         <tr
                           :class="`roundHistoryItem ${historyItem.roundWinningDirection === 1 ? 'up' : 'down'}`"
                           
                           v-for="historyItem in histories.get(selectedGameHistory).roundHistory.account.rounds.filter(round => {
-                              //@ts-ignore
                               return !round.recordId.eq(new anchor.BN(0)) && (roundHistorySelectedRound !== null ? (round.address !== undefined ? round.address!.toBase58() === roundHistorySelectedRound : true) : true) 
                             }).sort((a: RoundHistoryItem, b: RoundHistoryItem) => (b.recordId.sub(a.recordId)).toNumber())"
                         >
@@ -2126,10 +2127,10 @@ export default defineComponent({
                               {{ Math.floor(historyItem.roundTimeDifference.toNumber() / 60) + ':' + (historyItem.roundTimeDifference.toNumber() % 60 >= 10 ? historyItem.roundTimeDifference.toNumber() % 60 : "0" + historyItem.roundTimeDifference.toNumber() % 60)}}
                             </td>
                             <td>
-                              {{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.convertOraclePriceToNumber(historyItem.roundStartPrice, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.account.roundStartPriceDecimals, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)).toFixed(2) }}
+                              {{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.convertOraclePriceToNumber(historyItem.roundStartPrice, historyItem.roundStartPriceDecimals, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)).toFixed(2) }}
                             </td>
                             <td>
-                              {{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.convertOraclePriceToNumber(historyItem.roundPriceDifference, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.account.roundPriceDifferenceDecimals, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)).toFixed(2) }}
+                              {{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).currentRound.convertOraclePriceToNumber(historyItem.roundPriceDifference, historyItem.roundPriceDifferenceDecimals, computedGames.find(g => g.account.address.toBase58() === selectedGameHistory)).toFixed(2) }}
                             </td>
                             <td>
                               {{historyItem.totalPredictions}}
@@ -2155,7 +2156,7 @@ export default defineComponent({
                   histories.get(selectedGameHistory).userPredictionHistory !== null
                 ">
                   <v-card-title>User Prediction History</v-card-title>
-                  <v-card-subtitle>{{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).account.baseSymbol }}</v-card-subtitle>
+                  <v-card-subtitle>{{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).baseSymbolAsString() }}</v-card-subtitle>
                   <v-card-text>
                     <v-table
                     >
@@ -2185,12 +2186,9 @@ export default defineComponent({
                             <a @click.stop="(e) => {
                               e.preventDefault();
                               roundHistorySelectedRound = historyItem.round.toBase58()
-                              //@ts-ignore
                             }">{{ histories.get(selectedGameHistory).roundHistory.account.rounds.find(h =>  {
-                              //@ts-ignore
                               return (h.address !== undefined ? h.address!.toBase58() === historyItem.round.toBase58() : false)
                             }) !== undefined ? histories.get(selectedGameHistory).roundHistory.account.rounds.find(h => {
-                              //@ts-ignore
                               return (h.address !== undefined ? h.address!.toBase58() === historyItem.round.toBase58() : false)
                             }).roundNumber : historyItem.round.toBase58() }}</a>
                           </td>

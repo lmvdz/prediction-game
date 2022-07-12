@@ -3,7 +3,9 @@
 import Logo from './components/Logo.vue'
 import GithubLink from './components/GithubLink.vue'
 import DiscordLink from './components/DiscordLink.vue'
-import { WalletMultiButton } from 'solana-wallets-vue'
+import { WalletMultiButton, useWallet } from 'solana-wallets-vue'
+import { useDisplay } from 'vuetify'
+const wallet = useWallet();
 
 </script>
 
@@ -20,7 +22,7 @@ import { WalletMultiButton } from 'solana-wallets-vue'
       <!-- -->
     <!-- </v-navigation-drawer> -->
 
-    <div class="app-wallet-button">
+    <div :class="`app-wallet-button ${useDisplay().width.value >= 420 ? '' : 'hidden'}`">
       <wallet-multi-button dark />
     </div>
 
@@ -165,6 +167,10 @@ div.swv-modal-wrapper.swv-modal-wrapper-no-logo > ul.swv-modal-list > li > .swv-
 .app-wallet-button {
   position: fixed !important; 
   right: 0px; top: 0px; z-index: 1008;
+}
+
+.app-wallet-button.hidden > .swv-dark > .swv-dropdown > .swv-button.swv-button-trigger > p {
+  display: none;
 }
 
 .app-wallet-button > .swv-dark > .swv-button {
