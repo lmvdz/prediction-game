@@ -95,14 +95,13 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
         };
 
         if accounts.len() % 2 == 0 && accounts.len() >= 2 {
-            let mut index: usize = 0;
 
-            for _i in 0..(accounts.len()/2) {
+            for i in 0..(accounts.len()/2) {
 
-                let prediction_loader = AccountLoader::<'info, UserPrediction>::try_from(&accounts[index]).unwrap();
+                let prediction_loader = AccountLoader::<'info, UserPrediction>::try_from(&accounts[i*2]).unwrap();
                 let mut prediction = prediction_loader.load_mut()?;
 
-                let user_claimable_loader = AccountLoader::<'info, UserClaimable>::try_from(&accounts[index+1]).unwrap();
+                let user_claimable_loader = AccountLoader::<'info, UserClaimable>::try_from(&accounts[(i*2)+1]).unwrap();
                 let mut user_claimable = user_claimable_loader.load_mut()?;
 
                 require_keys_eq!(prediction.user, user_claimable.user, ErrorCode::PredictionAndClaimUserMismatch);
@@ -120,10 +119,6 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
 
                 let user_claim_position = some_user_claim_position.unwrap();
 
-                let user_claim = &mut user_claimable.claims[user_claim_position];
-
-                index += 2;
-
                 if !prediction.settled {
                     
                     if !current_round.invalid {
@@ -138,11 +133,11 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
                                 let initial_amount = prediction.amount;
                                 current_round.total_amount_settled = current_round.total_amount_settled.saturating_add(initial_amount);
         
-                                user_claim.amount = user_claim.amount.saturating_add(winnings).saturating_add(initial_amount);
+                                user_claimable.claims[user_claim_position].amount = user_claimable.claims[user_claim_position].amount.saturating_add(winnings).saturating_add(initial_amount);
 
-                                if user_claim.mint.eq(&Pubkey::default()) && user_claim.vault.eq(&Pubkey::default()) {
-                                    user_claim.mint = vault.token_mint.key();
-                                    user_claim.vault = vault.address.key();
+                                if user_claimable.claims[user_claim_position].mint.eq(&Pubkey::default()) && user_claimable.claims[user_claim_position].vault.eq(&Pubkey::default()) {
+                                    user_claimable.claims[user_claim_position].mint = vault.token_mint.key();
+                                    user_claimable.claims[user_claim_position].vault = vault.address.key();
                                 }
                                 
                             }
@@ -152,22 +147,22 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
                             let initial_amount = prediction.amount.saturating_sub(((prediction.amount) / 10000) * game.fee_bps as u64);
                             current_round.total_amount_settled = current_round.total_amount_settled.saturating_add(initial_amount);
     
-                            user_claim.amount = user_claim.amount.saturating_add(initial_amount);
+                            user_claimable.claims[user_claim_position].amount = user_claimable.claims[user_claim_position].amount.saturating_add(initial_amount);
 
-                            if user_claim.mint.eq(&Pubkey::default()) && user_claim.vault.eq(&Pubkey::default()) {
-                                user_claim.mint = vault.token_mint.key();
-                                user_claim.vault = vault.address.key();
+                            if user_claimable.claims[user_claim_position].mint.eq(&Pubkey::default()) && user_claimable.claims[user_claim_position].vault.eq(&Pubkey::default()) {
+                                user_claimable.claims[user_claim_position].mint = vault.token_mint.key();
+                                user_claimable.claims[user_claim_position].vault = vault.address.key();
                             }
                         }
                     } else {
                         // return initial amount minus fees to all
                         current_round.total_amount_settled = current_round.total_amount_settled.saturating_add(prediction.amount);
 
-                        user_claim.amount = user_claim.amount.saturating_add(prediction.amount);
+                        user_claimable.claims[user_claim_position].amount = user_claimable.claims[user_claim_position].amount.saturating_add(prediction.amount);
 
-                        if user_claim.mint.eq(&Pubkey::default()) && user_claim.vault.eq(&Pubkey::default()) {
-                            user_claim.mint = vault.token_mint.key();
-                            user_claim.vault = vault.key();
+                        if user_claimable.claims[user_claim_position].mint.eq(&Pubkey::default()) && user_claimable.claims[user_claim_position].vault.eq(&Pubkey::default()) {
+                            user_claimable.claims[user_claim_position].mint = vault.token_mint.key();
+                            user_claimable.claims[user_claim_position].vault = vault.key();
                         }
                     }
 
@@ -213,17 +208,16 @@ pub fn payout_cranks<'info>(mut ctx: Context<'_, '_, '_, 'info, PayoutCranks<'in
     let accounts = ctx.remaining_accounts;
 
     if accounts.len() % 2 == 0 && accounts.len() >= 2 {
-        let mut index: usize = 0;
 
-        for _i in 0..(accounts.len()/2) {
+        for i in 0..(accounts.len()/2) {
 
             // let crank_account_info = accounts[index].to_account_info().clone();
-            let crank_loader = &mut AccountLoader::<'info, Crank>::try_from(&accounts[index]).unwrap();
+            let crank_loader = &mut AccountLoader::<'info, Crank>::try_from(&accounts[i*2]).unwrap();
             let mut crank = crank_loader.load_mut()?;
 
             // let token_account = &Account::<'info, TokenAccount>::try_from(&accounts[index+1]).unwrap();
             // let user_claim_info = accounts[index+1].to_account_info().clone();
-            let user_claimable_loader = AccountLoader::<'info, UserClaimable>::try_from(&accounts[index+1]).unwrap();
+            let user_claimable_loader = AccountLoader::<'info, UserClaimable>::try_from(&accounts[(i*2) + 1]).unwrap();
             let mut user_claimable = user_claimable_loader.load_mut()?;
 
             require_keys_eq!(crank.user, user_claimable.user, ErrorCode::UserClaimableCrankUserMismatch);
@@ -241,10 +235,6 @@ pub fn payout_cranks<'info>(mut ctx: Context<'_, '_, '_, 'info, PayoutCranks<'in
 
             let user_claim_position = some_user_claim_position.unwrap();
 
-            let user_claim = &mut user_claimable.claims[user_claim_position];
-
-            index+=2;
-
             if !crank.last_paid_crank_round.eq(&round_key) && crank.last_crank_round.eq(&round_key) {
                 // 25% of the fee collected goes to crankers
                 let crank_pay = if current_round.invalid {
@@ -254,11 +244,11 @@ pub fn payout_cranks<'info>(mut ctx: Context<'_, '_, '_, 'info, PayoutCranks<'in
                 };
 
                 if crank_pay > 0 {
-                    user_claim.amount = user_claim.amount.saturating_add(crank_pay);
+                    user_claimable.claims[user_claim_position].amount = user_claimable.claims[user_claim_position].amount.saturating_add(crank_pay);
                 
-                    if user_claim.mint.eq(&Pubkey::default()) && user_claim.vault.eq(&Pubkey::default()) {
-                        user_claim.mint = vault.token_mint.key();
-                        user_claim.vault = vault.address.key();
+                    if user_claimable.claims[user_claim_position].mint.eq(&Pubkey::default()) && user_claimable.claims[user_claim_position].vault.eq(&Pubkey::default()) {
+                        user_claimable.claims[user_claim_position].mint = vault.token_mint.key();
+                        user_claimable.claims[user_claim_position].vault = vault.address.key();
                     }
                 }
 

@@ -38,13 +38,15 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
     let mut current_round = ctx.accounts.current_round.load_mut()?;
 
     let game_key = ctx.accounts.game.to_account_info().key();
-    let game = ctx.accounts.game.load()?;
+    let game = {ctx.accounts.game.load()?};
     
     let user_prediction_history_key = ctx.accounts.user_prediction_history.to_account_info().key();
     let mut user_prediction_history = ctx.accounts.user_prediction_history.load_mut()?;
     
     let user = &mut ctx.accounts.user;
-    let mut user_claimable = ctx.accounts.user_claimable.load_mut()?;
+
+    let user_claimable_key = ctx.accounts.user_claimable.to_account_info().key();
+    let mut user_claimable = {ctx.accounts.user_claimable.load_mut()?};
 
 
     require_keys_eq!(game.user_prediction_history, user_prediction_history_key);
@@ -66,7 +68,7 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
     user_prediction.owner = ctx.accounts.signer.key();
     user_prediction.address = user_prediction_pubkey;
     user_prediction.user = user.key();
-    user_prediction.user_claimable = user.user_claimable.key();
+    user_prediction.user_claimable = user_claimable_key;
     user_prediction.game = game_key;
     user_prediction.round = current_round_key;
     user_prediction.up_or_down = up_or_down;
@@ -98,20 +100,18 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
 
     let user_claim_position = some_user_claim_position.unwrap();
 
-    let user_claim = &mut user_claimable.claims[user_claim_position];
-
     current_round.total_predictions += 1;
 
     // deposit or use unclaimed
-    let deposit_amount = if {user_claim.amount}.gt(&{user_prediction.amount}) || {user_claim.amount}.eq(&{user_prediction.amount}) {
+    let deposit_amount = if {user_claimable.claims[user_claim_position].amount}.gt(&{user_prediction.amount}) || {user_claimable.claims[user_claim_position].amount}.eq(&{user_prediction.amount}) {
         
-        user_claim.amount = user_claim.amount.saturating_sub(user_prediction.amount);
+        user_claimable.claims[user_claim_position].amount = user_claimable.claims[user_claim_position].amount.saturating_sub(user_prediction.amount);
         0_u64
 
-    } else if {user_claim.amount}.gt(&0_u64) {
+    } else if {user_claimable.claims[user_claim_position].amount}.gt(&0_u64) {
 
-        let user_prediction_remaining_amount = user_prediction.amount.saturating_sub(user_claim.amount);
-        user_claim.amount = user_claim.amount.saturating_sub(user_prediction.amount);
+        let user_prediction_remaining_amount = user_prediction.amount.saturating_sub(user_claimable.claims[user_claim_position].amount);
+        user_claimable.claims[user_claim_position].amount = user_claimable.claims[user_claim_position].amount.saturating_sub(user_prediction.amount);
         user_prediction_remaining_amount
 
     } else {
@@ -120,9 +120,9 @@ pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, am
 
     };
 
-    if {user_claim.amount}.eq(&0) && !user_claim.mint.eq(&Pubkey::default()) && !user_claim.vault.eq(&Pubkey::default()) {
-        user_claim.mint = Pubkey::default();
-        user_claim.vault = Pubkey::default();
+    if {user_claimable.claims[user_claim_position].amount}.eq(&0) && !{user_claimable.claims[user_claim_position].mint}.eq(&Pubkey::default()) && !{user_claimable.claims[user_claim_position].vault}.eq(&Pubkey::default()) {
+        user_claimable.claims[user_claim_position].mint = Pubkey::default();
+        user_claimable.claims[user_claim_position].vault = Pubkey::default();
     }
 
     if deposit_amount.gt(&0_u64) {
@@ -151,15 +151,14 @@ pub fn user_claim_all<'info>(ctx: Context<'_, '_, '_, 'info, UserClaimAll<'info>
     let token_program = &ctx.accounts.token_program;
 
     if accounts.len() % 4 == 0 && accounts.len() >= 4 {
-        let mut index: usize = 0;
 
-        for _i in 0..(accounts.len()/4) {
+        for i in 0..(accounts.len()/4) {
 
             // load the game
             // let game_ata_account_info = accounts[index].to_account_info().clone();
             // let game = &Account::<'info, Game>::try_from(&game_ata_account_info).unwrap();
 
-            let vault_account_info = accounts[index].to_account_info().clone();
+            let vault_account_info = accounts[(i*4)].to_account_info().clone();
             let vault = &Account::<'info, Vault>::try_from(&vault_account_info).unwrap();
             let vault_ata_authority_nonce = vault.vault_ata_authority_nonce;
 
@@ -175,22 +174,21 @@ pub fn user_claim_all<'info>(ctx: Context<'_, '_, '_, 'info, UserClaimAll<'info>
         
             let user_claim_position = some_user_claim_position.unwrap();
         
-            let user_claim = &mut user_claimable.claims[user_claim_position];
 
             // require that the user claim has an amount to claim
         
-            require!({user_claim.amount}.gt(&0) && user_claim.mint.eq(&vault.token_mint.key()), ErrorCode::InsufficientClaimableAmount);
+            require!({user_claimable.claims[user_claim_position].amount}.gt(&0) && user_claimable.claims[user_claim_position].mint.eq(&vault.token_mint.key()), ErrorCode::InsufficientClaimableAmount);
 
             
-            let vault_ata_account_info = accounts[index+1].to_account_info().clone();
+            let vault_ata_account_info = accounts[(i*4)+1].to_account_info().clone();
             let vault_ata = &mut Account::<'info, TokenAccount>::try_from(&vault_ata_account_info).unwrap();
             let vault_ata_key = vault_ata.key();
 
             require_keys_eq!(vault.vault_ata, vault_ata_key, ErrorCode::VaultAtaNotEqualToAtaOnVault);
 
-            let vault_ata_authority = &accounts[index+2];
+            let vault_ata_authority = &accounts[(i*4)+2];
             
-            let to_token_account_info = accounts[index+3].to_account_info().clone();
+            let to_token_account_info = accounts[(i*4)+3].to_account_info().clone();
             let to_token_account = &mut Account::<'info, TokenAccount>::try_from(&to_token_account_info).unwrap();
 
             require_keys_eq!(to_token_account.owner, user.owner, ErrorCode::ToTokenAccountNotOwnedByUserOwner);
@@ -204,14 +202,12 @@ pub fn user_claim_all<'info>(ctx: Context<'_, '_, '_, 'info, UserClaimAll<'info>
                 vault_ata_authority, // from auth
                 signers, // signers
                 token_program, // TOKEN_PROGRAM
-                user_claim.amount
+                user_claimable.claims[user_claim_position].amount
             ).is_ok(), ErrorCode::FailedToClaim);
 
-            user_claim.amount = 0;
-            user_claim.mint = Pubkey::default();
-            user_claim.vault = Pubkey::default();
-
-            index+=4;
+            user_claimable.claims[user_claim_position].amount = 0;
+            user_claimable.claims[user_claim_position].mint = Pubkey::default();
+            user_claimable.claims[user_claim_position].vault = Pubkey::default();
         }
     }  
 
@@ -230,9 +226,7 @@ pub fn user_claim(ctx: Context<UserClaim>, amount: u64) -> Result<()> {
 
     let user_claim_position = some_user_claim_position.unwrap();
 
-    let user_claim = &mut user_claimable.claims[user_claim_position];
-
-    require!({user_claim.amount}.gt(&0) && user_claim.mint.eq(&vault.token_mint.key()), ErrorCode::InsufficientClaimableAmount);
+    require!({user_claimable.claims[user_claim_position].amount}.gt(&0) && user_claimable.claims[user_claim_position].mint.eq(&vault.token_mint.key()), ErrorCode::InsufficientClaimableAmount);
 
     
     let vault_ata = &mut ctx.accounts.vault_ata;
@@ -254,9 +248,9 @@ pub fn user_claim(ctx: Context<UserClaim>, amount: u64) -> Result<()> {
         amount
     ).is_ok(), ErrorCode::FailedToClaim);
 
-    user_claim.amount = user_claim.amount.saturating_sub(amount);
-    user_claim.mint = Pubkey::default();
-    user_claim.vault = Pubkey::default();
+    user_claimable.claims[user_claim_position].amount = user_claimable.claims[user_claim_position].amount.saturating_sub(amount);
+    user_claimable.claims[user_claim_position].mint = Pubkey::default();
+    user_claimable.claims[user_claim_position].vault = Pubkey::default();
 
     Ok(())
 }
