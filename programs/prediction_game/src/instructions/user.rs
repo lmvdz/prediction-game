@@ -33,9 +33,13 @@ pub fn init_user(ctx: Context<InitUser>) -> Result<()> {
 
 }
 
-pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, amount: u64) -> Result<()> {
+pub fn init_user_prediction(ctx: Context<InitUserPrediction>, up_or_down: u8, amount: u64, round_number: [u8; 4]) -> Result<()> {
+    let round_number_parsed = u32::from_be_bytes(round_number);
+    
     let current_round_key = ctx.accounts.current_round.to_account_info().key();
     let mut current_round = ctx.accounts.current_round.load_mut()?;
+
+    require!(round_number_parsed.eq(&{current_round.round_number}), ErrorCode::RoundNumberMismatch);
 
     let game_key = ctx.accounts.game.to_account_info().key();
     let game = ctx.accounts.game.load()?;
@@ -387,6 +391,7 @@ pub struct InitUser<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(up_or_down: u8, amount: u64, round_number: [u8; 4])]
 pub struct InitUserPrediction<'info> {
 
     #[account(mut)]
@@ -421,10 +426,10 @@ pub struct InitUserPrediction<'info> {
             signer.key().as_ref(), 
             game.key().as_ref(), 
             current_round.key().as_ref(), 
-            &[current_round.load_mut()?.round_number.to_be_bytes()[0]], 
-            &[current_round.load_mut()?.round_number.to_be_bytes()[1]],
-            &[current_round.load_mut()?.round_number.to_be_bytes()[2]], 
-            &[current_round.load_mut()?.round_number.to_be_bytes()[3]],
+            &[round_number[0]], 
+            &[round_number[1]],
+            &[round_number[2]], 
+            &[round_number[3]],
             b"user_prediction"
         ],
         bump, 

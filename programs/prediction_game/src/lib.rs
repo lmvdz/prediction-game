@@ -74,8 +74,8 @@ pub mod prediction_game {
         instructions::crank::init_crank(ctx)
     }
 
-    pub fn init_user_prediction_instruction(ctx: Context<InitUserPrediction>, up_or_down: u8, amount: u64) -> Result<()> {
-        instructions::user::init_user_prediction(ctx, up_or_down, amount)
+    pub fn init_user_prediction_instruction(ctx: Context<InitUserPrediction>, up_or_down: u8, amount: u64, round_number: [u8; 4]) -> Result<()> {
+        instructions::user::init_user_prediction(ctx, up_or_down, amount, round_number)
     }
 
     pub fn user_claim_instruction(ctx: Context<UserClaim>, amount: u64) -> Result<()> {

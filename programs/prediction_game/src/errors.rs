@@ -204,5 +204,7 @@ pub enum ErrorCode {
     #[msg("The Fee Vault ATA Authority Nonce did not match the one generated")]
     InvalidFeeVaultAuthorityNonce,
     #[msg("The Vault ATA Authority Nonce did not match the one generated")]
-    InvalidVaultAuthorityNonce
+    InvalidVaultAuthorityNonce,
+    #[msg("Round Number Mismatch")]
+    RoundNumberMismatch
 }

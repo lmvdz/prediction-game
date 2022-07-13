@@ -693,6 +693,15 @@ export type PredictionGame = {
         {
           "name": "amount",
           "type": "u64"
+        },
+        {
+          "name": "roundNumber",
+          "type": {
+            "array": [
+              "u8",
+              4
+            ]
+          }
         }
       ]
     },
@@ -2391,6 +2400,11 @@ export type PredictionGame = {
       "code": 6100,
       "name": "InvalidVaultAuthorityNonce",
       "msg": "The Vault ATA Authority Nonce did not match the one generated"
+    },
+    {
+      "code": 6101,
+      "name": "RoundNumberMismatch",
+      "msg": "Round Number Mismatch"
     }
   ]
 };
@@ -3090,6 +3104,15 @@ export const IDL: PredictionGame = {
         {
           "name": "amount",
           "type": "u64"
+        },
+        {
+          "name": "roundNumber",
+          "type": {
+            "array": [
+              "u8",
+              4
+            ]
+          }
         }
       ]
     },
@@ -4788,6 +4811,11 @@ export const IDL: PredictionGame = {
       "code": 6100,
       "name": "InvalidVaultAuthorityNonce",
       "msg": "The Vault ATA Authority Nonce did not match the one generated"
+    },
+    {
+      "code": 6101,
+      "name": "RoundNumberMismatch",
+      "msg": "Round Number Mismatch"
     }
   ]
 };

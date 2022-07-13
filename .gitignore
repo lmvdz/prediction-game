@@ -12,3 +12,4 @@ crank/lib
 .env.*
 server/frontend
 server/aggr
+solana-wallet-mobile-vite-vue-ts

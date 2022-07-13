@@ -59,8 +59,18 @@ export default class UserPrediction implements DataUpdatable<UserPredictionAccou
     ) : Promise<TransactionInstruction> {
 
         if (amount.gt(U64MAX) || amount.lt(USER_PREDICTION_MIN_AMOUNT(game.account.tokenDecimal))) throw Error("Amount does not fall in the required range for [1, u64::MAX]")
+        const roundNumberBuffer = new anchor.BN(game.account.roundNumber).toArrayLike(Buffer, 'be', 4);
 
-        return await workspace.program.methods.initUserPredictionInstruction(upOrDown.valueOf(), amount).accounts({
+        return await workspace.program.methods.initUserPredictionInstruction(
+            upOrDown.valueOf(), 
+            amount, 
+            [
+                roundNumberBuffer.readUintBE(0, 1), 
+                roundNumberBuffer.readUintBE(1, 1), 
+                roundNumberBuffer.readUintBE(2, 1), 
+                roundNumberBuffer.readUintBE(3, 1), 
+            ]
+        ).accounts({
             signer: workspace.owner,
             game: game.account.address,
             user: (user as User).account !== undefined ? (user as User).account.address : (user as PublicKey),
