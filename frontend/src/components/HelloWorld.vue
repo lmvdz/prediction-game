@@ -29,7 +29,6 @@ import * as anchor from '@project-serum/anchor'
 import axios from 'axios';
 import { useStore } from "../stores/store";
 import bs58 from 'bs58';
-import BN from 'bn.js';
 import UpArrowAnimation from '../lottie/65775-arrrow-moving-upward.json'
 import DownArrowAnimation from '../lottie/65777-graph-moving-downward.json'
 import CrabAnimation from '../lottie/101494-rebound-rock-water-creature-by-dave-chenell.json'
@@ -143,11 +142,11 @@ function loadPAF() {
 }
 
 function getRpcUrl() {
-  return window.location.host.startsWith("localhost") || window.location.host.startsWith("devnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net";
+  return !window.location.host.startsWith("mainnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net";
 }
 
 function getCluster() {
-  return window.location.host.startsWith("localhost") ? 'devnet' : window.location.host.split('.')[0] as Cluster;
+  return !window.location.host.startsWith("mainnet") ? 'devnet' : 'mainnet-beta';
 }
 
 type FrontendGameData = {
@@ -387,7 +386,7 @@ async function makePrediction(game: (Game)) {
     }
 
     
-    let fromTokenAccount = await getTokenAccountFromGame(game);
+    let fromTokenAccount = getTokenAccountFromGame(game);
     let vault = getVaultFromGame(game);
     
     let [userPredictionPubkey, _userPredictionPubkeyBump] = await (getWorkspace()).programAddresses.getUserPredictionPubkey(game, game.currentRound, computedUser.value || (getWorkspace()).owner);
@@ -464,7 +463,7 @@ async function makePrediction(game: (Game)) {
 }
 
 async function initTokenAccountForGame(game: Game) {
-  let tokenMint = await getTokenMint(game);
+  let tokenMint = getTokenMint(game);
   const transaction = new Transaction().add(
       createAssociatedTokenAccountInstruction(
           (getWorkspace()).owner,
@@ -696,7 +695,7 @@ function unloadUserClaimable() {
 
 
 async function loadGameHistoriesFromDB() {
-  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/history`);
+  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('mainnet') ? 'devnet' : 'mainnet'}/history`);
   let json = await res.json();
   if (Array.isArray(json))
   json.filter(j => j !== undefined).forEach(async ({ roundHistory, userPredictionHistory }) => {
@@ -712,7 +711,7 @@ async function loadGameHistoriesFromDB() {
 }
 
 async function loadRoundsFromDB() {
-  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/round`);
+  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('mainnet') ? 'devnet' : 'mainnet'}/round`);
   let data = await res.json();
   let roundAccountKeys = new Set<string>();
   data.forEach(async (vJSON: string) => {
@@ -751,7 +750,7 @@ async function loadRoundsFromDB() {
 }
 
 async function loadGamesFromDB() {
-  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/game`);
+  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('mainnet') ? 'devnet' : 'mainnet'}/game`);
   let data = await res.json();
   let gameAccountKeys = new Set<string>();
   data.forEach(async (vJSON: string) => {
@@ -775,7 +774,7 @@ async function loadGamesFromDB() {
 }
 
 async function loadVaultsFromDB() {
-  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/vault`);
+  let res = await fetch(`https://api.solpredict.io/${ !getHost().startsWith('mainnet') ? 'devnet' : 'mainnet' }/vault`);
   let data = await res.json();
   let vaultAccountKeys = new Set<string>();
   data.forEach(async (vJSON: string) => {

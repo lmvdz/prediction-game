@@ -28,7 +28,7 @@ const walletOptions = {
     new SlopeWalletAdapter(),
     new SolflareWalletAdapter({ network: WalletAdapterNetwork.Mainnet }),
   ],
-  autoConnect: true,
+  autoConnect: false,
 }
 import Vue3Lottie from 'vue3-lottie'
 import 'vue3-lottie/dist/style.css'
