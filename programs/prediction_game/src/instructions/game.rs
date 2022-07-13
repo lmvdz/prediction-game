@@ -215,8 +215,9 @@ pub fn payout_cranks<'info>(mut ctx: Context<'_, '_, '_, 'info, PayoutCranks<'in
             let crank_loader = &mut AccountLoader::<'info, Crank>::try_from(&accounts[i*2]).unwrap();
             let mut crank = crank_loader.load_mut()?;
 
-            // let token_account = &Account::<'info, TokenAccount>::try_from(&accounts[index+1]).unwrap();
-            // let user_claim_info = accounts[index+1].to_account_info().clone();
+            // let token_account_info = ctx.remaining_accounts[index].to_account_info().clone();
+            // let token_account = &Account::<'info, TokenAccount>::try_from(&ctx.remaining_accounts[index]).unwrap();
+            
             let user_claimable_loader = AccountLoader::<'info, UserClaimable>::try_from(&accounts[(i*2) + 1]).unwrap();
             let mut user_claimable = user_claimable_loader.load_mut()?;
 

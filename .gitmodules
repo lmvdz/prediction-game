@@ -1,0 +1,3 @@
+[submodule "mobile-wallet-adapter"]
+	path = mobile-wallet-adapter
+	url = git@github.com:lmvdz/mobile-wallet-adapter.git
