@@ -34,7 +34,7 @@ export const useWorkspace = () => workspace
 
 export const initWorkspace = (rpcUrl: string, cluster: Cluster) => {
   // console.log(cluster);
-  let wallet : Ref<AnchorWallet> = useAnchorWallet();
+  let wallet : Ref<AnchorWallet | undefined> = useAnchorWallet();
   if (wallet.value === undefined) {
     wallet = ref(new TempWallet(Keypair.generate()));
   }

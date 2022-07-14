@@ -4,7 +4,7 @@ import { computed, defineComponent, onMounted } from 'vue'
 
 
 import { useDisplay } from 'vuetify'
-import { WalletMultiButton } from 'solana-wallets-vue'
+import { WalletMultiButton, useWallet, WalletStore } from 'solana-wallets-vue'
 import { ProgramAccount } from "@project-serum/anchor";
 import { Cluster, LAMPORTS_PER_SOL, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 import { confirmTxRetry } from "sdk/lib/util";
@@ -22,7 +22,6 @@ import Game, { GameAccount } from "sdk/lib/accounts/game";
 import { U64MAX } from 'sdk';
 import { useWorkspace, initWorkspace } from '../plugins/anchor'
 import { initPAF, usePAF } from '../plugins/polling-account-fetcher'
-import { useWallet, WalletStore } from 'solana-wallets-vue'
 import { useTokenList } from "../plugins/tokenList";
 import CryptoIcon from './CryptoIcon.vue'
 import * as anchor from '@project-serum/anchor'
@@ -142,11 +141,11 @@ function loadPAF() {
 }
 
 function getRpcUrl() {
-  return !window.location.host.startsWith("mainnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net";
+  return window.location.host.startsWith("localhost") || window.location.host.startsWith("devnet") ? "https://api.devnet.solana.com" : "https://ssc-dao.genesysgo.net";
 }
 
 function getCluster() {
-  return !window.location.host.startsWith("mainnet") ? 'devnet' : 'mainnet-beta';
+  return window.location.host.startsWith("localhost") ? 'devnet' : window.location.host.split('.')[0] as Cluster;
 }
 
 type FrontendGameData = {
@@ -386,7 +385,7 @@ async function makePrediction(game: (Game)) {
     }
 
     
-    let fromTokenAccount = getTokenAccountFromGame(game);
+    let fromTokenAccount = await getTokenAccountFromGame(game);
     let vault = getVaultFromGame(game);
     
     let [userPredictionPubkey, _userPredictionPubkeyBump] = await (getWorkspace()).programAddresses.getUserPredictionPubkey(game, game.currentRound, computedUser.value || (getWorkspace()).owner);
@@ -463,7 +462,7 @@ async function makePrediction(game: (Game)) {
 }
 
 async function initTokenAccountForGame(game: Game) {
-  let tokenMint = getTokenMint(game);
+  let tokenMint = await getTokenMint(game);
   const transaction = new Transaction().add(
       createAssociatedTokenAccountInstruction(
           (getWorkspace()).owner,
@@ -695,7 +694,7 @@ function unloadUserClaimable() {
 
 
 async function loadGameHistoriesFromDB() {
-  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('mainnet') ? 'devnet' : 'mainnet'}/history`);
+  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/history`);
   let json = await res.json();
   if (Array.isArray(json))
   json.filter(j => j !== undefined).forEach(async ({ roundHistory, userPredictionHistory }) => {
@@ -711,7 +710,7 @@ async function loadGameHistoriesFromDB() {
 }
 
 async function loadRoundsFromDB() {
-  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('mainnet') ? 'devnet' : 'mainnet'}/round`);
+  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/round`);
   let data = await res.json();
   let roundAccountKeys = new Set<string>();
   data.forEach(async (vJSON: string) => {
@@ -750,7 +749,7 @@ async function loadRoundsFromDB() {
 }
 
 async function loadGamesFromDB() {
-  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('mainnet') ? 'devnet' : 'mainnet'}/game`);
+  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/game`);
   let data = await res.json();
   let gameAccountKeys = new Set<string>();
   data.forEach(async (vJSON: string) => {
@@ -774,7 +773,7 @@ async function loadGamesFromDB() {
 }
 
 async function loadVaultsFromDB() {
-  let res = await fetch(`https://api.solpredict.io/${ !getHost().startsWith('mainnet') ? 'devnet' : 'mainnet' }/vault`);
+  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/vault`);
   let data = await res.json();
   let vaultAccountKeys = new Set<string>();
   data.forEach(async (vJSON: string) => {
