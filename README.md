@@ -8,4 +8,4 @@ SolPredict is my first project which I am developing to learn Rust + Solana Bloc
 Currently SolPredict is deployed on the Solana Devnet
 
 ## Website
-https://devnet.solpredict.io
+https://devnet.solpredict.io --- not running, don't have a reliable RPC
