@@ -11,7 +11,6 @@ Currently SolPredict is deployed on the Solana Devnet
 
 ## How does it work?  
 > The idea is heavily inspired by BSC PancakeSwap's Prediction Game  
-> Multiple games (asset)   
 > Speculate if the price is going to be higher/lower than the starting price  
 > Round Length by default is 5 minutes  
   
