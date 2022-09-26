@@ -22,8 +22,7 @@ config({path: '.env.'+env})
 const privateKeyEnvVariable = "PRIVATE_KEY"
 // ENVIRONMENT VARIABLE FOR THE BOT PRIVATE KEY
 const privateKey = process.env[privateKeyEnvVariable]
-const endpoint = process.env.DEVNET_ENDPOINT;
-const wsEndpoint = process.env.DEVNET_WS_ENDPOINT;
+const endpoint = process.env.DEVNET;
 const rpcCluster = process.env.CLUSTER as Cluster;
 
 if (privateKey === undefined) {
@@ -289,7 +288,7 @@ const crankLoop = async (workspace: Workspace, vault: Vault, game: Game) => {
 
 async function run() {
     console.log('running');
-    const connection: Connection = new Connection(endpoint, { wsEndpoint })
+    const connection: Connection = new Connection(endpoint)
     console.log((await connection.getEpochInfo()).absoluteSlot)
 
     const workspace: Workspace = Workspace.load(connection, botWallet, rpcCluster, { commitment: 'confirmed' })
