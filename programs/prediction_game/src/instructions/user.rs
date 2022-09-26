@@ -491,9 +491,6 @@ pub struct AdminCloseUserPrediction<'info> {
     #[account()]
     pub signer: Signer<'info>,
 
-    #[account(constraint = game.load_mut()?.owner == signer.key())]
-    pub game: AccountLoader<'info, Game>,
-
     #[account(
         mut, 
         close = user_prediction_close_receiver

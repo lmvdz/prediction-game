@@ -22,7 +22,7 @@
     "polling-account-fetcher": "^1.0.15",
     "roboto-fontface": "*",
     "sdk": "file:../sdk",
-    "solana-wallets-vue": "^0.4.1",
+    "solana-wallets-vue": "^0.4.2",
     "vue": "^3.2.25",
     "vue-router": "4",
     "vue3-lottie": "^2.2.5",

@@ -17,28 +17,13 @@ pub mod prediction_game {
     use super::*;
     
 
+    // GAME
     pub fn init_game_instruction(ctx: Context<InitializeGame>, oracle: u8, base_symbol: [u8; 16], fee_bps: u16, crank_bps: u16, round_length: i64) -> Result<()> {
         instructions::game::init_game(ctx, oracle, base_symbol, fee_bps, crank_bps, round_length)
     }
 
     pub fn init_game_history_instruction(ctx: Context<InitGameHistory>) -> Result<()> {
         instructions::game::init_game_history(ctx)
-    }
-
-    pub fn init_vault_instruction(ctx: Context<InitializeVault>, vault_nonce: u8, fee_vault_nonce: u8) -> Result<()> {
-        instructions::vault::init_vault(ctx, vault_nonce, fee_vault_nonce)
-    }
-
-    pub fn init_first_round_instruction(ctx: Context<InitFirstRound>) -> Result<()> {
-        instructions::round::init_first_round(ctx)
-    }
-
-    pub fn init_second_round_instruction(ctx: Context<InitSecondRound>, next_round_number: [u8; 4]) -> Result<()> {
-        instructions::round::init_second_round(ctx, next_round_number)
-    }
-
-    pub fn init_next_round_and_close_previous_instruction(ctx: Context<InitNextRoundAndClosePrevious>, next_round_number: [u8; 4]) -> Result<()> {
-        instructions::round::init_next_round_and_close_previous(ctx, next_round_number)
     }
 
     pub fn update_game_instruction<'info>(ctx: Context<'_, '_, '_, 'info, UpdateGame<'info>>) -> Result<()> {
@@ -65,13 +50,51 @@ pub mod prediction_game {
         instructions::game::settle_predictions(ctx)
     }
 
+    pub fn close_game_instruction(ctx: Context<CloseGame>) -> Result<()> {
+        instructions::game::close_game(ctx)
+    }
+
+    // VAULT
+
+    pub fn init_vault_instruction(ctx: Context<InitializeVault>, vault_nonce: u8, fee_vault_nonce: u8) -> Result<()> {
+        instructions::vault::init_vault(ctx, vault_nonce, fee_vault_nonce)
+    }
+
+    pub fn close_fee_vault_ata_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CloseFeeVaultTokenAccount<'info>>) -> Result<()> {
+        instructions::vault::close_fee_vault_token_account(ctx)
+    }
+
+    pub fn close_vault_ata_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CloseVaultTokenAccount<'info>>) -> Result<()> {
+        instructions::vault::close_vault_token_account(ctx)
+    }
+
+    pub fn close_vault_instruction(_ctx: Context<CloseVault>) -> Result<()> {
+        Ok(())
+    }
+
+    // ROUNDS
+
+    pub fn init_first_round_instruction(ctx: Context<InitFirstRound>) -> Result<()> {
+        instructions::round::init_first_round(ctx)
+    }
+
+    pub fn init_second_round_instruction(ctx: Context<InitSecondRound>, next_round_number: [u8; 4]) -> Result<()> {
+        instructions::round::init_second_round(ctx, next_round_number)
+    }
+
+    pub fn init_next_round_and_close_previous_instruction(ctx: Context<InitNextRoundAndClosePrevious>, next_round_number: [u8; 4]) -> Result<()> {
+        instructions::round::init_next_round_and_close_previous(ctx, next_round_number)
+    }
+
+    pub fn close_round_instruction<'info>(_ctx: Context<'_, '_, '_, 'info, CloseRound<'info>>) -> Result<()> {
+        Ok(())
+    }
+
+    
+    // USER
 
     pub fn init_user_instruction(ctx: Context<InitUser>) -> Result<()> {
         instructions::user::init_user(ctx)
-    }
-
-    pub fn init_crank_instruction(ctx: Context<InitCrank>) -> Result<()> {
-        instructions::crank::init_crank(ctx)
     }
 
     pub fn init_user_prediction_instruction(ctx: Context<InitUserPrediction>, up_or_down: u8, amount: u64, round_number: [u8; 4]) -> Result<()> {
@@ -86,29 +109,43 @@ pub mod prediction_game {
         instructions::user::user_claim_all(ctx)
     }
 
-    pub fn admin_close_game_instruction<'info>(_ctx: Context<'_, '_, '_, 'info, AdminCloseGame<'info>>) -> Result<()> {
+    pub fn close_user_prediction_instruction(_ctx: Context<CloseUserPrediction>) -> Result<()> {
         Ok(())
+    }
+
+    pub fn close_user_account_instruction(_ctx: Context<CloseUserAccount>) -> Result<()> {
+        Ok(())
+    }
+    
+    // CRANK
+    
+    pub fn init_crank_instruction(ctx: Context<InitCrank>) -> Result<()> {
+        instructions::crank::init_crank(ctx)
     }
 
     pub fn close_crank_account_instruction(_ctx: Context<CloseCrankAccount>) -> Result<()> {
         Ok(())
     }
 
+    
+
+    
+
+    /**
+     * DEVNET SPECIFIC
+     * SHOULD BE REMOVED BEFORE DEPLOYING TO MAINNET
+     */
+
     pub fn admin_close_crank_account_instruction<'info>(_ctx: Context<'_, '_, '_, 'info, AdminCloseCrankAccount<'info>>) -> Result<()> {
         Ok(())
     }
 
-    pub fn close_fee_vault_ata_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CloseFeeVaultTokenAccount<'info>>) -> Result<()> {
-        instructions::vault::close_fee_vault_token_account(ctx)
-    }
-    pub fn close_vault_ata_instruction<'info>(ctx: Context<'_, '_, '_, 'info, CloseVaultTokenAccount<'info>>) -> Result<()> {
-        instructions::vault::close_vault_token_account(ctx)
-    }
-    pub fn admin_close_vault_instruction(_ctx: Context<AdminCloseVaultAccount>) -> Result<()> {
+
+    pub fn admin_close_game_instruction<'info>(_ctx: Context<'_, '_, '_, 'info, AdminCloseGame<'info>>) -> Result<()> {
         Ok(())
     }
 
-    pub fn close_round_instruction<'info>(_ctx: Context<'_, '_, '_, 'info, CloseRound<'info>>) -> Result<()> {
+    pub fn admin_close_vault_instruction(_ctx: Context<AdminCloseVaultAccount>) -> Result<()> {
         Ok(())
     }
 
@@ -116,17 +153,7 @@ pub mod prediction_game {
         Ok(())
     }
 
-    
-
-    pub fn close_user_prediction_instruction(_ctx: Context<CloseUserPrediction>) -> Result<()> {
-        Ok(())
-    }
-
     pub fn admin_close_user_prediction_instruction(_ctx: Context<AdminCloseUserPrediction>) -> Result<()> {
-        Ok(())
-    }
-
-    pub fn close_user_account_instruction(_ctx: Context<CloseUserAccount>) -> Result<()> {
         Ok(())
     }
 

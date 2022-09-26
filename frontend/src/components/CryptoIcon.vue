@@ -6,5 +6,11 @@
 </script>
 
 <template>
-    <v-img style="margin: 0 auto;" :src="url"></v-img>
+    <v-img class="crypto-icon" style="margin: 0 auto;" :src="url"></v-img>
 </template>
+
+<style>
+.crypto-icon > img {
+    position: relative !important;
+}
+</style>

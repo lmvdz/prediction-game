@@ -158,7 +158,12 @@ export async function closeAllGames(owner: Keypair, connection: Connection, clus
     await Promise.allSettled( (await workspace.program.account.game.all()).map(async gameAccount => {
         console.log('game', gameAccount.publicKey.toBase58());
         let game = new Game(gameAccount.account as unknown as GameAccount);
-        return await (game).adminCloseGame(workspace);
+        try {
+            return await (game).adminCloseGame(workspace);
+        } catch (error) {
+            console.error(error);
+        }
+        
     }));
 }
 
@@ -191,7 +196,12 @@ export async function closeAllUserPredictions(owner: Keypair, connection: Connec
     await Promise.allSettled( (await workspace.program.account.userPrediction.all()).map(async userPredictionAccount => {
         console.log('userPrediction', userPredictionAccount.publicKey.toBase58());
         let userPrediction = new UserPrediction(userPredictionAccount.account as unknown as UserPredictionAccount);
-        return await UserPrediction.adminCloseUserPrediction(workspace, userPrediction);
+        try {
+            return await UserPrediction.adminCloseUserPrediction(workspace, userPrediction);
+        } catch (error) {
+            console.error(error);
+        }
+        
     }));
 }
 
@@ -218,7 +228,12 @@ export async function closeAllRounds(owner: Keypair, connection: Connection, clu
     await Promise.allSettled( (await workspace.program.account.round.all()).map(async roundAccount => {
         console.log('round', roundAccount.publicKey.toBase58());
         let round = new Round(roundAccount.account as unknown as RoundAccount);
-        return await Round.adminCloseRound(workspace, round)
+        try {
+            return await Round.adminCloseRound(workspace, round)
+        } catch(error) {
+            console.error(error);
+        }
+        
     }));
 }
 
@@ -244,7 +259,12 @@ export async function closeAllUserClaimable(owner: Keypair, connection: Connecti
 
     await Promise.allSettled( (await workspace.program.account.userClaimable.all()).map(async userClaimableAccount => {
         console.log('userClaimable', userClaimableAccount.publicKey.toBase58());
-        return await UserClaimable.adminCloseUserClaimable(workspace, userClaimableAccount.publicKey)
+        try {
+            return await UserClaimable.adminCloseUserClaimable(workspace, userClaimableAccount.publicKey)
+        } catch(error) {
+            console.error(error);
+        }
+        
     }));
 }
 
@@ -254,10 +274,19 @@ export async function closeAllHistory(owner: Keypair, connection: Connection, cl
 
     await Promise.allSettled( [...(await workspace.program.account.userPredictionHistory.all()).map(async userPredictionHistory => {
         console.log('userPredictionHistory', userPredictionHistory.publicKey.toBase58());
-        return await UserPredictionHistory.adminCloseUserUserPredictionHistory(workspace, userPredictionHistory.publicKey)
+        try {
+            return await UserPredictionHistory.adminCloseUserUserPredictionHistory(workspace, userPredictionHistory.publicKey)
+        } catch (error) {
+            console.error(error);
+        }
+        
     }), ...(await workspace.program.account.roundHistory.all()).map(async roundHistory => {
         console.log('roundHistory', roundHistory.publicKey.toBase58());
-        return await RoundHistory.adminCloseUserRoundHistory(workspace, roundHistory.publicKey)
+        try {
+            return await RoundHistory.adminCloseUserRoundHistory(workspace, roundHistory.publicKey)
+        } catch (error) {
+            console.error(error);
+        }
     })] );
 }
 

@@ -96,244 +96,6 @@ export type PredictionGame = {
       "args": []
     },
     {
-      "name": "initVaultInstruction",
-      "accounts": [
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "feeVaultAta",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "feeVaultAtaAuthority",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "vaultAta",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "vaultAtaAuthority",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "vault",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tokenMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "rent",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "vaultNonce",
-          "type": "u8"
-        },
-        {
-          "name": "feeVaultNonce",
-          "type": "u8"
-        }
-      ]
-    },
-    {
-      "name": "initFirstRoundInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "game",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "crank",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "round",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "priceProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "priceFeed",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "initSecondRoundInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "game",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "roundHistory",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "crank",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "secondRound",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "firstRound",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "priceProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "priceFeed",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "nextRoundNumber",
-          "type": {
-            "array": [
-              "u8",
-              4
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "initNextRoundAndClosePreviousInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "game",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "roundHistory",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "crank",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "receiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "nextRound",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "currentRound",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "previousRound",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "priceProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "priceFeed",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "nextRoundNumber",
-          "type": {
-            "array": [
-              "u8",
-              4
-            ]
-          }
-        }
-      ]
-    },
-    {
       "name": "updateGameInstruction",
       "accounts": [
         {
@@ -555,6 +317,424 @@ export type PredictionGame = {
       "args": []
     },
     {
+      "name": "closeGameInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "currentRound",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "previousRound",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userPredictionHistory",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "roundHistory",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initVaultInstruction",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "feeVaultAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feeVaultAtaAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vaultAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vaultAtaAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "vaultNonce",
+          "type": "u8"
+        },
+        {
+          "name": "feeVaultNonce",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "closeFeeVaultAtaInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiverAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feeVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feeVaultAtaAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "closeVaultAtaInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiverAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vaultAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vaultAtaAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "closeVaultInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feeVaultAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vaultAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initFirstRoundInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "crank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "round",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "priceProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "priceFeed",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initSecondRoundInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "roundHistory",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "crank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "secondRound",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "firstRound",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "priceProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "priceFeed",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "nextRoundNumber",
+          "type": {
+            "array": [
+              "u8",
+              4
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "initNextRoundAndClosePreviousInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "roundHistory",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "crank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "nextRound",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "currentRound",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "previousRound",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "priceProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "priceFeed",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "nextRoundNumber",
+          "type": {
+            "array": [
+              "u8",
+              4
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "closeRoundInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "round",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "initUserInstruction",
       "accounts": [
         {
@@ -569,37 +749,6 @@ export type PredictionGame = {
         },
         {
           "name": "userClaimable",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "initCrankInstruction",
-      "accounts": [
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "game",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "user",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "crank",
           "isMut": true,
           "isSigner": false
         },
@@ -788,251 +937,12 @@ export type PredictionGame = {
       "args": []
     },
     {
-      "name": "adminCloseGameInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "receiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "game",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "closeCrankAccountInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "crank",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "receiver",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "adminCloseCrankAccountInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "crank",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "receiver",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "closeFeeVaultAtaInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "vault",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "receiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "receiverAta",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "feeVault",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "feeVaultAtaAuthority",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "closeVaultAtaInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "vault",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "receiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "receiverAta",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "vaultAta",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "vaultAtaAuthority",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "adminCloseVaultInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "receiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "vault",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "closeRoundInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "receiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "round",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "adminCloseRoundInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "round",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "receiver",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "closeUserPredictionInstruction",
       "accounts": [
         {
           "name": "signer",
           "isMut": true,
           "isSigner": true
-        },
-        {
-          "name": "userPrediction",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "userPredictionCloseReceiver",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "adminCloseUserPredictionInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "game",
-          "isMut": false,
-          "isSigner": false
         },
         {
           "name": "userPrediction",
@@ -1067,6 +977,171 @@ export type PredictionGame = {
         },
         {
           "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initCrankInstruction",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "game",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "crank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "closeCrankAccountInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "crank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseCrankAccountInstruction",
+      "docs": [
+        "* DEVNET SPECIFIC\n     * SHOULD BE REMOVED BEFORE DEPLOYING TO MAINNET"
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "crank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseGameInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseVaultInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseRoundInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "round",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseUserPredictionInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "userPrediction",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userPredictionCloseReceiver",
           "isMut": true,
           "isSigner": false
         }
@@ -2507,244 +2582,6 @@ export const IDL: PredictionGame = {
       "args": []
     },
     {
-      "name": "initVaultInstruction",
-      "accounts": [
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "feeVaultAta",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "feeVaultAtaAuthority",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "vaultAta",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "vaultAtaAuthority",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "vault",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tokenMint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "rent",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "vaultNonce",
-          "type": "u8"
-        },
-        {
-          "name": "feeVaultNonce",
-          "type": "u8"
-        }
-      ]
-    },
-    {
-      "name": "initFirstRoundInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "game",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "crank",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "round",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "priceProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "priceFeed",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "initSecondRoundInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "game",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "roundHistory",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "crank",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "secondRound",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "firstRound",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "priceProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "priceFeed",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "nextRoundNumber",
-          "type": {
-            "array": [
-              "u8",
-              4
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "initNextRoundAndClosePreviousInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "game",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "roundHistory",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "crank",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "receiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "nextRound",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "currentRound",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "previousRound",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "priceProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "priceFeed",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "nextRoundNumber",
-          "type": {
-            "array": [
-              "u8",
-              4
-            ]
-          }
-        }
-      ]
-    },
-    {
       "name": "updateGameInstruction",
       "accounts": [
         {
@@ -2966,6 +2803,424 @@ export const IDL: PredictionGame = {
       "args": []
     },
     {
+      "name": "closeGameInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "currentRound",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "previousRound",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userPredictionHistory",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "roundHistory",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initVaultInstruction",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "feeVaultAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feeVaultAtaAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vaultAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vaultAtaAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "vaultNonce",
+          "type": "u8"
+        },
+        {
+          "name": "feeVaultNonce",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "closeFeeVaultAtaInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiverAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feeVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feeVaultAtaAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "closeVaultAtaInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiverAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vaultAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vaultAtaAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "closeVaultInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feeVaultAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vaultAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initFirstRoundInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "crank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "round",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "priceProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "priceFeed",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initSecondRoundInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "roundHistory",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "crank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "secondRound",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "firstRound",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "priceProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "priceFeed",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "nextRoundNumber",
+          "type": {
+            "array": [
+              "u8",
+              4
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "initNextRoundAndClosePreviousInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "roundHistory",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "crank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "nextRound",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "currentRound",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "previousRound",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "priceProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "priceFeed",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "nextRoundNumber",
+          "type": {
+            "array": [
+              "u8",
+              4
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "closeRoundInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "round",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "initUserInstruction",
       "accounts": [
         {
@@ -2980,37 +3235,6 @@ export const IDL: PredictionGame = {
         },
         {
           "name": "userClaimable",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "initCrankInstruction",
-      "accounts": [
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "game",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "user",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "crank",
           "isMut": true,
           "isSigner": false
         },
@@ -3199,251 +3423,12 @@ export const IDL: PredictionGame = {
       "args": []
     },
     {
-      "name": "adminCloseGameInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "receiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "game",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "closeCrankAccountInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "crank",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "receiver",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "adminCloseCrankAccountInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "crank",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "receiver",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "closeFeeVaultAtaInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "vault",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "receiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "receiverAta",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "feeVault",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "feeVaultAtaAuthority",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "closeVaultAtaInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "vault",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "receiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "receiverAta",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "vaultAta",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "vaultAtaAuthority",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "adminCloseVaultInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "receiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "vault",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "closeRoundInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "receiver",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "round",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "adminCloseRoundInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "round",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "receiver",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "closeUserPredictionInstruction",
       "accounts": [
         {
           "name": "signer",
           "isMut": true,
           "isSigner": true
-        },
-        {
-          "name": "userPrediction",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "userPredictionCloseReceiver",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "adminCloseUserPredictionInstruction",
-      "accounts": [
-        {
-          "name": "signer",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
-          "name": "game",
-          "isMut": false,
-          "isSigner": false
         },
         {
           "name": "userPrediction",
@@ -3478,6 +3463,171 @@ export const IDL: PredictionGame = {
         },
         {
           "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initCrankInstruction",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "game",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "crank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "closeCrankAccountInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "crank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseCrankAccountInstruction",
+      "docs": [
+        "* DEVNET SPECIFIC\n     * SHOULD BE REMOVED BEFORE DEPLOYING TO MAINNET"
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "crank",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseGameInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "game",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseVaultInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseRoundInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "round",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "adminCloseUserPredictionInstruction",
+      "accounts": [
+        {
+          "name": "signer",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "userPrediction",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userPredictionCloseReceiver",
           "isMut": true,
           "isSigner": false
         }

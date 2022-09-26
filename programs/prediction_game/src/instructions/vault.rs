@@ -116,6 +116,7 @@ pub struct InitializeVault<'info> {
     )]
     pub fee_vault_ata: Box<Account<'info, TokenAccount>>,
 
+    // this should be a PDA, so that we can withdraw with a signed cpi program call
     /// CHECK: make sure the authority is not malicously calculated
     pub fee_vault_ata_authority: AccountInfo<'info>,
 
@@ -129,6 +130,7 @@ pub struct InitializeVault<'info> {
     )]
     pub vault_ata: Box<Account<'info, TokenAccount>>,
 
+    // this should be a PDA, so that we can withdraw with a signed cpi program call
     /// CHECK: make sure the authority is not malicously calculated
     pub vault_ata_authority: AccountInfo<'info>,
 
@@ -227,6 +229,42 @@ pub struct CloseVaultTokenAccount<'info> {
     pub vault_ata_authority: AccountInfo<'info>,
 
     pub token_program: Program<'info, Token>,
+
+}
+
+
+#[derive(Accounts)]
+pub struct CloseVault<'info> {
+
+    #[account(
+        constraint = signer.key() == vault.owner
+    )]
+    pub signer: Signer<'info>,
+
+    #[account(
+        mut
+    )]
+    pub receiver: SystemAccount<'info>,
+
+    #[account(
+        mut,
+        constraint = vault.fee_vault_ata == fee_vault_ata.key(),
+        constraint = fee_vault_ata.amount == 0
+    )]
+    pub fee_vault_ata:  Box<Account<'info, TokenAccount>>,
+
+    #[account(
+        mut,
+        constraint = vault.vault_ata == vault_ata.key(),
+        constraint = vault_ata.amount == 0
+    )]
+    pub vault_ata:  Box<Account<'info, TokenAccount>>,
+
+    #[account(
+        mut,
+        close = receiver
+    )]
+    pub vault:  Box<Account<'info, Vault>>
 
 }
 

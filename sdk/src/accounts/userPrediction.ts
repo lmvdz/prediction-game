@@ -154,7 +154,6 @@ export default class UserPrediction implements DataUpdatable<UserPredictionAccou
     public static async adminCloseUserPredictionInstruction(workspace: Workspace, prediction: UserPrediction) : Promise<TransactionInstruction> {
         return await workspace.program.methods.adminCloseUserPredictionInstruction().accounts({
             signer: workspace.owner,
-            game: prediction.account.game,
             userPrediction: prediction.account.address,
             userPredictionCloseReceiver: prediction.account.owner
         }).instruction()
@@ -186,18 +185,17 @@ export default class UserPrediction implements DataUpdatable<UserPredictionAccou
     }
 
 
-    public static async adminCloseUserPredictionFromPubkeysInstruction(workspace: Workspace, game: PublicKey, userPrediction: PublicKey, receiver: PublicKey) : Promise<TransactionInstruction> {
+    public static async adminCloseUserPredictionFromPubkeysInstruction(workspace: Workspace, userPrediction: PublicKey, receiver: PublicKey) : Promise<TransactionInstruction> {
         return await workspace.program.methods.adminCloseUserPredictionInstruction().accounts({
             signer: workspace.owner,
-            game,
             userPrediction,
             userPredictionCloseReceiver: receiver
         }).instruction()
     }
 
-    public static async adminCloseUserPredictionFromPubkeys(workspace: Workspace, game: PublicKey, userPrediction: PublicKey, receiver: PublicKey) : Promise<boolean> {
+    public static async adminCloseUserPredictionFromPubkeys(workspace: Workspace, userPrediction: PublicKey, receiver: PublicKey) : Promise<boolean> {
         
-        let ix = await this.adminCloseUserPredictionFromPubkeysInstruction(workspace, game, userPrediction, receiver);
+        let ix = await this.adminCloseUserPredictionFromPubkeysInstruction(workspace, userPrediction, receiver);
         let tx = new Transaction().add(ix);
   
         return new Promise((resolve, reject) => {

@@ -6131,10 +6131,10 @@ socket.io-parser@~4.2.0:
     "@socket.io/component-emitter" "~3.1.0"
     debug "~4.3.1"
 
-solana-wallets-vue@^0.4.1:
-  version "0.4.1"
-  resolved "https://registry.yarnpkg.com/solana-wallets-vue/-/solana-wallets-vue-0.4.1.tgz#99076b402928e9ced99e1ebaf089870e17679f21"
-  integrity sha512-TRl3sg/4LGID/cd2liTauI1/kVFEK925HS8oprlz+8Pt4+HWfGviaoIUQd0QF9A6r+1R/uH3PWsAxC+9hUSGtA==
+solana-wallets-vue@^0.4.2:
+  version "0.4.2"
+  resolved "https://registry.yarnpkg.com/solana-wallets-vue/-/solana-wallets-vue-0.4.2.tgz#34daaa689527f42c151cb31f036cb2c9de1f8394"
+  integrity sha512-AMFS3aV4Sf8O26cWTZfdUFjwgBDrGW53UNAknpJbZIQUMKTlokiFQ0pZPxaREYZeZYOW8l6RtTeVu9sSOQS6fg==
   dependencies:
     "@solana/wallet-adapter-base" "^0.9.5"
     vue "^3.2.25"

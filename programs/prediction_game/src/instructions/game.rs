@@ -14,7 +14,6 @@ use crate::state::UserPredictionHistory;
 use crate::state::Vault;
 use crate::utils::transfer_token_account_signed;
 
-// initialize game
 pub fn init_game(ctx: Context<InitializeGame>, oracle: u8, base_symbol: [u8; 16], fee_bps: u16, crank_bps: u16, round_length: i64) -> Result<()> {
     let game_key = ctx.accounts.game.to_account_info().key();
     let mut game = ctx.accounts.game.load_init()?;
@@ -450,6 +449,36 @@ pub fn init_game_history(ctx: Context<InitGameHistory>) -> Result<()> {
     Ok(())
 }
 
+pub fn close_game(ctx: Context<CloseGame>) -> Result<()> {
+    let signer = ctx.accounts.signer.to_account_info();
+    let game = ctx.accounts.game.load()?;
+    let current_round = ctx.accounts.current_round.load()?;
+    let previous_round = ctx.accounts.previous_round.load()?;
+    let round_history = ctx.accounts.round_history.load()?;
+    let user_prediction_history = ctx.accounts.user_prediction_history.load()?;
+
+    require_keys_eq!(signer.key(), game.owner);
+    require_keys_eq!(game.previous_round, previous_round.address);
+    require_keys_eq!(game.current_round, current_round.address);
+
+    require_keys_eq!(game.round_history, round_history.address);
+    require_keys_eq!(game.user_prediction_history, user_prediction_history.address);
+
+    require!(previous_round.cranks_paid, ErrorCode::RoundCranksNotPaid);
+    require!(previous_round.fee_collected, ErrorCode::RoundFeeNotCollected);
+    require!(previous_round.finished, ErrorCode::RoundNotFinished);
+    require!(previous_round.settled, ErrorCode::RoundNotSettled);
+    
+    require!(current_round.cranks_paid, ErrorCode::RoundCranksNotPaid);
+    require!(current_round.fee_collected, ErrorCode::RoundFeeNotCollected);
+    require!(current_round.finished, ErrorCode::RoundNotFinished);
+    require!(current_round.settled, ErrorCode::RoundNotSettled);
+    
+
+    Ok(())
+}
+
+// INITIALIZATION
 #[derive(Accounts)]
 pub struct InitializeGame<'info> {
     #[account(mut)]
@@ -497,24 +526,7 @@ pub struct InitGameHistory<'info> {
     pub system_program: Program<'info, System>,
 }
 
-#[derive(Accounts)]
-pub struct CollectFee<'info> {
-    #[account(mut)]
-    pub signer: Signer<'info>,
-
-    #[account(mut)]
-    pub crank: AccountLoader<'info, Crank>,
-
-    #[account(mut)]
-    pub game: AccountLoader<'info, Game>,
-
-    #[account(mut)]
-    pub current_round: AccountLoader<'info, Round>,
-
-
-    // required for Account
-    pub system_program: Program<'info, System>,
-}
+// FEE COLLECTION
 
 #[derive(Accounts)]
 pub struct ClaimFee<'info> {
@@ -569,6 +581,27 @@ pub struct WithdrawFee<'info> {
 
 
     pub token_program: Program<'info, Token>,
+}
+
+
+// GAME LIFECYCLE (CRANKABLE)
+#[derive(Accounts)]
+pub struct CollectFee<'info> {
+    #[account(mut)]
+    pub signer: Signer<'info>,
+
+    #[account(mut)]
+    pub crank: AccountLoader<'info, Crank>,
+
+    #[account(mut)]
+    pub game: AccountLoader<'info, Game>,
+
+    #[account(mut)]
+    pub current_round: AccountLoader<'info, Round>,
+
+
+    // required for Account
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
@@ -633,6 +666,44 @@ pub struct UpdateGame<'info> {
     // required for Account
     pub system_program: Program<'info, System>,
 }
+
+// CLOSE
+
+#[derive(Accounts)]
+pub struct CloseGame<'info> {
+    #[account(
+        mut
+    )]
+    pub signer: Signer<'info>,
+
+    #[account(
+        mut
+    )]
+    pub receiver: SystemAccount<'info>,
+
+    #[account(mut, close = receiver)]
+    pub current_round: AccountLoader<'info, Round>,
+
+    #[account(mut, close = receiver)]
+    pub previous_round: AccountLoader<'info, Round>,
+
+    #[account(mut, close = receiver)]
+    pub user_prediction_history: AccountLoader<'info, UserPredictionHistory>,
+
+    #[account(mut, close = receiver)]
+    pub round_history: AccountLoader<'info, RoundHistory>,
+
+    #[account(
+        mut,
+        close = receiver
+    )]
+    pub game: AccountLoader<'info, Game>,
+
+    pub system_program: Program<'info, System>,
+}
+
+// DEVNET ONLY
+// ADMIN CLOSE
 
 #[derive(Accounts)]
 pub struct AdminCloseGame<'info> {
