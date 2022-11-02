@@ -1,0 +1,20 @@
+[submodule "crank"]
+	path = crank
+	url = git@github.com:lmvdz/prediction-game-crank.git
+
+[submodule "frontend"]
+	path = frontend
+	url = git@github.com:lmvdz/prediction-game-frontend.git
+
+[submodule "sdk"]
+	path = sdk
+	url = git@github.com:lmvdz/prediction-game-sdk.git
+
+[submodule "server"]
+	path = server
+	url = git@github.com:lmvdz/prediction-game-server.git
+
+[submodule "aggr"]
+	branch = workspace-url
+	path = aggr
+	url = git@github.com:lmvdz/aggr.git

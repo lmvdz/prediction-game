@@ -1,0 +1,4 @@
+node_modules
+.env.devnet
+.env
+.env.mainnet

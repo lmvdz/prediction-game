@@ -23,45 +23,41 @@ let args = process.argv.slice(2)
 
 let env = args[0]
 
-config({path: '.env.'+env})
+config({ path: '.env.' + env })
 
-let devnetConnection = new Connection(process.env.DEVNET_ENDPOINT.toString());
-let mainnetConnection = new Connection(process.env.MAINNET_ENDPOINT.toString());
+let connectionConfig = {
+    commitment: 'finalized',
+    httpHeaders: {
+        
+    }
+};
 
-let workspace = {
-    devnet: Workspace.load(devnetConnection, new anchor.Wallet(owner), 'devnet'),
-    mainnet: Workspace.load(mainnetConnection, new anchor.Wallet(owner), 'mainnet-beta')
+let bearer = process.env[process.env.ENV?.trim() + "_AUTHORIZATION_BEARER"];
+
+if (bearer !== '') {
+    connectionConfig.httpHeaders["Authorization"] = "Bearer " + bearer
 }
 
-let paf = {
-    devnet: new PollingAccountsFetcher(process.env.DEVNET_ENDPOINT.toString(), 5000, 5),
-    mainnet: new PollingAccountsFetcher(process.env.MAINNET_ENDPOINT.toString(), 5000, 5)
-}
-paf.devnet.start();
-paf.mainnet.start();
+let connection = new Connection(process.env[process.env.ENV?.trim() + "_ENDPOINT"], connectionConfig);
+let cluster = process.env.ENV?.trim().toLowerCase();
+let isDevnet = cluster === 'devnet'
 
-let vaults = {
-    devnet: new Set(),
-    mainnet: new Set()
-}
-let games = {
-    devnet: new Set(),
-    mainnet: new Set()
-}
-let histories = {
-    devnet: new Map(),
-    mainnet: new Map()
-}
-let rounds = {
-    devnet: new Set(),
-    mainnet: new Set()
-}
+let workspace = Workspace.load(connection, new anchor.Wallet(owner), cluster)
+
+let paf = new PollingAccountsFetcher(connection.rpcEndpoint, 5000, 5)
+paf.start();
+
+let vaults = new Set()
+let games = new Set()
+let histories = new Map()
+let rounds = new Set()
 
 async function loadGeneric(paf, workspace, vaults, rounds, games, histories) {
-    await loadVaults(paf, workspace, vaults),
-    await loadRounds(paf, workspace, rounds),
-    await loadGames(paf, workspace, games),
-    await loadGameHistories(paf, workspace, games, histories)
+    console.log('loading generic api');
+    await loadVaults(paf, workspace, vaults);
+    await loadRounds(paf, workspace, rounds);
+    await loadGames(paf, workspace, games);
+    await loadGameHistories(paf, workspace, games, histories);
 }
 
 
@@ -78,7 +74,7 @@ async function loadGameHistories(paf, workspace, games, histories) {
                         histories.set(game.account.address.toBase58(), { ...histories.get(game.account.address.toBase58()), userPredictionHistory: data });
                     }
                 }, (error) => {
-                    paf.accounts.delete(gameUserPredictionHistoryPubkey.toBase58())
+                    paf.accounts.delete(gameUserPredictionHistoryPubkey.toBase58());
                 });
             }
             let gameRoundHistoryPubkey = game.account.roundHistory;
@@ -96,9 +92,9 @@ async function loadGameHistories(paf, workspace, games, histories) {
             }
         })
     } catch (error) {
-      console.error(error);
+        console.error(error);
     }
-  }
+}
 
 async function loadRounds(paf, workspace, rounds) {
     try {
@@ -109,7 +105,7 @@ async function loadRounds(paf, workspace, rounds) {
             if (!rounds.has(roundAddress)) {
                 rounds.add(roundAddress);
             }
-        
+
             if (!paf.accounts.has(roundAddress)) {
                 //@ts-ignore
                 paf.addProgram('round', roundAddress, workspace.program, async (data) => {
@@ -124,20 +120,20 @@ async function loadRounds(paf, workspace, rounds) {
     } catch (error) {
         console.error(error);
     }
-        
-  }
-  
-  async function loadGames(paf, workspace, games) {
+
+}
+
+async function loadGames(paf, workspace, games) {
     try {
         return await Promise.allSettled(((await Promise.all((await (workspace).program.account.game.all()).map(async (gameProgramAccount) => (new Game(
-        gameProgramAccount.account
+            gameProgramAccount.account
         )))))).map(async newgame => {
             let newGameAddress = newgame.account.address.toBase58();
-        
+
             if (!games.has(newGameAddress)) {
                 games.add(newGameAddress);
             }
-        
+
             if (!paf.accounts.has(newGameAddress)) {
                 //@ts-ignore
                 paf.addProgram('game', newGameAddress, workspace.program, async (data) => {
@@ -152,19 +148,19 @@ async function loadRounds(paf, workspace, rounds) {
     } catch (error) {
         console.error(error);
     }
-  }
-  
-  async function loadVaults(paf, workspace, vaults) {
+}
+
+async function loadVaults(paf, workspace, vaults) {
     try {
         return await Promise.allSettled(((await Promise.all((await workspace.program.account.vault.all()).map(async (vaultProgramAccount) => (new Vault(
             vaultProgramAccount.account
-          )))))).map(async (vault) => {
+        )))))).map(async (vault) => {
             let vaultAddress = vault.account.address.toBase58();
-    
+
             if (!vaults.has(vaultAddress)) {
-              vaults.add(vaultAddress);
+                vaults.add(vaultAddress);
             }
-              
+
             if (!paf.accounts.has(vaultAddress)) {
                 //@ts-ignore
                 paf.addProgram('vault', vaultAddress, workspace.program, async (data) => {
@@ -175,12 +171,12 @@ async function loadRounds(paf, workspace, rounds) {
                 }, vault.account)
             }
             return;
-          }));
+        }));
     } catch (error) {
         console.error(error);
     }
-      
-  }
+
+}
 
 let updateInterval = null;
 
@@ -190,10 +186,9 @@ const databaseUpdateLoop = () => {
         if (updateInterval) clearInterval(updateInterval)
         updateInterval = setInterval(async () => {
             await Promise.allSettled([
-                await loadGeneric(paf.devnet, workspace.devnet, vaults.devnet, rounds.devnet, games.devnet, histories.devnet),
-                await loadGeneric(paf.mainnet, workspace.mainnet, vaults.mainnet, rounds.mainnet, games.mainnet, histories.mainnet)
+                await loadGeneric(paf, workspace, vaults, rounds, games, histories),
             ]);
-        }, 10 * 1000)
+        }, 60 * 1000)
     } catch (error) {
         databaseUpdateLoop()
     }
@@ -206,40 +201,40 @@ const database = express();
 database.use(cors());
 database.use(bodyParser.json());
 
-database.get('/:cluster/game', (req, res) => {
-    res.send([...games[req.params.cluster].values()].map(pub => {
-        let account = paf[req.params.cluster].accounts.get(pub);
+database.get('/game', (req, res) => {
+    res.send([...games.values()].map(pub => {
+        let account = paf.accounts.get(pub);
         if (account !== undefined)
-            return JSON.stringify(paf[req.params.cluster].accounts.get(pub).data)
-        else 
+            return JSON.stringify(paf.accounts.get(pub).data)
+        else
             return undefined
     }).filter(g => g !== undefined))
 })
 
-database.get('/:cluster/round', (req, res) => {
-    
-    res.send([...rounds[req.params.cluster].values()].map(pub => {
-        let account = paf[req.params.cluster].accounts.get(pub);
+database.get('/round', (req, res) => {
+
+    res.send([...rounds.values()].map(pub => {
+        let account = paf.accounts.get(pub);
         if (account !== undefined)
-            return JSON.stringify(paf[req.params.cluster].accounts.get(pub).data)
-        else 
+            return JSON.stringify(paf.accounts.get(pub).data)
+        else
             return undefined
     }).filter(r => r !== undefined))
 })
 
 
-database.get('/:cluster/history', (req, res) => {
-    res.send(JSON.stringify(histories[req.params.cluster].values()))
+database.get('/history', (req, res) => {
+    res.send(JSON.stringify(histories.values()))
 })
 
-database.get('/:cluster/vault', (req, res) => {
-    res.send([...vaults[req.params.cluster].values()].map(pub => {
-        let account = paf[req.params.cluster].accounts.get(pub);
+database.get('/vault', (req, res) => {
+    res.send([...vaults.values()].map(pub => {
+        let account = paf.accounts.get(pub);
         if (account !== undefined)
-            return JSON.stringify(paf[req.params.cluster].accounts.get(pub).data)
-        else 
+            return JSON.stringify(paf.accounts.get(pub).data)
+        else
             return undefined
     }).filter(v => v !== undefined))
 })
 
-database.listen(4000, () => {console.log('database started on port 4000')});
+database.listen(4000, () => { console.log('database started on port 4000') });

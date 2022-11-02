@@ -409,7 +409,7 @@ async function makePrediction(game: (Game)) {
     }
 
     
-    let fromTokenAccount = await getTokenAccountFromGame(game);
+    let fromTokenAccount = getTokenAccountFromGame(game);
     let vault = getVaultFromGame(game);
     
     let [userPredictionPubkey, _userPredictionPubkeyBump] = await (getWorkspace()).programAddresses.getUserPredictionPubkey(game, game.currentRound, computedUser.value || (getWorkspace()).owner);
