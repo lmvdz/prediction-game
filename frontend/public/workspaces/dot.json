@@ -1,9 +1,9 @@
 {
   "version": 5,
-  "createdAt": 1656726999180,
-  "updatedAt": 1656727347710,
-  "name": "BTCUSD",
-  "id": "wla3",
+  "createdAt": 1656726973261,
+  "updatedAt": 1656727029417,
+  "name": "DOTUSD",
+  "id": "wla2",
   "states": {
     "panes": {
       "_id": "panes",
@@ -14,22 +14,20 @@
           "name": "",
           "type": "chart",
           "markets": [
-            "BINANCE_FUTURES:btcusd_perp",
-            "BINANCE_FUTURES:btcusdt",
-            "BINANCE:btcusdt",
-            "BITFINEX:BTCF0:USTF0",
-            "BITFINEX:BTCUSD",
-            "BITFINEX:BTCUST",
-            "BITMEX:XBTUSD",
-            "BITMEX:XBTUSDT",
-            "BYBIT:BTCUSD",
-            "BYBIT:BTCUSDT",
-            "COINBASE:BTC-USD",
-            "COINBASE:BTC-USDT",
-            "DERIBIT:BTC-PERPETUAL",
-            "FTX:BTC-PERP",
-            "FTX:BTC/USD",
-            "FTX:BTC/USDT"
+            "BINANCE_FUTURES:dotusd_perp",
+            "BINANCE_FUTURES:dotusdt",
+            "BINANCE:dotusdt",
+            "BITFINEX:DOTF0:USTF0",
+            "BITFINEX:DOTUSD",
+            "BITFINEX:DOTUST",
+            "BITMEX:DOTUSD",
+            "BITMEX:DOTUSDT",
+            "BYBIT:DOTUSDT",
+            "COINBASE:DOT-USD",
+            "COINBASE:DOT-USDT",
+            "FTX:DOT-PERP",
+            "FTX:DOT/USD",
+            "FTX:DOT/USDT"
           ]
         },
         "trades": {
@@ -37,22 +35,20 @@
           "name": "",
           "type": "trades",
           "markets": [
-            "BINANCE_FUTURES:btcusd_perp",
-            "BINANCE_FUTURES:btcusdt",
-            "BINANCE:btcusdt",
-            "BITFINEX:BTCF0:USTF0",
-            "BITFINEX:BTCUSD",
-            "BITFINEX:BTCUST",
-            "BITMEX:XBTUSD",
-            "BITMEX:XBTUSDT",
-            "BYBIT:BTCUSD",
-            "BYBIT:BTCUSDT",
-            "COINBASE:BTC-USD",
-            "COINBASE:BTC-USDT",
-            "DERIBIT:BTC-PERPETUAL",
-            "FTX:BTC-PERP",
-            "FTX:BTC/USD",
-            "FTX:BTC/USDT"
+            "BINANCE_FUTURES:dotusd_perp",
+            "BINANCE_FUTURES:dotusdt",
+            "BINANCE:dotusdt",
+            "BITFINEX:DOTF0:USTF0",
+            "BITFINEX:DOTUSD",
+            "BITFINEX:DOTUST",
+            "BITMEX:DOTUSD",
+            "BITMEX:DOTUSDT",
+            "BYBIT:DOTUSDT",
+            "COINBASE:DOT-USD",
+            "COINBASE:DOT-USDT",
+            "FTX:DOT-PERP",
+            "FTX:DOT/USD",
+            "FTX:DOT/USDT"
           ],
           "settings": {
             "tradeType": "trades",
@@ -71,22 +67,20 @@
           "name": "REKTS",
           "type": "trades",
           "markets": [
-            "BINANCE_FUTURES:btcusd_perp",
-            "BINANCE_FUTURES:btcusdt",
-            "BINANCE:btcusdt",
-            "BITFINEX:BTCF0:USTF0",
-            "BITFINEX:BTCUSD",
-            "BITFINEX:BTCUST",
-            "BITMEX:XBTUSD",
-            "BITMEX:XBTUSDT",
-            "BYBIT:BTCUSD",
-            "BYBIT:BTCUSDT",
-            "COINBASE:BTC-USD",
-            "COINBASE:BTC-USDT",
-            "DERIBIT:BTC-PERPETUAL",
-            "FTX:BTC-PERP",
-            "FTX:BTC/USD",
-            "FTX:BTC/USDT"
+            "BINANCE_FUTURES:dotusd_perp",
+            "BINANCE_FUTURES:dotusdt",
+            "BINANCE:dotusdt",
+            "BITFINEX:DOTF0:USTF0",
+            "BITFINEX:DOTUSD",
+            "BITFINEX:DOTUST",
+            "BITMEX:DOTUSD",
+            "BITMEX:DOTUSDT",
+            "BYBIT:DOTUSDT",
+            "COINBASE:DOT-USD",
+            "COINBASE:DOT-USDT",
+            "FTX:DOT-PERP",
+            "FTX:DOT/USD",
+            "FTX:DOT/USDT"
           ],
           "settings": {
             "tradeType": "liquidations"
@@ -171,7 +165,7 @@
           "updatedAt": null,
           "series": [
             "liquidations",
-            "upf5yabz"
+            "7pojv6z4"
           ]
         },
         "price": {
@@ -182,8 +176,8 @@
             "priceScaleId": "right",
             "priceFormat": {
               "auto": true,
-              "precision": 1,
-              "minMove": 0.1
+              "precision": 2,
+              "minMove": 0.01
             },
             "priceLineVisible": true,
             "lastValueVisible": true,
@@ -230,7 +224,7 @@
           "updatedAt": null,
           "series": [
             "volume",
-            "za35zkg1"
+            "piu0b70f"
           ]
         }
       },
@@ -319,66 +313,22 @@
       },
       "previousSearchSelections": [
         {
-          "label": "BTCUSD",
+          "label": "DOTUSD",
           "markets": [
-            "BINANCE_FUTURES:btcusd_perp",
-            "BINANCE_FUTURES:btcusdt",
-            "BINANCE:btcusdt",
-            "BITFINEX:BTCF0:USTF0",
-            "BITFINEX:BTCUSD",
-            "BITFINEX:BTCUST",
-            "BITMEX:XBTUSD",
-            "BITMEX:XBTUSDT",
-            "BYBIT:BTCUSD",
-            "BYBIT:BTCUSDT",
-            "COINBASE:BTC-USD",
-            "COINBASE:BTC-USDT",
-            "DERIBIT:BTC-PERPETUAL",
-            "FTX:BTC-PERP",
-            "FTX:BTC/USD",
-            "FTX:BTC/USDT"
-          ],
-          "count": 16
-        },
-        {
-          "label": "ETHUSD",
-          "markets": [
-            "BINANCE_FUTURES:ethusd_perp",
-            "BINANCE_FUTURES:ethusdt",
-            "BINANCE:ethusdt",
-            "BITFINEX:ETHF0:USTF0",
-            "BITFINEX:ETHUSD",
-            "BITFINEX:ETHUST",
-            "BITMEX:ETHUSD",
-            "BITMEX:ETHUSDT",
-            "BYBIT:ETHUSD",
-            "BYBIT:ETHUSDT",
-            "COINBASE:ETH-USD",
-            "COINBASE:ETH-USDT",
-            "DERIBIT:ETH-PERPETUAL",
-            "FTX:ETH-PERP",
-            "FTX:ETH/USD",
-            "FTX:ETH/USDT"
-          ],
-          "count": 16
-        },
-        {
-          "label": "SOLUSD",
-          "markets": [
-            "BINANCE_FUTURES:solusd_perp",
-            "BINANCE_FUTURES:solusdt",
-            "BINANCE:solusdt",
-            "BITFINEX:SOLF0:USTF0",
-            "BITFINEX:SOLUSD",
-            "BITFINEX:SOLUST",
-            "BITMEX:SOLUSD",
-            "BITMEX:SOLUSDT",
-            "BYBIT:SOLUSDT",
-            "COINBASE:SOL-USD",
-            "COINBASE:SOL-USDT",
-            "FTX:SOL-PERP",
-            "FTX:SOL/USD",
-            "FTX:SOL/USDT"
+            "BINANCE_FUTURES:dotusd_perp",
+            "BINANCE_FUTURES:dotusdt",
+            "BINANCE:dotusdt",
+            "BITFINEX:DOTF0:USTF0",
+            "BITFINEX:DOTUSD",
+            "BITFINEX:DOTUST",
+            "BITMEX:DOTUSD",
+            "BITMEX:DOTUSDT",
+            "BYBIT:DOTUSDT",
+            "COINBASE:DOT-USD",
+            "COINBASE:DOT-USDT",
+            "FTX:DOT-PERP",
+            "FTX:DOT/USD",
+            "FTX:DOT/USDT"
           ],
           "count": 14
         }
