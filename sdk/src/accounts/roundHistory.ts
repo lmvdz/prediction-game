@@ -21,6 +21,7 @@ export type  RoundHistoryItem = {
     roundPriceDifference: anchor.BN,
     roundPriceDifferenceDecimals: anchor.BN,
     roundWinningDirection: number,
+    roundInvalid: boolean,
     totalFeeCollected: anchor.BN,
     totalUpAmount: anchor.BN,
     totalDownAmount: anchor.BN,
