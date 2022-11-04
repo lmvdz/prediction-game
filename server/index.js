@@ -14,7 +14,7 @@ const { getMint, mintTo, getAccount, getAssociatedTokenAddress } = require("@sol
 const owner = require('./owner.js')
 const anchor = require('@project-serum/anchor')
 const admin = require('sdk/lib/admin')
-const _api = require('./api.js')
+// const _api = require('./api.js')
 
 let connectionConfig = {
     commitment: 'finalized',

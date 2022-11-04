@@ -53,7 +53,6 @@ let histories = new Map()
 let rounds = new Set()
 
 async function loadGeneric(paf, workspace, vaults, rounds, games, histories) {
-    console.log('loading generic api');
     await loadVaults(paf, workspace, vaults);
     await loadRounds(paf, workspace, rounds);
     await loadGames(paf, workspace, games);
@@ -63,7 +62,9 @@ async function loadGeneric(paf, workspace, vaults, rounds, games, histories) {
 
 async function loadGameHistories(paf, workspace, games, histories) {
     try {
-        [...games.values()].filter(game => paf.accounts.has(game) && paf.accounts.get(game).data !== null && paf.accounts.get(game).data !== undefined).map(game => new Game(paf.accounts.get(game).data)).forEach(game => {
+        [...games.values()].filter(game => {
+            return paf.accounts.has(game) && paf.accounts.get(game).data !== null && paf.accounts.get(game).data !== undefined
+        }).map(game => new Game(paf.accounts.get(game).data)).forEach(game => {
             let gameUserPredictionHistoryPubkey = game.account.userPredictionHistory;
             if (!paf.accounts.has(gameUserPredictionHistoryPubkey.toBase58())) {
                 //@ts-ignore
@@ -74,6 +75,7 @@ async function loadGameHistories(paf, workspace, games, histories) {
                         histories.set(game.account.address.toBase58(), { ...histories.get(game.account.address.toBase58()), userPredictionHistory: data });
                     }
                 }, (error) => {
+                    console.error(error);
                     paf.accounts.delete(gameUserPredictionHistoryPubkey.toBase58());
                 });
             }
@@ -87,6 +89,7 @@ async function loadGameHistories(paf, workspace, games, histories) {
                         histories.set(game.account.address.toBase58(), { ...histories.get(game.account.address.toBase58()), roundHistory: data });
                     }
                 }, (error) => {
+                    console.error(error);
                     paf.accounts.delete(gameRoundHistoryPubkey.toBase58())
                 });
             }
@@ -224,7 +227,7 @@ database.get('/round', (req, res) => {
 
 
 database.get('/history', (req, res) => {
-    res.send(JSON.stringify(histories.values()))
+    res.send(JSON.stringify([...histories.values()]))
 })
 
 database.get('/vault', (req, res) => {

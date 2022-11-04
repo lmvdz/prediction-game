@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start-api-devnet": "export ENV=DEVNET && node api.js",
     "start-devnet": "export ENV=DEVNET && node index.js",
+    "start-api-mainnet": "export ENV=MAINNET-BETA && node api.js",
     "start-mainnet": "export ENV=MAINNET-BETA && node index.js"
   },
   "author": "",

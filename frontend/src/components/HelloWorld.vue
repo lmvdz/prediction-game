@@ -16,7 +16,7 @@ import Vault, { VaultAccount } from "sdk/lib/accounts/vault";
 import Round, { RoundAccount } from "sdk/lib/accounts/round";
 import { Account, AccountLayout, AccountState, ASSOCIATED_TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { storeToRefs } from "pinia";
-import { ref, watch } from "vue";
+import { ref, watch, shallowRef } from "vue";
 import { PredictionGame, USER_PREDICTION_MIN_AMOUNT, Workspace } from 'sdk'
 import Game, { GameAccount } from "sdk/lib/accounts/game";
 import { U64MAX } from 'sdk';
@@ -66,10 +66,23 @@ let frontendGameData = ref(new Map<string, FrontendGameData>());
 
 // generic
 let games = ref(new Map<string, Game>());
-let computedGames = computed(() => [...games.value.values()])
+let computedGames = computed(() => [...games.value.values()]);
 let rounds = ref(new Map<string, Round>());
-let computedRounds = computed(() => [...rounds.value.values()])
-let histories = ref(new Map<string, { roundHistory: RoundHistory, userPredictionHistory: UserPredictionHistory }>)
+let computedRounds = computed(() => [...rounds.value.values()]);
+let histories = shallowRef(new Map<string, { roundHistory: RoundHistory, userPredictionHistory: UserPredictionHistory }>);
+
+let computedUserPredictionHistoryItems = computed(() => {
+  return histories.value.get(selectedGameHistory.value).userPredictionHistory.account.userPredictions.filter(userPrediction => !userPrediction.recordId.eq(new anchor.BN(0))).sort((a: UserPredictionHistoryItem, b: UserPredictionHistoryItem) => (a.recordId.sub(b.recordId)).toNumber())
+});
+
+let computedRoundHistoryItems = computed(() => {
+  if (selectedGameHistory.value === null) return []
+  return histories.value.get(selectedGameHistory.value).roundHistory.account.rounds.filter(round => {
+    return !round.recordId.eq(new anchor.BN(0)) && (roundHistorySelectedRound !== null ? (round.address !== undefined ? round.address!.toBase58() === roundHistorySelectedRound.value : true) : true) 
+  }).sort((a: RoundHistoryItem, b: RoundHistoryItem) => (b.recordId.sub(a.recordId)).toNumber())
+});
+
+
 let vaults = ref(new Map<string, Vault>());
 let computedVaults = computed(() => [...vaults.value.values()])
 
@@ -83,6 +96,7 @@ let paf = ref(null as PollingAccountsFetcher);
 let tokenList = ref(null as TokenInfo[]);
 
 let updateInterval = ref(null as NodeJS.Timer);
+let loading = ref(false);
 let aggrWorkspace = ref('');
 
 let selectedGameHistory = ref(null as string);
@@ -716,25 +730,22 @@ function unloadUserClaimable() {
 }
 
 
-
+// load history data from api
 async function loadGameHistoriesFromDB() {
-  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/history`);
+  let res = await fetch(`https://api.solpredict.io/history`);
   let json = await res.json();
   if (Array.isArray(json))
   json.filter(j => j !== undefined).forEach(async ({ roundHistory, userPredictionHistory }) => {
     let roundHistoryAccount = RoundHistory.fromJSON<RoundHistoryAccount>(roundHistory);
     let userPredictionHistoryAccount = UserPredictionHistory.fromJSON<UserPredictionHistoryAccount>(userPredictionHistory);
-    let game = computedGames.value.find(g => g.account.address.toBase58() === roundHistoryAccount.game.toBase58() && g.account.address.toBase58() === userPredictionHistoryAccount.game.toBase58())
-    if (game) {
-      game.roundHistory = new RoundHistory(roundHistoryAccount);
-      game.userPredictionHistory = new UserPredictionHistory(userPredictionHistoryAccount);
-      histories.value.set(game.account.address.toBase58(), { roundHistory: game.roundHistory, userPredictionHistory: game.userPredictionHistory })
-    }
+    histories.value.set(roundHistoryAccount.game.toBase58(), { roundHistory: new RoundHistory(roundHistoryAccount), userPredictionHistory: new UserPredictionHistory(userPredictionHistoryAccount) })
   });
 }
 
+
+// loads round data from api
 async function loadRoundsFromDB() {
-  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/round`);
+  let res = await fetch(`https://api.solpredict.io/round`);
   let data = await res.json();
   let roundAccountKeys = new Set<string>();
   data.forEach(async (vJSON: string) => {
@@ -772,8 +783,9 @@ async function loadRoundsFromDB() {
   })
 }
 
+// load games data from api
 async function loadGamesFromDB() {
-  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/game`);
+  let res = await fetch(`https://api.solpredict.io/game`);
   let data = await res.json();
   let gameAccountKeys = new Set<string>();
   data.forEach(async (vJSON: string) => {
@@ -796,8 +808,9 @@ async function loadGamesFromDB() {
   })
 }
 
+// load vaults data from api
 async function loadVaultsFromDB() {
-  let res = await fetch(`https://api.solpredict.io/${!getHost().startsWith('localhost') ? getHost().split('.')[0] : 'devnet'}/vault`);
+  let res = await fetch(`https://api.solpredict.io/vault`);
   let data = await res.json();
   let vaultAccountKeys = new Set<string>();
   data.forEach(async (vJSON: string) => {
@@ -817,6 +830,8 @@ async function loadVaultsFromDB() {
   })
 }
 
+// loads user predictions associated with the current connected wallet
+// using memcmp to target only user predictions owned by the wallet address
 async function loadPredictions() {
   if (wallet.value !== null && wallet.value.connected && wallet.value.publicKey !== undefined && wallet.value.publicKey !== null) {
     try {
@@ -841,30 +856,37 @@ async function loadPredictions() {
 }
 
 async function loadGeneric() {
-  await loadVaultsFromDB(),
-  await loadRoundsFromDB(),
-  await loadGamesFromDB(),
-  await loadGameHistoriesFromDB(),
-  await loadTPS()
+  await Promise.allSettled([
+    loadVaultsFromDB(),
+    loadRoundsFromDB(),
+    loadGamesFromDB(),
+    // loadGameHistoriesFromDB(),
+    loadTPS()
+  ])
 }
 
 async function loadUserSpecific() {
-  await loadSOLBalance(),
-  await loadUser(),
-  await loadTokenAccounts(),
-  await loadUserClaimable(),
-  await loadPredictions()
+  await Promise.allSettled([
+    loadSOLBalance(),
+    loadUser(),
+    loadTokenAccounts(),
+    loadUserClaimable(),
+    loadPredictions()
+  ])
 }
 
 async function loadAll() {
-  await loadUserSpecific(),
-  await loadGeneric()
+  Promise.allSettled([
+    loadUserSpecific(),
+    loadGeneric()
+  ])
 }
 
 async function loadWorkspace() {
 
   initWorkspace(getRpcUrl(), getCluster());
   workspace.value = useWorkspace();
+  loading.value = true;
 
   if (paf.value.interval === undefined || paf.value.interval === null)
     paf.value.start();
@@ -877,9 +899,12 @@ async function loadWorkspace() {
     await loadUserSpecific();
   }
   await loadGeneric();
+  loading.value = false;
 
   if (updateInterval.value) clearInterval(updateInterval.value)
+  let count = 0
   updateInterval.value = setInterval(async () => {
+    loading.value = true;
     if (wallet.value !== null && wallet.value.connected) {
       if (userAddress.value === null)
       userAddress.value = (await getWorkspace().programAddresses.getUserPubkey(wallet.value.publicKey))[0];
@@ -888,6 +913,13 @@ async function loadWorkspace() {
       await loadUserSpecific();
     }
     await loadGeneric();
+    count++;
+    if (count % 6 === 0) {
+      // dont load history
+      await loadGameHistoriesFromDB();
+      count = 0;
+    }
+    loading.value = false;
   }, 10 * 1000)
 }
 
@@ -901,8 +933,6 @@ function loadWallet() {
         await loadWorkspace();
       }
   }, 1000)
-
-  
 }
 
 function getProtocol() {
@@ -1296,6 +1326,14 @@ export default defineComponent({
 
 <template>
   <v-container>
+    <v-progress-linear
+      v-if="loading"
+      indeterminate
+      rounded
+      color="cyan"
+    />
+    <br/>
+    <!-- TX Status Notification -->
     <div style="position: fixed; top: 0em; left: 0; margin: 0 auto; z-index: 1030;" v-if="getWorkspace() !== null">
         
         <v-card tonal :class="`txStatus ${txStatus.color}`" v-for="(txStatus, txindex) in txStatusList.filter(txStatus => txStatus.show)" :key="`txStatus-`+txindex" >
@@ -1313,6 +1351,7 @@ export default defineComponent({
         </v-card>
 
     </div>
+    <!-- V2 -->
     <div v-if="v2">
       <v-tabs 
         v-model="tab"
@@ -1373,6 +1412,7 @@ export default defineComponent({
         </v-row>
       </v-container>
     </div>
+    <!-- V1 -->
     <div v-else>
       <v-btn-group :style="`position: fixed; top: 0px; left: 0px; margin-left: ${useDisplay().width.value < 1000 ? '1em' : 'auto'}; right: 0px; width: 10em; margin-right: auto; margin-top: .5em; z-index: 1020;`">
         <v-btn icon="mdi-help" variant="plain"  :color="showHelp ? 'success' : 'grey'" @click="() => { showHelp = !showHelp; }"></v-btn>
@@ -1380,7 +1420,7 @@ export default defineComponent({
         <v-btn icon="mdi-history" variant="plain" :color="showHistory ? 'success' : 'grey'" @click="() => { showHistory = !showHistory; }"></v-btn>
         <v-btn icon="mdi-account" variant="plain" v-if="wallet !== null && wallet.connected && !wallet.connecting && useDisplay().width.value < 1000"  :color="showAccountInfo ? 'success' : 'grey'" @click="() => { showAccountInfo = !showAccountInfo; }"></v-btn>
       </v-btn-group>
-
+      <!-- HELP -->
       <v-dialog v-model="showHelp" class="align-center justify-center" style="background-color: rgba(0,0, 0, 1)">
         <v-sheet color="rgb(18, 18, 18)" style="padding: 1em; margin: 0 auto;">
           <v-btn variant="plain" style="position: absolute; top: 0; right: 0;" icon="mdi-close" @click="showHelp = false"></v-btn>
@@ -2102,6 +2142,7 @@ export default defineComponent({
           </v-fade-transition>
         </v-row>
       </v-fade-transition>
+      <!-- CHART -->
       <v-fade-transition leave-absolute hide-on-leave>
         <v-row v-show="useDisplay().width.value > 1000 ? useDisplay().height.value >= 1280 ? true : showChart : showChart">
           <v-col :cols="wallet !== null && wallet.connected && !showChart ? 7 : 12" :style="`padding: 8px; transition: all .3s; margin-top: ${showAccountInfo ? '1em' : '0'};`">
@@ -2120,6 +2161,7 @@ export default defineComponent({
           </v-col>
         </v-row>
       </v-fade-transition>
+      <!-- HISTORY -->
       <v-fade-transition leave-absolute hide-on-leave>
         <v-row v-show="useDisplay().width.value > 1000 ? useDisplay().height.value >= 1280 ? true : showHistory : showHistory">
           <v-col :cols="wallet !== null && wallet.connected && !showHistory ? 7 : 12" :style="`padding: 8px; transition: all .3s; margin-bottom: ${showAccountInfo ? '1em' : '0'}; margin-top: ${showChart ? '1em' : '1em'};`">
@@ -2128,6 +2170,7 @@ export default defineComponent({
                 <v-container fluid>
                   <v-row align="center">
                     <v-col cols="12" sm="6" class="d-flex">
+                      
                       <v-select 
                           style="margin: 0;" 
                           label="Asset" 
@@ -2136,7 +2179,7 @@ export default defineComponent({
                               title: g.baseSymbolAsString(),
                               value: g.account.address.toBase58()
                             }
-                          })" 
+                          })"
                           v-model="selectedGameHistory"
                       />
                     </v-col>
@@ -2161,7 +2204,7 @@ export default defineComponent({
                     frontendGameData.get(selectedGameHistory) !== undefined && 
                     frontendGameData.get(selectedGameHistory) !== null && 
                     frontendGameData.get(selectedGameHistory).history.show.rounds &&
-                    histories.get(selectedGameHistory).roundHistory !== null
+                    histories.has(selectedGameHistory)
                   ">
                     <v-card-title>Round History</v-card-title>
                     <v-card-subtitle>{{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).baseSymbolAsString() }}</v-card-subtitle>
@@ -2198,11 +2241,8 @@ export default defineComponent({
                         <tbody>
                           
                           <tr
-                            :class="`roundHistoryItem ${historyItem.roundWinningDirection === 1 ? 'up' : 'down'}`"
-                            
-                            v-for="historyItem in histories.get(selectedGameHistory).roundHistory.account.rounds.filter(round => {
-                                return !round.recordId.eq(new anchor.BN(0)) && (roundHistorySelectedRound !== null ? (round.address !== undefined ? round.address!.toBase58() === roundHistorySelectedRound : true) : true) 
-                              }).sort((a: RoundHistoryItem, b: RoundHistoryItem) => (b.recordId.sub(a.recordId)).toNumber())"
+                            :class="`roundHistoryItem ${ !(historyItem as any).invalid ? (historyItem.roundWinningDirection === 1 ? 'up' : 'down') : 'invalid' }`"
+                            v-for="historyItem in computedRoundHistoryItems"
                           >
                               <td>
                                 {{historyItem.roundNumber}}
@@ -2237,7 +2277,7 @@ export default defineComponent({
                     frontendGameData.get(selectedGameHistory) !== undefined && 
                     frontendGameData.get(selectedGameHistory) !== null && 
                     frontendGameData.get(selectedGameHistory).history.show.userPredictions &&
-                    histories.get(selectedGameHistory).userPredictionHistory !== null
+                    histories.has(selectedGameHistory)
                   ">
                     <v-card-title>User Prediction History</v-card-title>
                     <v-card-subtitle>{{ computedGames.find(g => g.account.address.toBase58() === selectedGameHistory).baseSymbolAsString() }}</v-card-subtitle>
@@ -2259,7 +2299,7 @@ export default defineComponent({
                         </thead>
                         <tbody>
                           <tr :class="`userPredictionHistoryItem ${historyItem.upOrDown === 1 ? 'up' : 'down'}`" 
-                            v-for="historyItem in histories.get(selectedGameHistory).userPredictionHistory.account.userPredictions.filter(userPrediction => !userPrediction.recordId.eq(new anchor.BN(0))).sort((a: UserPredictionHistoryItem, b: UserPredictionHistoryItem) => (a.recordId.sub(b.recordId)).toNumber())">
+                            v-for="historyItem in computedUserPredictionHistoryItems">
                             <td>
                               {{ UpOrDown[historyItem.upOrDown] }}
                             </td>
