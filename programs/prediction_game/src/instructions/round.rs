@@ -283,12 +283,13 @@ impl Round {
 
                 self.round_winning_direction = if self.round_end_price > self.round_start_price {
                     1
-                } else {
+                } else  {
                     2
                 };
 
                 // if the round finishes after 10% of the round_length invalidate the round
-                if self.round_time_difference >= self.round_length.saturating_add(self.round_length.saturating_mul(10).saturating_div(100)) {
+                // or if the round price is the same as the start price
+                if self.round_time_difference >= self.round_length.saturating_add(self.round_length.saturating_mul(10).saturating_div(100)) || self.round_end_price == self.round_start_price {
                     self.invalid = true;
                 }
                 

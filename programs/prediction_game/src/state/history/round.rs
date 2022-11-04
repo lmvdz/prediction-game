@@ -56,6 +56,8 @@ pub struct RoundHistoryItem {
 
     pub round_winning_direction: u8,
 
+    pub round_invalid: bool,
+
     pub total_fee_collected: u64,
 
     pub total_up_amount: u64,
