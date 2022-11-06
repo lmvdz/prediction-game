@@ -31,6 +31,11 @@ Currently SolPredict is deployed on the Solana Devnet
 - [ ] Admin UI   
 - [ ] Dedicated RPC
 - [ ] UX/UI Developer
+  
+## Known Bugs  
+Keeping track of cranks for each round is not working correctly.
+Will be better to keep track of each crank's pubkey instead of just having a counter.
+Possible fix is to also keep track of the round number, not sure what the cause of the bug is yet.
 
 ## Website
 https://devnet.solpredict.io --- not running, don't have a reliable RPC
