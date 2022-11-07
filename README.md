@@ -8,6 +8,13 @@ SolPredict is my first project which I am developing to learn Rust + Solana Bloc
 ## Devnet
 Currently SolPredict is deployed on the Solana Devnet
 
+## Submodules
+
+[sdk](https://github.com/lmvdz/prediction-game-sdk) - Typescript SDK  
+[frontend](https://github.com/lmvdz/prediction-game-frontend) - VueJS Frontend  
+[server](https://github.com/lmvdz/prediction-game-server) - NodeJS Host for Frontend/Aggr and API  
+[crank](https://github.com/lmvdz/prediction-game-crank) - Typescript Crank Bot
+
 
 ## How does it work?  
 > The idea is heavily inspired by BSC PancakeSwap's Prediction Game  
