@@ -1,15 +1,21 @@
-# prediction-game
-SolPredict - Prediction Game deployed on the Solana Blockchain
-
+# prediction-game  
+  
+SolPredict - Prediction Game deployed on the Solana Blockchain  
+  
 ## Introduction  
+  
 SolPredict is my first project which I am developing to learn Rust + Solana Blockchain tech.
 
 
-## Devnet
-Currently SolPredict is deployed on the Solana Devnet
+## Devnet  
+  
+Currently SolPredict is deployed on the Solana Devnet  
+The current price displayed on the game in the frontend is pulled from the game's state on the blockchain.  
+With 5 game cranks running on one IP address, the rate limiting which could occur requires a slow rate of transactions to update the game state.  
+This can be remidied by pulling the oracle data for each frontend client (live price feed updates).  
 
-## Submodules
-
+## Submodules  
+  
 [sdk](https://github.com/lmvdz/prediction-game-sdk) - Typescript SDK  
 [frontend](https://github.com/lmvdz/prediction-game-frontend) - VueJS Frontend  
 [server](https://github.com/lmvdz/prediction-game-server) - NodeJS Host for Frontend/Aggr and API  
@@ -17,6 +23,7 @@ Currently SolPredict is deployed on the Solana Devnet
 
 
 ## How does it work?  
+  
 > The idea is heavily inspired by BSC PancakeSwap's Prediction Game  
 > Speculate if the price is going to be higher/lower than the starting price  
 > Round Length by default is 5 minutes  
