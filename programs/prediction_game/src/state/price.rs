@@ -1,3 +1,5 @@
+use std::cell::Ref;
+
 use chainlink_solana as chainlink;
 use pyth_sdk_solana::load_price_feed_from_account_info;
 use switchboard::AggregatorAccountData;
@@ -54,9 +56,9 @@ impl std::fmt::Display for Decimal {
     }
 }
 
-pub fn get_price<'info>(oracle: u8, price_program: &AccountInfo<'info>, price_feed: &AccountInfo<'info>) -> Result<(i128, i128)> {
+pub fn get_price<'info>(oracle: &u8, price_program: &AccountInfo<'info>, price_feed: &AccountInfo<'info>) -> Result<(i128, i128)> {
     
-    let oracle_from_u8 = Oracle::from(oracle);
+    let oracle_from_u8 = Oracle::from(*oracle);
 
     let (price, decimals) = match oracle_from_u8 {
         Oracle::Chainlink => {
@@ -78,7 +80,13 @@ pub fn get_price<'info>(oracle: u8, price_program: &AccountInfo<'info>, price_fe
             ( current_price.price.into(), current_price.expo as i128)
         },
         Oracle::Switchboard => {
-            let switchboard_decimal = AggregatorAccountData::new(price_feed)?.get_result()?;
+            let data = price_feed.try_borrow_data()?;
+
+            let switchboard_account: Ref<AggregatorAccountData> = Ref::map(data, |data| {
+                bytemuck::from_bytes(&data[8..std::mem::size_of::<AggregatorAccountData>() + 8])
+            });
+            
+            let switchboard_decimal = switchboard_account.get_result()?;
             ( switchboard_decimal.mantissa, switchboard_decimal.scale as i128)
         },
         Oracle::Undefined => (0, 0)

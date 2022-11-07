@@ -1,6 +1,6 @@
 [package]
 name = "sol_predict"
-version = "1.0.8"
+version = "1.0.9"
 description = "Created with Anchor"
 edition = "2021"
 
@@ -17,12 +17,12 @@ default = []
 overflow-checks = true
 
 [dependencies]
-anchor-lang = { version = "0.24.2", features = ["init-if-needed"] }
-anchor-spl = "0.24.2"
+anchor-lang = { version = "0.25.0", features = ["init-if-needed"] }
+anchor-spl = "0.25.0"
 num-traits = "0.2"
 num-derive = "0.3"
-pyth-sdk-solana = "0.4.1"
+pyth-sdk-solana = "0.6.1"
 chainlink_solana = "1.0.0"
 bytemuck = "1.9.1"
-switchboard-v2 = "0.1.10"
+switchboard-v2 = "0.1.16"
 num_enum = "0.5.7"

@@ -74,16 +74,28 @@ pub mod prediction_game {
 
     // ROUNDS
 
-    pub fn init_first_round_instruction(ctx: Context<InitFirstRound>) -> Result<()> {
+    pub fn init_first_round_instruction<'info>(ctx: Context<'_, '_, '_, 'info, InitFirstRound<'info>>) -> Result<()> {
         instructions::round::init_first_round(ctx)
     }
 
-    pub fn init_second_round_instruction(ctx: Context<InitSecondRound>, next_round_number: [u8; 4]) -> Result<()> {
+    pub fn init_stuck_first_round_instruction<'info>(ctx: Context<'_, '_, '_, 'info, InitStuckFirstRound<'info>>) -> Result<()> {
+        instructions::round::init_stuck_first_round(ctx)
+    }
+
+    pub fn init_second_round_instruction<'info>(ctx: Context<'_, '_, '_, 'info, InitSecondRound<'info>>, next_round_number: [u8; 4]) -> Result<()> {
         instructions::round::init_second_round(ctx, next_round_number)
     }
 
-    pub fn init_next_round_and_close_previous_instruction(ctx: Context<InitNextRoundAndClosePrevious>, next_round_number: [u8; 4]) -> Result<()> {
+    pub fn init_stuck_second_round_instruction<'info>(ctx: Context<'_, '_, '_, 'info, InitStuckSecondRound<'info>>, next_round_number: [u8; 4]) -> Result<()> {
+        instructions::round::init_stuck_second_round(ctx, next_round_number)
+    }
+
+    pub fn init_next_round_and_close_previous_instruction<'info>(ctx: Context<'_, '_, '_, 'info, InitNextRoundAndClosePrevious<'info>>, next_round_number: [u8; 4]) -> Result<()> {
         instructions::round::init_next_round_and_close_previous(ctx, next_round_number)
+    }
+
+    pub fn init_stuck_next_round_and_close_previous_instruction<'info>(ctx: Context<'_, '_, '_, 'info, InitStuckNextRoundAndClosePrevious<'info>>, next_round_number: [u8; 4]) -> Result<()> {
+        instructions::round::init_stuck_next_round_and_close_previous(ctx, next_round_number)
     }
 
     pub fn close_round_instruction<'info>(_ctx: Context<'_, '_, '_, 'info, CloseRound<'info>>) -> Result<()> {

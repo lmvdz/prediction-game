@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
 use anchor_spl::token::TokenAccount;
+use switchboard_v2::SwitchboardDecimal;
 
 use crate::errors::ErrorCode;
 
@@ -12,6 +13,8 @@ use crate::state::Game;
 use crate::state::Round;
 use crate::state::UserPredictionHistory;
 use crate::state::Vault;
+use crate::state::get_price;
+use crate::state::price::{oracle_value, Oracle};
 use crate::utils::transfer_token_account_signed;
 
 pub fn init_game(ctx: Context<InitializeGame>, oracle: u8, base_symbol: [u8; 16], fee_bps: u16, crank_bps: u16, round_length: i64) -> Result<()> {
@@ -65,8 +68,10 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
     let game = ctx.accounts.game.load()?;
     let vault = &ctx.accounts.vault;
 
-    require_keys_eq!(game.current_round, current_round_key);
+    require_keys_eq!(game.current_round, current_round_key, ErrorCode::RoundGameKeyNotEqual);
+    require_keys_eq!(current_round.game, game.address, ErrorCode::RoundGameKeyNotEqual);
     require_keys_eq!(vault.to_account_info().key(), game.vault);
+    
     require!(current_round.finished, ErrorCode::RoundNotFinished);
     require!(current_round.fee_collected, ErrorCode::RoundFeeNotCollected);
     require!(!current_round.settled, ErrorCode::RoundAlreadySettled);
@@ -75,13 +80,10 @@ pub fn settle_predictions<'info>(mut ctx: Context<'_, '_, '_, 'info, SettlePredi
     // The account which is calling 
     let mut crank = ctx.accounts.crank.load_mut()?;
 
-    if !crank.last_crank_round.eq(&current_round_key) {
-        current_round.total_unique_crankers = current_round.total_unique_crankers.saturating_add(1);
-        crank.last_crank_round = current_round_key;
-        crank.cranks = 1;
-    } else {
-        crank.cranks = crank.cranks.saturating_add(1);
-    }
+    require_keys_eq!(crank.last_crank_round, current_round_key);
+
+    crank.cranks = crank.cranks.saturating_add(1);
+
     current_round.total_cranks = current_round.total_cranks.saturating_add(1);
 
 
@@ -352,13 +354,9 @@ pub fn collect_fee<'info>(mut ctx: Context<'_, '_, '_, 'info, CollectFee<'info>>
 
     let mut crank = ctx.accounts.crank.load_mut()?;
 
-    if !crank.last_crank_round.eq(&current_round_key) {
-        current_round.total_unique_crankers = current_round.total_unique_crankers.saturating_add(1);
-        crank.last_crank_round = current_round_key;
-        crank.cranks = 1;
-    } else {
-        crank.cranks = crank.cranks.saturating_add(1);
-    }
+    require_keys_eq!(crank.last_crank_round, current_round_key, ErrorCode::CrankRoundMismatch);
+
+    crank.cranks = crank.cranks.saturating_add(1);
 
     current_round.total_cranks = current_round.total_cranks.saturating_add(1);
 
@@ -394,36 +392,98 @@ pub fn collect_fee<'info>(mut ctx: Context<'_, '_, '_, 'info, CollectFee<'info>>
     Ok(())
 }
 
-pub fn update_game<'info>(mut ctx: Context<'_, '_, '_, 'info, UpdateGame<'info>>) -> Result<()> {
-    let ctx = &mut ctx;
-    let current_round_key = ctx.accounts.current_round.to_account_info().key();
+pub fn update_game<'info>(ctx: Context<'_, '_, '_, 'info, UpdateGame<'info>>) -> Result<()> {
+    
     let mut current_round = ctx.accounts.current_round.load_mut()?;
+    let current_round_key = current_round.address;
     let game = ctx.accounts.game.load()?;
-    let game_key = ctx.accounts.game.to_account_info().key();
+    let game_key = game.address;
 
     require_keys_eq!(current_round.game, game_key, ErrorCode::RoundGameKeyNotEqual);
+    require_keys_eq!(game.current_round, current_round_key, ErrorCode::RoundGameKeyNotEqual);
     require_keys_eq!(game.price_program, ctx.accounts.price_program.to_account_info().key(), ErrorCode::RoundPriceProgramNotEqual);
     require_keys_eq!(game.price_feed, ctx.accounts.price_feed.to_account_info().key(), ErrorCode::RoundPriceFeedNotEqual);
+    require!(!current_round.finished, ErrorCode::RoundAlreadyFinished);
+    
 
     let mut crank = ctx.accounts.crank.load_mut()?;
 
     if !crank.last_crank_round.eq(&current_round_key) {
+
         current_round.total_unique_crankers = current_round.total_unique_crankers.saturating_add(1);
+        
         crank.last_crank_round = current_round_key;
         crank.cranks = 1;
+
     } else {
+
         crank.cranks = crank.cranks.saturating_add(1);
+
     }
+
     current_round.total_cranks = current_round.total_cranks.saturating_add(1);
 
+    if current_round.round_predictions_allowed && current_round.round_time_difference >= (current_round.round_length / 2) { // for production
+        current_round.round_predictions_allowed = false;
+    }
+
+    // update the round time
+    current_round.round_current_time = Clock::get()?.unix_timestamp;
+    // calculate the difference in time or set to zero
+    current_round.round_time_difference = current_round.round_current_time.checked_sub(current_round.round_start_time).unwrap_or(0);
+    
+
+    let oracle = &ctx.accounts.game.load()?.oracle;
 
     let price_program = &ctx.accounts.price_program;
     let price_feed = &ctx.accounts.price_feed;
-    let oracle = ctx.accounts.game.load()?.oracle;
 
-    require!(current_round.update_round(game, oracle,  price_program, price_feed).is_ok(), ErrorCode::FailedToUpdateRound);
+    // update the round price
+    let (price, decimals) = get_price(oracle, price_program, price_feed).unwrap_or((current_round.round_start_price, 0));  // production
+
+    current_round.round_current_price = price;
+    current_round.round_current_price_decimals = decimals;
+    // current_round.round_current_price += 1; // localnet testing
+
+    // calculate the difference in price or set to zero
+    (current_round.round_price_difference, current_round.round_price_difference_decimals) = if game.oracle.eq(&oracle_value(Oracle::Switchboard)) {
+        let current_price: f64 = SwitchboardDecimal::new(current_round.round_current_price, current_round.round_current_price_decimals.unsigned_abs().try_into().unwrap()).try_into()?;
+        let start_price: f64 = SwitchboardDecimal::new(current_round.round_start_price, current_round.round_start_price_decimals.unsigned_abs().try_into().unwrap()).try_into()?;
+        let price_difference = SwitchboardDecimal::from_f64(current_price - start_price);
+        (price_difference.mantissa, price_difference.scale as i128)
+    } else {
+        (current_round.round_current_price.checked_sub(current_round.round_start_price).unwrap_or(0), current_round.round_current_price_decimals)
+    };
+    
+    
+
+    // if current_round.round_time_difference > (2) { 
+    if current_round.round_time_difference >= current_round.round_length { // for production
+
+        current_round.round_end_price = current_round.round_current_price;
+        current_round.round_end_price_decimals = current_round.round_current_price_decimals;
+        
+        current_round.finished = true;
+
+        current_round.round_winning_direction = if current_round.round_end_price > current_round.round_start_price {
+            1
+        } else  {
+            2
+        };
+
+        // if the round finishes after 10% of the round_length invalidate the round
+        // or if the round price is the same as the start price
+        if current_round.round_time_difference >= current_round.round_length.saturating_add(current_round.round_length.saturating_mul(10).saturating_div(100)) || current_round.round_end_price == current_round.round_start_price {
+            current_round.invalid = true;
+        }
+        
+    }
 
     Ok(())
+
+    // require!(current_round.update_round(game, oracle, price_program, price_feed).is_ok(), ErrorCode::FailedToUpdateRound);
+
+    // Ok(())
 }
 
 pub fn init_game_history(ctx: Context<InitGameHistory>) -> Result<()> {

@@ -206,5 +206,7 @@ pub enum ErrorCode {
     #[msg("The Vault ATA Authority Nonce did not match the one generated")]
     InvalidVaultAuthorityNonce,
     #[msg("Round Number Mismatch")]
-    RoundNumberMismatch
+    RoundNumberMismatch,
+    #[msg("Crank Round Mismatch")]
+    CrankRoundMismatch
 }
